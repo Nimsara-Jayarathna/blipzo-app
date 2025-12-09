@@ -81,7 +81,7 @@ export default function AuthScreen() {
   });
 
   const activeMutation = mode === 'login' ? loginMutation : registerMutation;
-  const isLoading = activeMutation.isPending || (sessionQuery.isLoading && !isSessionChecked);
+  const isLoading = activeMutation.isPending;
 
   const modalCopy = useMemo(
     () => ({
@@ -139,6 +139,15 @@ export default function AuthScreen() {
     loginMutation.reset();
     registerMutation.reset();
   };
+
+  if (!isSessionChecked && sessionQuery.isLoading) {
+    return (
+      <ThemedView style={styles.loadingContainer}>
+        <ActivityIndicator />
+        <ThemedText style={styles.loadingText}>Checking your session...</ThemedText>
+      </ThemedView>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -335,5 +344,12 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: '600',
   },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    marginTop: 8,
+  },
 });
-
