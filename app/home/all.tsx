@@ -1,43 +1,44 @@
 import dayjs from 'dayjs';
 import { useQuery } from '@tanstack/react-query';
 import React, { useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { getTransactionsFiltered, type TransactionFilters } from '@/api/transactions';
-import { ThemedText } from '@/components/themed-text';
 import { ProfileHeader } from '@/components/ProfileHeader';
 import { useAuth } from '@/hooks/useAuth';
-import type { Transaction } from '@/types';
-import { TransactionRow } from './all/_components/TransactionRow';
-import { FilterCard } from './all/_components/FilterCard';
-import { AddTransactionSheet } from './_components/AddTransactionSheet';
+import { ThemedText } from '@/components/themed-text';
 import { HomeBackground } from './_components/HomeBackground';
+import { AddTransactionSheet } from './_components/AddTransactionSheet';
 
-type TypeFilter = 'all' | 'income' | 'expense';
-
-export interface AllFilters {
-  startDate?: string;
-  endDate?: string;
-  typeFilter: TypeFilter;
-  sortField: 'date' | 'amount' | 'category';
-  sortDirection: 'asc' | 'desc';
-}
+// Sub-components
+import { TransactionList } from './all/_components/TransactionList';
+import { 
+  type AllFilters, 
+  type Grouping, 
+  useGroupedTransactions, 
+  useTransactionCategories 
+} from './all/_hooks/useTransactionLogic';
+import { AllFiltersSheet } from './all/_components/AllFiltersSheet';
 
 export default function AllTransactionsScreen() {
   const { isAuthenticated, user } = useAuth();
-
   const today = dayjs().format('YYYY-MM-DD');
+
+  // --- STATE ---
   const [filters, setFilters] = useState<AllFilters>({
     startDate: today,
     endDate: today,
     typeFilter: 'all',
+    categoryFilter: 'all',
     sortField: 'date',
     sortDirection: 'desc',
   });
+  const [grouping, setGrouping] = useState<Grouping>('none');
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const [isFabDimmed, setIsFabDimmed] = useState(false);
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
-  const { data, isLoading, isError } = useQuery({
+  // --- DATA ---
+  const { data, isLoading } = useQuery({
     queryKey: ['transactions', 'all', filters],
     queryFn: () =>
       getTransactionsFiltered({
@@ -51,57 +52,55 @@ export default function AllTransactionsScreen() {
   });
 
   const transactions = data?.transactions ?? [];
+  
+  // Apply category filtering locally (API handles Type/Date, Client handles Category specific ID)
+  const filteredTransactions = transactions.filter((txn) => {
+    if (filters.categoryFilter === 'all') return true;
+    const catId = typeof txn.category === 'string' ? txn.category : txn.category?.id ?? txn.category?._id;
+    return catId === filters.categoryFilter;
+  });
 
+  // --- HOOKS ---
+  const { categoriesForType } = useTransactionCategories(filters, setFilters);
+  const groupedData = useGroupedTransactions(filteredTransactions, grouping);
+
+  // --- RENDER ---
   return (
     <HomeBackground>
       <ProfileHeader user={user ? { name: user.name ?? user.email, avatarUrl: undefined } : null} />
 
       <View style={styles.container}>
-        <FilterCard filters={filters} today={today} setFilters={setFilters} />
-
-        {isLoading && (
-          <View style={styles.center}>
-            <ActivityIndicator />
-          </View>
-        )}
-
-        {isError && (
-          <View style={styles.center}>
-            <ThemedText>Unable to load transactions. Try again later.</ThemedText>
-          </View>
-        )}
-
-        {!isLoading && !isError && transactions.length === 0 ? (
-          <View style={styles.center}>
-            <ThemedText>
-              No transactions found. Adjust filters or add one from the web.
-            </ThemedText>
-          </View>
-        ) : (
-          <FlatList
-            data={transactions}
-            keyExtractor={item => String(item.id ?? `${item.date}-${item.amount}-${item.title}`)}
-            contentContainerStyle={styles.listContent}
-            onScroll={event => {
-              const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
-              const paddingToBottom = 32;
-              const reachedBottom =
-                layoutMeasurement.height + contentOffset.y >=
-                contentSize.height - paddingToBottom;
-              setIsFabDimmed(reachedBottom);
-            }}
-            scrollEventThrottle={16}
-            renderItem={({ item }) => <TransactionRow transaction={item} />}
-          />
-        )}
+        <TransactionList 
+          data={filteredTransactions}
+          groupedData={groupedData}
+          HeaderComponent={() => (
+            <View style={styles.headerContainer}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.filtersButton,
+                  pressed && styles.filtersButtonPressed,
+                ]}
+                onPress={() => setIsFiltersOpen(true)}
+              >
+                <ThemedText style={styles.filtersButtonLabel}>
+                  Filters, sort &amp; group
+                </ThemedText>
+                <ThemedText style={styles.filtersButtonSummary}>
+                  {filters.startDate} → {filters.endDate} •{' '}
+                  {filters.typeFilter === 'all'
+                    ? 'All types'
+                    : filters.typeFilter === 'income'
+                    ? 'Income'
+                    : 'Expense'}
+                </ThemedText>
+              </Pressable>
+              {isLoading && <ActivityIndicator style={{ marginTop: 20 }} />}
+            </View>
+          )}
+        />
 
         <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Add transaction"
-          style={({ pressed }) => [
-            styles.fab,
-            (pressed || isFabDimmed) && styles.fabPressed,
-          ]}
+          style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
           onPress={() => setIsAddOpen(true)}>
           <ThemedText style={styles.fabText}>+</ThemedText>
         </Pressable>
@@ -111,36 +110,48 @@ export default function AllTransactionsScreen() {
         visible={isAddOpen}
         onClose={() => setIsAddOpen(false)}
       />
+
+      <AllFiltersSheet
+        visible={isFiltersOpen}
+        filters={filters}
+        grouping={grouping}
+        categories={categoriesForType}
+        onClose={() => setIsFiltersOpen(false)}
+        onApply={(nextFilters, nextGrouping) => {
+          setFilters(nextFilters);
+          setGrouping(nextGrouping);
+        }}
+      />
     </HomeBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
+  container: { flex: 1, paddingHorizontal: 16 },
+  headerContainer: { paddingBottom: 16, paddingTop: 8 },
+  filtersButton: {
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(211,216,224,0.9)',
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
   },
-  container: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 24,
-    gap: 16,
+  filtersButtonPressed: {
+    opacity: 0.9,
   },
-  title: {
-    textAlign: 'center',
-    marginBottom: 8,
+  filtersButtonLabel: {
+    fontSize: 13,
+    fontWeight: '600',
   },
-  subtitle: {
-    textAlign: 'center',
-  },
-  center: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-  },
-  listContent: {
-    paddingTop: 8,
-    paddingBottom: 4,
-    gap: 8,
+  filtersButtonSummary: {
+    fontSize: 11,
+    opacity: 0.7,
+    marginTop: 2,
   },
   fab: {
     position: 'absolute',
@@ -148,22 +159,16 @@ const styles = StyleSheet.create({
     bottom: 24,
     width: 56,
     height: 56,
-    borderRadius: 999,
+    borderRadius: 28,
     backgroundColor: '#3498db',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.18,
-    shadowRadius: 20,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 6,
   },
-  fabPressed: {
-    opacity: 0.35,
-  },
-  fabText: {
-    color: '#ffffff',
-    fontSize: 28,
-    fontWeight: '600',
-  },
+  fabPressed: { opacity: 0.8 },
+  fabText: { color: '#fff', fontSize: 28, marginTop: -2 },
 });
