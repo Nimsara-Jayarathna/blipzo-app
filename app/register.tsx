@@ -35,7 +35,7 @@ export default function RegisterScreen() {
     onSuccess: data => {
       setAuth(data);
       setErrorMessage(null);
-      router.replace('/(tabs)');
+      router.replace('/home');
     },
     onError: () => setErrorMessage('Unable to create account'),
   });
@@ -336,4 +336,3 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
 });
-

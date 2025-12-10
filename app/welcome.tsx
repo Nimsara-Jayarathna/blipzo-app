@@ -32,7 +32,7 @@ export default function WelcomeScreen() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      router.replace('/(tabs)');
+      router.replace('/home');
     }
   }, [isAuthenticated, router]);
 

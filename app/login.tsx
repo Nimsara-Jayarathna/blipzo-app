@@ -33,7 +33,7 @@ export default function LoginScreen() {
     onSuccess: data => {
       setAuth(data);
       setErrorMessage(null);
-      router.replace('/(tabs)');
+      router.replace('/home');
     },
     onError: () => setErrorMessage('Invalid email or password'),
   });
@@ -315,4 +315,3 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
 });
-

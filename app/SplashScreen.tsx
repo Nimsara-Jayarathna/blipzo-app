@@ -41,7 +41,7 @@ export default function SplashScreen() {
 
           if (!cancelled) {
             setAuth(authData);
-            router.replace('/(tabs)');
+            router.replace('/home');
           }
         } else if (!cancelled) {
           logout();
