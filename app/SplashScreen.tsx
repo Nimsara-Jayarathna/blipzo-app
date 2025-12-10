@@ -4,8 +4,8 @@ import { useRouter } from 'expo-router';
 
 import { getSession, refreshSession } from '@/api/auth';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import { useAuth } from '@/hooks/useAuth';
+import { HomeBackground } from './home/_components/HomeBackground';
 
 const accentColor = '#3498db';
 const incomeColor = '#2ecc71';
@@ -63,11 +63,7 @@ export default function SplashScreen() {
   }, [logout, router, setAuth]);
 
   return (
-    <ThemedView style={styles.container}>
-      {/* Soft radial overlays inspired by the dashboard */}
-      <View style={styles.topGlow} pointerEvents="none" />
-      <View style={styles.bottomGlow} pointerEvents="none" />
-
+    <HomeBackground>
       <View style={styles.content}>
         <View style={styles.logoCard}>
           {/* TODO: Replace with real logo asset */}
@@ -89,33 +85,11 @@ export default function SplashScreen() {
           <ThemedText style={styles.loaderText}>Loading your workspace...</ThemedText>
         </View>
       </View>
-    </ThemedView>
+    </HomeBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f6fa',
-  },
-  topGlow: {
-    position: 'absolute',
-    top: -120,
-    left: -80,
-    width: 260,
-    height: 260,
-    borderRadius: 130,
-    backgroundColor: 'rgba(52,152,219,0.18)',
-  },
-  bottomGlow: {
-    position: 'absolute',
-    bottom: -140,
-    right: -80,
-    width: 260,
-    height: 260,
-    borderRadius: 130,
-    backgroundColor: 'rgba(46,204,113,0.16)',
-  },
   content: {
     flex: 1,
     alignItems: 'center',

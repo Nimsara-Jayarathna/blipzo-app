@@ -12,13 +12,12 @@ import {
 } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import { useAuth } from '@/hooks/useAuth';
+import { HomeBackground } from './home/_components/HomeBackground';
 
 const accentColor = '#3498db';
 const incomeColor = '#2ecc71';
 const expenseColor = '#e74c3c';
-const backgroundColor = '#f5f6fa';
 const bottomSheetColor = 'rgba(255,255,255,0.96)';
 
 export default function WelcomeScreen() {
@@ -89,11 +88,7 @@ export default function WelcomeScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ThemedView style={styles.container}>
-        {/* Soft hero background similar to web */}
-        <View style={styles.topGlow} pointerEvents="none" />
-        <View style={styles.bottomGlow} pointerEvents="none" />
-
+      <HomeBackground>
         <Animated.View
           style={[
             styles.logoContainer,
@@ -150,7 +145,7 @@ export default function WelcomeScreen() {
             <ThemedText style={styles.secondaryButtonText}>Create account</ThemedText>
           </Pressable>
         </Animated.View>
-      </ThemedView>
+      </HomeBackground>
     </SafeAreaView>
   );
 }
@@ -158,29 +153,6 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor,
-  },
-  container: {
-    flex: 1,
-    backgroundColor,
-  },
-  topGlow: {
-    position: 'absolute',
-    top: -140,
-    left: -90,
-    width: 260,
-    height: 260,
-    borderRadius: 130,
-    backgroundColor: 'rgba(52,152,219,0.16)',
-  },
-  bottomGlow: {
-    position: 'absolute',
-    bottom: -140,
-    right: -80,
-    width: 260,
-    height: 260,
-    borderRadius: 130,
-    backgroundColor: 'rgba(46,204,113,0.14)',
   },
   logoContainer: {
     alignItems: 'center',

@@ -14,11 +14,10 @@ import {
 
 import { login } from '@/api/auth';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import { useAuth } from '@/hooks/useAuth';
+import { HomeBackground } from './home/_components/HomeBackground';
 
 const accentColor = '#3498db';
-const backgroundColor = '#f5f6fa';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -90,10 +89,7 @@ export default function LoginScreen() {
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.select({ ios: 'padding', android: undefined })}>
-        <ThemedView style={styles.container}>
-          <View style={styles.topGlow} pointerEvents="none" />
-          <View style={styles.bottomGlow} pointerEvents="none" />
-
+        <HomeBackground>
           <View style={styles.content}>
             <View style={styles.logoBlock}>
               {/* TODO: Replace with real logo asset */}
@@ -178,7 +174,7 @@ export default function LoginScreen() {
               </Pressable>
             </View>
           </View>
-        </ThemedView>
+        </HomeBackground>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -187,29 +183,6 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor,
-  },
-  container: {
-    flex: 1,
-    backgroundColor,
-  },
-  topGlow: {
-    position: 'absolute',
-    top: -140,
-    left: -90,
-    width: 260,
-    height: 260,
-    borderRadius: 130,
-    backgroundColor: 'rgba(52,152,219,0.16)',
-  },
-  bottomGlow: {
-    position: 'absolute',
-    bottom: -140,
-    right: -80,
-    width: 260,
-    height: 260,
-    borderRadius: 130,
-    backgroundColor: 'rgba(46,204,113,0.14)',
   },
   content: {
     flex: 1,
