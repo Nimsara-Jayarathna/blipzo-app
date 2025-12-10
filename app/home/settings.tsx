@@ -2,12 +2,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -18,25 +16,30 @@ import {
   getCategories,
   setDefaultCategory,
 } from '@/api/categories';
-import { ThemedText } from '@/components/themed-text';
 import { ProfileHeader } from '@/components/ProfileHeader';
+import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/hooks/useAuth';
 import type { Category } from '@/types';
+
 import { HomeBackground } from './_components/HomeBackground';
 
-const categoryKey = ['categories'];
+// Importing components directly from their files
+import { CategoryTabs } from './settings/_components/CategoryTabs';
+import { AddCategoryInput } from './settings/_components/AddCategoryInput';
+import { CategoryList } from './settings/_components/CategoryList';
 
-// Helper to handle inconsistent API ID types
+const categoryKey = ['categories'];
 const getCategoryId = (cat: Category) => cat._id ?? cat.id ?? '';
 
 export default function SettingsScreen() {
   const { isAuthenticated, user } = useAuth();
   const queryClient = useQueryClient();
 
-  // UX: Use a tab system instead of side-by-side columns for mobile
+  // State
   const [activeTab, setActiveTab] = useState<'income' | 'expense'>('income');
   const [newCategoryName, setNewCategoryName] = useState('');
 
+  // Data Fetching
   const {
     data: categories,
     isLoading,
@@ -48,7 +51,7 @@ export default function SettingsScreen() {
     enabled: isAuthenticated,
   });
 
-  // Derived state
+  // Derived State
   const incomeCategories = useMemo(
     () => (categories ?? []).filter(item => item.type === 'income'),
     [categories]
@@ -58,16 +61,17 @@ export default function SettingsScreen() {
     [categories]
   );
 
-  // Calculate defaults on the fly
   const defaultIncomeId =
     incomeCategories.find(c => c.isDefault)?._id ??
     incomeCategories.find(c => c.isDefault)?.id;
+
   const defaultExpenseId =
     expenseCategories.find(c => c.isDefault)?._id ??
     expenseCategories.find(c => c.isDefault)?.id;
 
   const MAX_PER_TYPE = 10;
   const currentList = activeTab === 'income' ? incomeCategories : expenseCategories;
+  const currentDefaultId = activeTab === 'income' ? defaultIncomeId : defaultExpenseId;
   const isFull = currentList.length >= MAX_PER_TYPE;
 
   // Mutations
@@ -99,23 +103,13 @@ export default function SettingsScreen() {
   // Handlers
   const handleDelete = (category: Category) => {
     const id = getCategoryId(category);
-    if (!id) return;
-
-    // Match web behavior: do not delete default categories.
-    if (category.isDefault) {
-      return;
-    }
-
+    if (!id || category.isDefault) return;
     deleteMutation.mutate(id);
   };
 
   const handleSetDefault = (category: Category) => {
     const id = getCategoryId(category);
-    if (!id) return;
-
-    const currentDefault = category.type === 'income' ? defaultIncomeId : defaultExpenseId;
-    if (id === currentDefault) return;
-
+    if (!id || id === currentDefaultId) return;
     setDefaultMutation.mutate(id);
   };
 
@@ -124,8 +118,7 @@ export default function SettingsScreen() {
     createMutation.mutate();
   };
 
-  const isBusy =
-    createMutation.isPending || deleteMutation.isPending || setDefaultMutation.isPending;
+  const deletingId = deleteMutation.isPending ? deleteMutation.variables : undefined;
 
   return (
     <HomeBackground>
@@ -141,180 +134,54 @@ export default function SettingsScreen() {
           contentContainerStyle={styles.container}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Header & busy state */}
+          {/* Header */}
           <View style={styles.headerRow}>
-            {isBusy && <ActivityIndicator size="small" />}
+            {createMutation.isPending && <ActivityIndicator size="small" />}
           </View>
 
+          {/* Error Message */}
           {isError && (
             <TouchableOpacity onPress={() => refetch()} style={styles.errorBox}>
               <ThemedText style={styles.errorText}>
-                Failed to load. Tap to retry.
+                Failed to load categories. Tap to retry.
               </ThemedText>
             </TouchableOpacity>
           )}
 
-          {/* Type toggles (tabs) */}
-          <View style={styles.tabContainer}>
-            <TouchableOpacity
-              style={[styles.tab, activeTab === 'income' && styles.tabActiveIncome]}
-              onPress={() => setActiveTab('income')}
-            >
-              <ThemedText
-                style={[
-                  styles.tabText,
-                  activeTab === 'income' && styles.tabTextActiveIncome,
-                ]}
-              >
-                Income ({incomeCategories.length}/{MAX_PER_TYPE})
-              </ThemedText>
-            </TouchableOpacity>
+          {/* Tab Selection */}
+          <CategoryTabs
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            incomeCount={incomeCategories.length}
+            expenseCount={expenseCategories.length}
+            maxCount={MAX_PER_TYPE}
+          />
 
-            <TouchableOpacity
-              style={[styles.tab, activeTab === 'expense' && styles.tabActiveExpense]}
-              onPress={() => setActiveTab('expense')}
-            >
-              <ThemedText
-                style={[
-                  styles.tabText,
-                  activeTab === 'expense' && styles.tabTextActiveExpense,
-                ]}
-              >
-                Expense ({expenseCategories.length}/{MAX_PER_TYPE})
-              </ThemedText>
-            </TouchableOpacity>
-          </View>
+          {/* Input Field */}
+          <AddCategoryInput
+            value={newCategoryName}
+            onChangeText={setNewCategoryName}
+            onAdd={handleCreateCategory}
+            activeTab={activeTab}
+            isFull={isFull}
+            isLoading={createMutation.isPending}
+          />
 
-          {/* Input area */}
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.input}
-              placeholder={`New ${activeTab} category...`}
-              value={newCategoryName}
-              onChangeText={setNewCategoryName}
-              onSubmitEditing={handleCreateCategory}
-              returnKeyType="done"
-              editable={!isFull && !createMutation.isPending}
-            />
-            <TouchableOpacity
-              style={[
-                styles.addButton,
-                (!newCategoryName.trim() || isFull) && styles.addButtonDisabled,
-              ]}
-              onPress={handleCreateCategory}
-              disabled={!newCategoryName.trim() || isFull}
-            >
-              <ThemedText style={styles.addButtonText}>Add</ThemedText>
-            </TouchableOpacity>
-          </View>
-
-          {isFull && (
-            <ThemedText style={styles.limitWarning}>
-              Maximum limit reached for {activeTab} categories.
-            </ThemedText>
-          )}
-
-          {/* List */}
-          <View style={styles.listContainer}>
-            {isLoading ? (
-              <ActivityIndicator style={{ marginTop: 20 }} />
-            ) : (
-              currentList.map(item => {
-                const id = getCategoryId(item);
-                const isDefault =
-                  activeTab === 'income'
-                    ? id === defaultIncomeId
-                    : id === defaultExpenseId;
-                const canDelete = !isDefault;
-                const isDeleting =
-                  deleteMutation.isPending && deleteMutation.variables === id;
-
-                return (
-                  <CategoryRow
-                    key={id}
-                    category={item}
-                    isDefault={isDefault}
-                    canDelete={canDelete}
-                    isDeleting={isDeleting}
-                    onDelete={() => {
-                      if (canDelete && !isDeleting) {
-                        handleDelete(item);
-                      }
-                    }}
-                    onSetDefault={() => handleSetDefault(item)}
-                  />
-                );
-              })
-            )}
-
-            {!isLoading && currentList.length === 0 && (
-              <ThemedText style={styles.emptyText}>
-                No {activeTab} categories yet.
-              </ThemedText>
-            )}
-          </View>
+          {/* List Display */}
+          <CategoryList
+            data={currentList}
+            activeTab={activeTab}
+            isLoading={isLoading}
+            defaultId={currentDefaultId}
+            deletingId={deletingId}
+            onDelete={handleDelete}
+            onSetDefault={handleSetDefault}
+          />
         </ScrollView>
       </KeyboardAvoidingView>
     </HomeBackground>
   );
 }
-
-const CategoryRow = ({
-  category,
-  isDefault,
-  canDelete,
-  isDeleting,
-  onDelete,
-  onSetDefault,
-}: {
-  category: Category;
-  isDefault: boolean;
-  canDelete: boolean;
-  isDeleting: boolean;
-  onDelete: () => void;
-  onSetDefault: () => void;
-}) => {
-  return (
-    <View style={styles.categoryRow}>
-      <View style={styles.categoryInfo}>
-        <ThemedText style={styles.categoryName}>{category.name}</ThemedText>
-      </View>
-
-      <View style={styles.categoryActions}>
-        {/* Default star: ★ when default, ☆ otherwise */}
-        <TouchableOpacity
-          onPress={!isDefault ? onSetDefault : undefined}
-          disabled={isDefault}
-          style={styles.iconButton}
-        >
-          <ThemedText style={[styles.iconDefault, isDefault && styles.iconDefaultActive]}>
-            {isDefault ? '★' : '☆'}
-          </ThemedText>
-        </TouchableOpacity>
-
-        {/* Delete cross: red when deletable, black/disabled when not */}
-        <TouchableOpacity
-          onPress={onDelete}
-          disabled={!canDelete || isDeleting}
-          style={styles.iconButton}
-        >
-          {isDeleting && canDelete ? (
-            <ActivityIndicator size="small" color="#e74c3c" />
-          ) : (
-            <ThemedText
-              style={[
-                styles.iconDelete,
-                (!canDelete || isDeleting) && styles.iconDeleteDisabled,
-              ]}
-            >
-              ×
-            </ThemedText>
-          )}
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-};
 
 const styles = StyleSheet.create({
   screen: {
@@ -330,6 +197,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
+    minHeight: 20,
   },
   errorBox: {
     padding: 10,
@@ -340,137 +208,6 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#e74c3c',
-  },
-  // Tab Styles
-  tabContainer: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.5)',
-    borderRadius: 12,
-    padding: 4,
-    marginBottom: 20,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 10,
-    alignItems: 'center',
-    borderRadius: 10,
-  },
-  tabActiveIncome: {
-    backgroundColor: '#e8f5e9',
-  },
-  tabActiveExpense: {
-    backgroundColor: '#ffebee',
-  },
-  tabText: {
-    fontWeight: '600',
-    color: '#7f8c8d',
-  },
-  tabTextActiveIncome: {
-    color: '#2ecc71',
-  },
-  tabTextActiveExpense: {
-    color: '#e74c3c',
-  },
-  // Input Styles
-  inputContainer: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 8,
-  },
-  input: {
-    flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  addButton: {
-    backgroundColor: '#3498db',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-    borderRadius: 12,
-  },
-  addButtonDisabled: {
-    backgroundColor: '#bdc3c7',
-  },
-  addButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-  limitWarning: {
-    fontSize: 12,
-    color: '#e67e22',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  // List Styles
-  listContainer: {
-    marginTop: 10,
-    backgroundColor: 'rgba(255,255,255,0.8)',
-    borderRadius: 20,
-    padding: 16,
-    minHeight: 200,
-  },
-  emptyText: {
-    textAlign: 'center',
-    color: '#95a5a6',
-    marginTop: 20,
-  },
-  categoryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.05)',
-  },
-  categoryInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    flex: 1,
-  },
-  categoryName: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  badge: {
-    backgroundColor: '#e0e0e0',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  badgeText: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: '#555',
-  },
-  categoryActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-  iconButton: {
-    padding: 4,
-  },
-  iconDefault: {
-    fontSize: 26,
-    lineHeight: 26,
-    color: '#f1c40f',
-  },
-  iconDefaultActive: {
-    opacity: 0.85,
-  },
-  iconDelete: {
-    fontSize: 26,
-    lineHeight: 26,
-    color: '#e74c3c',
-  },
-  iconDeleteDisabled: {
-    color: '#000000',
+    textDecorationLine: 'underline',
   },
 });
-
