@@ -203,7 +203,6 @@ export function AddTransactionSheet({
                     placeholder="0.00"
                     placeholderTextColor="#ccc"
                     style={styles.amountInput}
-                    autoFocus
                   />
                 </View>
 
