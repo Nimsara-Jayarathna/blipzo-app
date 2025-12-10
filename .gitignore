@@ -44,6 +44,7 @@ app-example
 
 # Local design notes (not for commit)
 myex-design-language.md
+myex-icon-spec.md
 
 # For JetBrains:
 /.idea
