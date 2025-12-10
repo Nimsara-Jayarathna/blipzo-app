@@ -1,21 +1,24 @@
 import dayjs from 'dayjs';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
+
 import { ThemedText } from '@/components/themed-text';
 import type { Transaction } from '@/types';
 
 export function TransactionRow({ transaction }: { transaction: Transaction }) {
   const isIncome = transaction.type === 'income';
-  const color = isIncome ? '#27ae60' : '#c0392b'; // Slightly darker/readable shades
+  const color = isIncome ? '#27ae60' : '#c0392b';
   const displayTitle = transaction.title || transaction.categoryName || 'Untitled';
-  
-  // Format time (e.g., "2:30 PM") instead of "Today"
   const timeString = dayjs(transaction.date).format('h:mm A');
 
   return (
     <View style={styles.container}>
-      {/* Icon Placeholder or Category Dot */}
-      <View style={[styles.iconDot, { backgroundColor: isIncome ? '#d4efdf' : '#fadbd8' }]}>
+      <View
+        style={[
+          styles.iconDot,
+          { backgroundColor: isIncome ? '#d4efdf' : '#fadbd8' },
+        ]}
+      >
         <View style={[styles.innerDot, { backgroundColor: color }]} />
       </View>
 
@@ -24,7 +27,8 @@ export function TransactionRow({ transaction }: { transaction: Transaction }) {
           {displayTitle}
         </ThemedText>
         <ThemedText style={styles.meta}>
-           {transaction.categoryName ? `${transaction.categoryName} • ` : ''}{timeString}
+          {transaction.categoryName ? `${transaction.categoryName} • ` : ''}
+          {timeString}
         </ThemedText>
       </View>
 
@@ -78,3 +82,4 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
+

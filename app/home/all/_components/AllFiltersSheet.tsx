@@ -124,19 +124,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sheet: {
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     paddingHorizontal: 20,
-    paddingTop: 12,
+    paddingTop: 16,
     paddingBottom: 20,
     borderWidth: 1,
-    borderColor: 'rgba(211,216,224,0.9)',
-    backgroundColor: 'rgba(255,255,255,0.98)',
+    borderColor: '#ffffff',
+    backgroundColor: 'rgba(255,255,255,0.9)',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -16 },
-    shadowOpacity: 0.12,
-    shadowRadius: 24,
-    elevation: 12,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 5,
     maxHeight: '85%',
   },
   handle: {
@@ -203,4 +203,3 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
 });
-

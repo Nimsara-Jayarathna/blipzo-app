@@ -1,5 +1,12 @@
-import React from 'react';
-import { StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
+import {
+  ActivityIndicator,
+  Platform,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 
 type Props = {
@@ -19,70 +26,145 @@ export function AddCategoryInput({
   isFull,
   isLoading,
 }: Props) {
+  const [isFocused, setIsFocused] = useState(false);
+  
+  // Logic: Disable if empty, full, or currently submitting
   const isDisabled = !value.trim() || isFull || isLoading;
 
   return (
-    <View>
-      <View style={styles.inputContainer}>
+    <View style={styles.container}>
+      <View style={styles.inputRow}>
         <TextInput
-          style={styles.input}
-          placeholder={`New ${activeTab} category...`}
+          style={[
+            styles.input,
+            isFocused && styles.inputFocused,
+            isFull && styles.inputDisabled
+          ]}
+          placeholder={isFull ? `Limit reached` : `New ${activeTab} category...`}
+          placeholderTextColor="#95a5a6"
           value={value}
           onChangeText={onChangeText}
-          onSubmitEditing={onAdd}
+          onSubmitEditing={!isDisabled ? onAdd : undefined}
           returnKeyType="done"
           editable={!isFull && !isLoading}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
         />
+        
         <TouchableOpacity
-          style={[styles.addButton, isDisabled && styles.addButtonDisabled]}
+          style={[
+            styles.addButton,
+            isDisabled && styles.addButtonDisabled,
+            isLoading && styles.addButtonLoading
+          ]}
           onPress={onAdd}
+          activeOpacity={0.7}
           disabled={isDisabled}>
-          <ThemedText style={styles.addButtonText}>Add</ThemedText>
+          {isLoading ? (
+            <ActivityIndicator size="small" color="#ffffff" />
+          ) : (
+            <ThemedText style={styles.addButtonText}>
+              {/* Plus icon using text for simplicity, or use an Icon lib */}
+              + Add
+            </ThemedText>
+          )}
         </TouchableOpacity>
       </View>
 
       {isFull && (
-        <ThemedText style={styles.limitWarning}>
-          Maximum limit reached for {activeTab} categories.
-        </ThemedText>
+        <View style={styles.warningBanner}>
+          <ThemedText style={styles.warningIcon}>⚠️</ThemedText>
+          <ThemedText style={styles.warningText}>
+            You have reached the maximum of 10 {activeTab} categories.
+          </ThemedText>
+        </View>
       )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  inputContainer: {
+  container: {
+    marginBottom: 16,
+  },
+  inputRow: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 8,
+    alignItems: 'stretch', // Ensures input and button are same height
+    height: 50,
   },
   input: {
     flex: 1,
     backgroundColor: '#fff',
-    borderRadius: 12,
+    borderRadius: 14,
     paddingHorizontal: 16,
-    paddingVertical: 12,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: 'transparent',
+    color: '#2c3e50',
+    // Shadow for depth
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  inputFocused: {
+    borderColor: '#3498db',
+    backgroundColor: '#fbfdff',
+    shadowOpacity: 0.1,
+  },
+  inputDisabled: {
+    backgroundColor: '#f8f9fa',
+    color: '#bdc3c7',
   },
   addButton: {
     backgroundColor: '#3498db',
     justifyContent: 'center',
+    alignItems: 'center',
     paddingHorizontal: 20,
-    borderRadius: 12,
+    borderRadius: 14,
+    minWidth: 80,
+    // Shadow for depth
+    shadowColor: '#3498db',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 4,
+  },
+  addButtonLoading: {
+    opacity: 0.8,
   },
   addButtonDisabled: {
-    backgroundColor: '#bdc3c7',
+    backgroundColor: '#e0e0e0',
+    shadowColor: 'transparent',
+    elevation: 0,
   },
   addButtonText: {
     color: '#fff',
     fontWeight: '600',
+    fontSize: 15,
   },
-  limitWarning: {
+  // Warning Banner Styles
+  warningBanner: {
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(230, 126, 34, 0.1)',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(230, 126, 34, 0.2)',
+  },
+  warningIcon: {
     fontSize: 12,
-    color: '#e67e22',
-    marginBottom: 8,
-    textAlign: 'center',
+    marginRight: 8,
+  },
+  warningText: {
+    fontSize: 12,
+    color: '#d35400',
+    fontWeight: '500',
+    flex: 1,
   },
 });

@@ -11,84 +11,79 @@ type TransactionRowProps = {
 
 export function TransactionRow({ transaction }: TransactionRowProps) {
   const isIncome = transaction.type === 'income';
-  const amountColor = isIncome ? '#2ecc71' : '#e74c3c';
-  const isToday = dayjs(transaction.date).isSame(dayjs(), 'day');
+  const color = isIncome ? '#27ae60' : '#c0392b';
+  const displayTitle = transaction.title || transaction.categoryName || 'Untitled';
+  const timeString = dayjs(transaction.date).format('h:mm A');
 
   return (
-    <View style={styles.row}>
-      <View style={styles.rowLeft}>
-        <ThemedText style={styles.rowTitle}>
-          {transaction.title ?? transaction.categoryName ?? String(transaction.category)}
-        </ThemedText>
-        <ThemedText style={styles.rowMeta}>
-          {dayjs(transaction.date).format('MMM D, YYYY')}
-          {isToday ? ' • Today' : ''}
-        </ThemedText>
-      </View>
+    <View style={styles.container}>
       <View
         style={[
-          styles.amountPill,
-          isIncome ? styles.incomePill : styles.expensePill,
-        ]}>
-        <ThemedText style={[styles.rowAmount, { color: amountColor }]}>
-          {isIncome ? '+' : '-'}${transaction.amount.toFixed(2)}
+          styles.iconDot,
+          { backgroundColor: isIncome ? '#d4efdf' : '#fadbd8' },
+        ]}
+      >
+        <View style={[styles.innerDot, { backgroundColor: color }]} />
+      </View>
+
+      <View style={styles.info}>
+        <ThemedText style={styles.title} numberOfLines={1}>
+          {displayTitle}
+        </ThemedText>
+        <ThemedText style={styles.meta}>
+          {transaction.categoryName ? `${transaction.categoryName} • ` : ''}
+          {timeString}
         </ThemedText>
       </View>
+
+      <ThemedText style={[styles.amount, { color }]}>
+        {isIncome ? '+' : '-'}${Math.abs(transaction.amount).toFixed(2)}
+      </ThemedText>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: {
+  container: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 18,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.7)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.8)',
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    shadowColor: 'rgba(0,0,0,0.18)',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.18,
-    shadowRadius: 22,
-    elevation: 4,
+    borderColor: 'rgba(255,255,255,0.5)',
   },
-  rowLeft: {
-    flex: 1,
+  iconDot: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginRight: 12,
   },
-  rowTitle: {
-    fontSize: 16,
-    fontWeight: '500',
+  innerDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
-  rowMeta: {
-    fontSize: 12,
-    opacity: 0.7,
-    marginTop: 2,
+  info: {
+    flex: 1,
+    justifyContent: 'center',
   },
-  rowAmount: {
+  title: {
     fontSize: 16,
     fontWeight: '600',
+    color: '#2c3e50',
+    marginBottom: 2,
   },
-  amountPill: {
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.9)',
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    minWidth: 88,
-    alignItems: 'center',
+  meta: {
+    fontSize: 12,
+    color: '#7f8c8d',
   },
-  incomePill: {
-    borderColor: 'rgba(46,204,113,0.55)',
-    backgroundColor: 'rgba(46,204,113,0.08)',
-  },
-  expensePill: {
-    borderColor: 'rgba(231,76,60,0.55)',
-    backgroundColor: 'rgba(231,76,60,0.08)',
+  amount: {
+    fontSize: 16,
+    fontWeight: '700',
   },
 });
 
