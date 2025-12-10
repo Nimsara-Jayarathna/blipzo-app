@@ -1,6 +1,5 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-
 import { ThemedText } from '@/components/themed-text';
 
 type SummaryCardProps = {
@@ -10,37 +9,32 @@ type SummaryCardProps = {
 };
 
 export function SummaryCard({ income, expense, balance }: SummaryCardProps) {
-  const safeIncome = Number.isFinite(income) ? income : 0;
-  const safeExpense = Number.isFinite(expense) ? expense : 0;
-  const safeBalance = Number.isFinite(balance) ? balance : 0;
+  // Safe formatting helper
+  const formatMoney = (val: number) => 
+    `$${(Number.isFinite(val) ? Math.abs(val) : 0).toFixed(2)}`;
 
   return (
-    <View style={styles.summaryCard}>
-      <ThemedText style={styles.title}>Today&apos;s snapshot</ThemedText>
-      <View style={styles.metricsRow}>
-        <View style={styles.metricColumn}>
-          <View style={[styles.metricPill, styles.incomePill]}>
-            <ThemedText style={[styles.metricLabel, styles.incomeLabel]}>Income</ThemedText>
-            <ThemedText style={[styles.metricValue, styles.incomeValue]}>
-              ${safeIncome.toFixed(2)}
-            </ThemedText>
-          </View>
+    <View style={styles.card}>
+      <View style={styles.header}>
+        <ThemedText style={styles.label}>Today's Balance</ThemedText>
+        <ThemedText style={[styles.balanceValue, { color: balance >= 0 ? '#3498db' : '#e74c3c' }]}>
+          {balance < 0 ? '-' : ''}{formatMoney(balance)}
+        </ThemedText>
+      </View>
+
+      <View style={styles.divider} />
+
+      <View style={styles.row}>
+        <View style={styles.column}>
+          <ThemedText style={styles.subLabel}>Income</ThemedText>
+          <ThemedText style={styles.incomeValue}>{formatMoney(income)}</ThemedText>
         </View>
-        <View style={styles.metricColumn}>
-          <View style={[styles.metricPill, styles.expensePill]}>
-            <ThemedText style={[styles.metricLabel, styles.expenseLabel]}>Expenses</ThemedText>
-            <ThemedText style={[styles.metricValue, styles.expenseValue]}>
-              ${safeExpense.toFixed(2)}
-            </ThemedText>
-          </View>
-        </View>
-        <View style={styles.metricColumn}>
-          <View style={[styles.metricPill, styles.balancePill]}>
-            <ThemedText style={[styles.metricLabel, styles.balanceLabel]}>Balance</ThemedText>
-            <ThemedText style={[styles.metricValue, styles.balanceValue]}>
-              ${safeBalance.toFixed(2)}
-            </ThemedText>
-          </View>
+        
+        <View style={styles.verticalDivider} />
+
+        <View style={styles.column}>
+          <ThemedText style={styles.subLabel}>Expense</ThemedText>
+          <ThemedText style={styles.expenseValue}>{formatMoney(expense)}</ThemedText>
         </View>
       </View>
     </View>
@@ -48,87 +42,63 @@ export function SummaryCard({ income, expense, balance }: SummaryCardProps) {
 }
 
 const styles = StyleSheet.create({
-  summaryCard: {
-    borderRadius: 28,
-    paddingVertical: 20,
-    paddingHorizontal: 22,
+  card: {
+    borderRadius: 24,
+    padding: 20,
+    backgroundColor: 'rgba(255,255,255,0.9)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.85)',
-    backgroundColor: 'rgba(255,255,255,0.58)',
-    shadowColor: 'rgba(52,152,219,0.55)',
-    shadowOffset: { width: 0, height: 24 },
-    shadowOpacity: 0.22,
-    shadowRadius: 42,
-    elevation: 16,
+    borderColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 5,
   },
-  title: {
-    textAlign: 'center',
-    fontSize: 13,
-    fontWeight: '500',
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    opacity: 0.75,
-    marginBottom: 10,
-  },
-  metricsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'stretch',
-    gap: 14,
-  },
-  metricColumn: {
-    flex: 1,
+  header: {
     alignItems: 'center',
+    marginBottom: 16,
   },
-  metricPill: {
-    width: '100%',
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.75)',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    alignItems: 'center',
-  },
-  metricLabel: {
-    fontSize: 12,
-    opacity: 0.8,
+  label: {
+    fontSize: 14,
+    color: '#7f8c8d',
     marginBottom: 4,
-    textAlign: 'center',
-  },
-  metricValue: {
-    fontSize: 18,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  incomeLabel: {
-    color: '#2ecc71',
-  },
-  incomeValue: {
-    color: '#2ecc71',
-  },
-  incomePill: {
-    borderColor: 'rgba(46,204,113,0.55)',
-    backgroundColor: 'rgba(46,204,113,0.08)',
-  },
-  expenseLabel: {
-    color: '#e74c3c',
-  },
-  expenseValue: {
-    color: '#e74c3c',
-  },
-  expensePill: {
-    borderColor: 'rgba(231,76,60,0.55)',
-    backgroundColor: 'rgba(231,76,60,0.08)',
-  },
-  balanceLabel: {
-    color: '#3498db',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   balanceValue: {
-    color: '#3498db',
+    fontSize: 32,
+    fontWeight: '700',
   },
-  balancePill: {
-    borderColor: 'rgba(52,152,219,0.55)',
-    backgroundColor: 'rgba(52,152,219,0.08)',
+  divider: {
+    height: 1,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    marginBottom: 16,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  column: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  verticalDivider: {
+    width: 1,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+  },
+  subLabel: {
+    fontSize: 12,
+    color: '#95a5a6',
+    marginBottom: 4,
+  },
+  incomeValue: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#2ecc71',
+  },
+  expenseValue: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#e74c3c',
   },
 });

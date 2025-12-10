@@ -1,7 +1,14 @@
 import dayjs from 'dayjs';
 import { useQuery } from '@tanstack/react-query';
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { 
+  ActivityIndicator, 
+  FlatList, 
+  Pressable, 
+  StyleSheet, 
+  View, 
+  RefreshControl 
+} from 'react-native';
 
 import { ProfileHeader } from '@/components/ProfileHeader';
 import { getTransactionsFiltered, type TransactionFilters } from '@/api/transactions';
@@ -18,18 +25,14 @@ const transactionKey = ['transactions'];
 export default function TodayScreen() {
   const { user, isAuthenticated } = useAuth();
   const todayDate = dayjs().format('YYYY-MM-DD');
-
-  const [todayTransactions, setTodayTransactions] = useState<Transaction[]>([]);
-  const [todayIncome, setTodayIncome] = useState(0);
-  const [todayExpense, setTodayExpense] = useState(0);
-  const [todayBalance, setTodayBalance] = useState(0);
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const [isFabDimmed, setIsFabDimmed] = useState(false);
 
   const {
     data: todayData,
-    isLoading: isTodayLoading,
-    isError: isTodayError,
+    isLoading,
+    isError,
+    refetch,
+    isRefetching
   } = useQuery({
     queryKey: [...transactionKey, 'today', todayDate],
     queryFn: () =>
@@ -40,19 +43,28 @@ export default function TodayScreen() {
     enabled: isAuthenticated,
   });
 
-  useEffect(() => {
+  // PERF: Calculate derived state directly (no useEffect needed)
+  const { transactions, income, expense, balance } = useMemo(() => {
     const items = todayData?.transactions ?? [];
-    setTodayTransactions(items);
-    const income = items
-      .filter(item => item.type === 'income')
-      .reduce((total, item) => total + item.amount, 0);
-    const expense = items
-      .filter(item => item.type === 'expense')
-      .reduce((total, item) => total + item.amount, 0);
-    setTodayIncome(income);
-    setTodayExpense(expense);
-    setTodayBalance(income - expense);
+    
+    let inc = 0;
+    let exp = 0;
+
+    items.forEach(item => {
+      if (item.type === 'income') inc += item.amount;
+      else if (item.type === 'expense') exp += item.amount;
+    });
+
+    return {
+      transactions: items,
+      income: inc,
+      expense: exp,
+      balance: inc - exp,
+    };
   }, [todayData]);
+
+  // Helper for IDs
+  const getKey = (item: Transaction) => item._id ?? item.id ?? Math.random().toString();
 
   return (
     <HomeBackground>
@@ -60,54 +72,42 @@ export default function TodayScreen() {
 
       <View style={styles.container}>
         <View style={styles.summaryWrapper}>
-          <SummaryCard income={todayIncome} expense={todayExpense} balance={todayBalance} />
+          <SummaryCard income={income} expense={expense} balance={balance} />
         </View>
 
-        {isTodayLoading && (
+        {isLoading && (
           <View style={styles.center}>
-            <ActivityIndicator />
+            <ActivityIndicator size="large" color="#3498db" />
           </View>
         )}
 
-        {isTodayError && (
+        {isError && (
           <View style={styles.center}>
             <ThemedText>Unable to load dashboard data.</ThemedText>
+            <ThemedText onPress={() => refetch()} style={styles.retryText}>Tap to retry</ThemedText>
           </View>
         )}
 
-        {!isTodayLoading && !isTodayError && todayTransactions.length === 0 ? (
+        {!isLoading && !isError && transactions.length === 0 ? (
           <View style={styles.center}>
-            <ThemedText>
-              No activity today. Add a transaction on the web to see it here.
-            </ThemedText>
+            <ThemedText style={styles.emptyText}>No activity today.</ThemedText>
+            <ThemedText style={styles.emptySubText}>Tap the + button to add one.</ThemedText>
           </View>
         ) : (
           <FlatList
-            data={todayTransactions}
-            keyExtractor={item =>
-              String(item.id ?? `${item.date}-${item.amount}-${item.title}`)
-            }
+            data={transactions}
+            keyExtractor={getKey}
             contentContainerStyle={styles.listContent}
-            onScroll={event => {
-              const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
-              const paddingToBottom = 32;
-              const reachedBottom =
-                layoutMeasurement.height + contentOffset.y >=
-                contentSize.height - paddingToBottom;
-              setIsFabDimmed(reachedBottom);
-            }}
-            scrollEventThrottle={16}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#3498db" />
+            }
             renderItem={({ item }) => <TransactionRow transaction={item} />}
           />
         )}
 
         <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Add transaction"
-          style={({ pressed }) => [
-            styles.fab,
-            (pressed || isFabDimmed) && styles.fabPressed,
-          ]}
+          style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
           onPress={() => setIsAddOpen(true)}>
           <ThemedText style={styles.fabText}>+</ThemedText>
         </Pressable>
@@ -122,61 +122,62 @@ export default function TodayScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-  },
   container: {
     flex: 1,
     paddingHorizontal: 16,
-    paddingVertical: 24,
-    gap: 16,
-  },
-  title: {
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  subtitle: {
-    textAlign: 'center',
+    paddingTop: 24,
   },
   summaryWrapper: {
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    marginBottom: 12,
-    fontSize: 16,
-    fontWeight: '600',
+    marginBottom: 20,
   },
   center: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
+    paddingBottom: 50,
+  },
+  retryText: {
+    marginTop: 8,
+    textDecorationLine: 'underline',
+    color: '#3498db',
+  },
+  emptyText: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  emptySubText: {
+    opacity: 0.6,
   },
   listContent: {
-    paddingBottom: 4,
-    gap: 8,
+    paddingBottom: 100, // Ensure last item isn't hidden by FAB
+    gap: 12,
   },
   fab: {
     position: 'absolute',
-    right: 16,
-    bottom: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 999,
+    right: 20,
+    bottom: 30,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: '#3498db',
     alignItems: 'center',
     justifyContent: 'center',
+    // Enhanced Shadow
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.18,
-    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
     elevation: 8,
   },
   fabPressed: {
-    opacity: 0.35,
+    backgroundColor: '#2980b9',
+    transform: [{ scale: 0.95 }],
   },
   fabText: {
     color: '#ffffff',
-    fontSize: 28,
-    fontWeight: '600',
+    fontSize: 32,
+    fontWeight: '400',
+    marginTop: -2, // Visual center correction
   },
 });
