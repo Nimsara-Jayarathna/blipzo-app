@@ -9,6 +9,8 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useAuth } from '@/hooks/useAuth';
 import type { Transaction } from '@/types';
+import { SummaryCard } from './today/_components/SummaryCard';
+import { TransactionRow } from './today/_components/TransactionRow';
 
 const transactionKey = ['transactions'];
 
@@ -93,38 +95,6 @@ export default function TodayScreen() {
   );
 }
 
-const SummaryCard = ({ label, value, color }: { label: string; value: number; color: string }) => {
-  return (
-    <View style={[styles.summaryCard, { borderColor: color }]}>
-      <ThemedText style={styles.summaryLabel}>{label}</ThemedText>
-      <ThemedText style={[styles.summaryValue, { color }]}>
-        ${value.toFixed(2)}
-      </ThemedText>
-    </View>
-  );
-};
-
-const TransactionRow = ({ transaction }: { transaction: Transaction }) => {
-  const isIncome = transaction.type === 'income';
-  const amountColor = isIncome ? '#2ecc71' : '#e74c3c';
-
-  return (
-    <View style={styles.row}>
-      <View style={styles.rowLeft}>
-        <ThemedText style={styles.rowTitle}>
-          {transaction.title ?? transaction.categoryName ?? String(transaction.category)}
-        </ThemedText>
-        <ThemedText style={styles.rowMeta}>
-          {dayjs(transaction.date).format('MMM D, YYYY')}
-        </ThemedText>
-      </View>
-      <ThemedText style={[styles.rowAmount, { color: amountColor }]}>
-        {isIncome ? '+' : '-'}${transaction.amount.toFixed(2)}
-      </ThemedText>
-    </View>
-  );
-};
-
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
@@ -149,26 +119,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   summaryCard: {
-    flex: 1,
-    borderWidth: 1,
-    borderRadius: 24,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderColor: 'rgba(211,216,224,0.9)',
-    backgroundColor: 'rgba(255,255,255,0.96)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-    elevation: 6,
+    // kept for backwards-compatibility if needed elsewhere;
+    // SummaryCard now owns its own styles.
   },
   summaryLabel: {
-    fontSize: 12,
-    marginBottom: 4,
+    // moved into SummaryCard component
   },
   summaryValue: {
-    fontSize: 18,
-    fontWeight: '600',
+    // moved into SummaryCard component
   },
   sectionTitle: {
     marginBottom: 12,
@@ -183,37 +141,5 @@ const styles = StyleSheet.create({
   listContent: {
     paddingBottom: 4,
     gap: 8,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: 'rgba(211,216,224,0.9)',
-    backgroundColor: 'rgba(255,255,255,0.96)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.04,
-    shadowRadius: 16,
-    elevation: 3,
-  },
-  rowLeft: {
-    flex: 1,
-    marginRight: 12,
-  },
-  rowTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  rowMeta: {
-    fontSize: 12,
-    opacity: 0.7,
-  },
-  rowAmount: {
-    fontSize: 16,
-    fontWeight: '600',
   },
 });
