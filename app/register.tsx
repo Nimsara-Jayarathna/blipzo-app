@@ -4,18 +4,27 @@ import { useRouter } from 'expo-router';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  LayoutAnimation,
   Platform,
   Pressable,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   TextInput,
+  UIManager,
   View,
 } from 'react-native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { register } from '@/api/auth';
 import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/hooks/useAuth';
 import { HomeBackground } from './home/_components/HomeBackground';
+
+// Enable animations for Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 const accentColor = '#3498db';
 
@@ -29,6 +38,9 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Track focus for styling
+  const [focusedField, setFocusedField] = useState<'fname' | 'lname' | 'email' | 'password' | null>(null);
+
   const registerMutation = useMutation({
     mutationFn: register,
     onSuccess: data => {
@@ -36,20 +48,13 @@ export default function RegisterScreen() {
       setErrorMessage(null);
       router.replace('/home');
     },
-    onError: () => setErrorMessage('Unable to create account'),
+    onError: () => {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setErrorMessage('Unable to create account. Email might be in use.');
+    },
   });
 
   const isLoading = registerMutation.isPending;
-
-  const isEmailValid = useMemo(
-    () => /\S+@\S+\.\S+/.test(email.trim()),
-    [email]
-  );
-
-  const isPasswordValid = useMemo(
-    () => password.trim().length >= 6,
-    [password]
-  );
 
   const handleSubmit = () => {
     const trimmed = {
@@ -59,28 +64,13 @@ export default function RegisterScreen() {
       password: password.trim(),
     };
 
-    if (!trimmed.firstName || !trimmed.lastName) {
-      setErrorMessage('Please enter your first and last name');
-      return;
-    }
-
-    if (!trimmed.email || !trimmed.password) {
-      setErrorMessage('Email and password are required');
-      return;
-    }
-
-    if (!isEmailValid) {
-      setErrorMessage('Please enter a valid email address');
-      return;
-    }
-
-    if (!isPasswordValid) {
-      setErrorMessage('Password should be at least 6 characters');
+    if (!trimmed.firstName || !trimmed.lastName || !trimmed.email || !trimmed.password) {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setErrorMessage('Please fill in all fields.');
       return;
     }
 
     setErrorMessage(null);
-    registerMutation.reset();
     registerMutation.mutate({
       email: trimmed.email,
       password: trimmed.password,
@@ -89,115 +79,154 @@ export default function RegisterScreen() {
     });
   };
 
-  const handleGoToLogin = () => {
-    router.navigate('/login');
-  };
-
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.select({ ios: 'padding', android: undefined })}>
-        <HomeBackground>
-          <View style={styles.content}>
-            <View style={styles.logoBlock}>
-              {/* TODO: Replace with real logo asset */}
-              <View style={styles.logoCircle} />
-              <ThemedText type="title" style={styles.title}>
-                Create your MyEx account
-              </ThemedText>
+    <HomeBackground>
+      <SafeAreaView style={styles.safeArea}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        >
+          <ScrollView 
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            
+            {/* --- Header --- */}
+            <View style={styles.header}>
+              <View style={styles.logoCircle}>
+                <MaterialIcons name="person-add-alt-1" size={30} color="#fff" />
+              </View>
+              <ThemedText type="title" style={styles.title}>Create Account</ThemedText>
               <ThemedText style={styles.subtitle}>
-                Set up your profile and start tracking smarter within seconds.
+                Start tracking your finances in seconds.
               </ThemedText>
             </View>
 
+            {/* --- Card Form --- */}
             <View style={styles.card}>
+              
+              {/* Error Banner */}
+              {errorMessage && (
+                <View style={styles.errorBanner}>
+                  <MaterialIcons name="error-outline" size={20} color="#c0392b" />
+                  <ThemedText style={styles.errorText}>{errorMessage}</ThemedText>
+                </View>
+              )}
+
+              {/* Row: First & Last Name */}
               <View style={styles.row}>
                 <View style={styles.fieldGroupHalf}>
-                  <ThemedText style={styles.label}>First name</ThemedText>
-                  <TextInput
-                    value={firstName}
-                    onChangeText={setFirstName}
-                    placeholder="Alex"
-                    autoCapitalize="words"
-                    style={styles.input}
-                  />
+                  <ThemedText style={styles.label}>First Name</ThemedText>
+                  <View style={[styles.inputWrapper, focusedField === 'fname' && styles.inputFocused]}>
+                    <TextInput
+                      value={firstName}
+                      onChangeText={setFirstName}
+                      placeholder="Alex"
+                      placeholderTextColor="#bdc3c7"
+                      style={styles.input}
+                      onFocus={() => setFocusedField('fname')}
+                      onBlur={() => setFocusedField(null)}
+                    />
+                  </View>
                 </View>
+
                 <View style={styles.fieldGroupHalf}>
-                  <ThemedText style={styles.label}>Last name</ThemedText>
+                  <ThemedText style={styles.label}>Last Name</ThemedText>
+                  <View style={[styles.inputWrapper, focusedField === 'lname' && styles.inputFocused]}>
+                    <TextInput
+                      value={lastName}
+                      onChangeText={setLastName}
+                      placeholder="Doe"
+                      placeholderTextColor="#bdc3c7"
+                      style={styles.input}
+                      onFocus={() => setFocusedField('lname')}
+                      onBlur={() => setFocusedField(null)}
+                    />
+                  </View>
+                </View>
+              </View>
+
+              {/* Email */}
+              <View style={styles.fieldGroup}>
+                <ThemedText style={styles.label}>Email Address</ThemedText>
+                <View style={[styles.inputWrapper, focusedField === 'email' && styles.inputFocused]}>
+                  <MaterialIcons 
+                    name="mail-outline" 
+                    size={20} 
+                    color={focusedField === 'email' ? accentColor : '#95a5a6'} 
+                    style={styles.inputIcon} 
+                  />
                   <TextInput
-                    value={lastName}
-                    onChangeText={setLastName}
-                    placeholder="Taylor"
-                    autoCapitalize="words"
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="you@example.com"
+                    placeholderTextColor="#bdc3c7"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
                     style={styles.input}
+                    onFocus={() => setFocusedField('email')}
+                    onBlur={() => setFocusedField(null)}
                   />
                 </View>
               </View>
 
-              <View style={styles.fieldGroup}>
-                <ThemedText style={styles.label}>Email</ThemedText>
-                <TextInput
-                  value={email}
-                  onChangeText={setEmail}
-                  placeholder="you@example.com"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoComplete="email"
-                  style={styles.input}
-                />
-              </View>
-
+              {/* Password */}
               <View style={styles.fieldGroup}>
                 <ThemedText style={styles.label}>Password</ThemedText>
-                <TextInput
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="••••••••"
-                  secureTextEntry
-                  autoCapitalize="none"
-                  style={styles.input}
-                />
+                <View style={[styles.inputWrapper, focusedField === 'password' && styles.inputFocused]}>
+                  <MaterialIcons 
+                    name="lock-outline" 
+                    size={20} 
+                    color={focusedField === 'password' ? accentColor : '#95a5a6'} 
+                    style={styles.inputIcon} 
+                  />
+                  <TextInput
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder="Min. 6 characters"
+                    placeholderTextColor="#bdc3c7"
+                    secureTextEntry
+                    style={styles.input}
+                    onFocus={() => setFocusedField('password')}
+                    onBlur={() => setFocusedField(null)}
+                  />
+                </View>
               </View>
 
-              {errorMessage ? (
-                <ThemedText style={styles.errorText}>{errorMessage}</ThemedText>
-              ) : null}
-
+              {/* Submit Button */}
               <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Create account"
-                accessibilityHint="Creates a new MyEx account with the provided details"
+                onPress={handleSubmit}
+                disabled={isLoading}
                 style={({ pressed }) => [
                   styles.primaryButton,
                   pressed && styles.buttonPressed,
-                ]}
-                onPress={handleSubmit}
-                disabled={isLoading}>
+                ]}>
                 {isLoading ? (
                   <ActivityIndicator color="#ffffff" />
                 ) : (
-                  <ThemedText style={styles.primaryButtonText}>Create account</ThemedText>
+                  <View style={styles.btnContent}>
+                    <ThemedText style={styles.primaryButtonText}>Sign Up</ThemedText>
+                    <MaterialIcons name="arrow-forward" size={18} color="#fff" />
+                  </View>
                 )}
               </Pressable>
+
             </View>
 
-            <View style={styles.footerRow}>
-              <ThemedText style={styles.footerText}>
-                Already have an account?{' '}
-              </ThemedText>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Log in"
-                accessibilityHint="Opens the login screen"
-                onPress={handleGoToLogin}>
+            {/* --- Footer --- */}
+            <View style={styles.footer}>
+              <ThemedText style={styles.footerText}>Already have an account?</ThemedText>
+              <Pressable onPress={() => router.navigate('/login')} style={{ padding: 4 }}>
                 <ThemedText style={styles.footerLink}>Log in</ThemedText>
               </Pressable>
             </View>
-          </View>
-        </HomeBackground>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </HomeBackground>
   );
 }
 
@@ -205,107 +234,167 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-  content: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingVertical: 24,
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingBottom: 40,
   },
-  logoBlock: {
+
+  // --- Header ---
+  header: {
     alignItems: 'center',
     marginBottom: 24,
   },
   logoCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 60,
+    height: 60,
+    borderRadius: 22,
     backgroundColor: accentColor,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 16,
+    shadowColor: accentColor,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+    transform: [{ rotate: '-5deg' }],
   },
   title: {
-    marginBottom: 8,
-    textAlign: 'center',
+    fontSize: 26,
+    fontWeight: 'bold',
+    marginBottom: 6,
+    color: '#2c3e50',
   },
   subtitle: {
     textAlign: 'center',
     fontSize: 14,
-    paddingHorizontal: 24,
+    color: '#7f8c8d',
+    maxWidth: '80%',
   },
+
+  // --- Card ---
   card: {
-    borderRadius: 28,
-    paddingHorizontal: 20,
-    paddingVertical: 18,
-    borderWidth: 1,
-    borderColor: 'rgba(211,216,224,0.9)',
-    backgroundColor: 'rgba(255,255,255,0.96)',
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    padding: 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 16 },
+    shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.08,
-    shadowRadius: 24,
-    elevation: 8,
+    shadowRadius: 20,
+    elevation: 4,
+    marginBottom: 24,
   },
+  
   row: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 10,
-  },
-  fieldGroup: {
-    marginBottom: 12,
+    gap: 12,
+    marginBottom: 16,
   },
   fieldGroupHalf: {
     flex: 1,
   },
-  label: {
-    fontSize: 13,
-    marginBottom: 6,
+  fieldGroup: {
+    marginBottom: 16,
   },
-  input: {
-    height: 44,
-    borderRadius: 12,
+  label: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#34495e',
+    marginBottom: 8,
+    marginLeft: 4,
+  },
+  
+  // Input Styles
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 50,
     borderWidth: 1,
-    borderColor: '#dde1eb',
-    paddingHorizontal: 12,
-    backgroundColor: '#ffffff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    borderColor: '#e0e0e0',
+    borderRadius: 14,
+    backgroundColor: '#f8f9fa',
+    paddingHorizontal: 14,
+  },
+  inputFocused: {
+    borderColor: accentColor,
+    backgroundColor: '#fff',
+    shadowColor: accentColor,
+    shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
   },
-  errorText: {
-    marginTop: 4,
-    marginBottom: 10,
-    color: '#e74c3c',
-    fontSize: 13,
+  inputIcon: {
+    marginRight: 10,
   },
+  input: {
+    flex: 1,
+    fontSize: 15,
+    color: '#2c3e50',
+    height: '100%',
+  },
+
+  // Error Banner
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fcebe6',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 16,
+    gap: 8,
+  },
+  errorText: {
+    color: '#c0392b',
+    fontSize: 13,
+    fontWeight: '500',
+    flex: 1,
+  },
+
+  // Button
   primaryButton: {
-    marginTop: 4,
-    height: 48,
-    borderRadius: 999,
+    height: 54,
     backgroundColor: accentColor,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 8,
+    shadowColor: accentColor,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  btnContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   primaryButtonText: {
     color: '#ffffff',
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
   },
   buttonPressed: {
     opacity: 0.8,
+    transform: [{ scale: 0.98 }],
   },
-  footerRow: {
+
+  // Footer
+  footer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 16,
+    gap: 4,
   },
   footerText: {
-    fontSize: 13,
+    color: '#7f8c8d',
+    fontSize: 14,
   },
   footerLink: {
-    fontSize: 13,
     color: accentColor,
-    fontWeight: '600',
-    textDecorationLine: 'underline',
+    fontWeight: '700',
+    fontSize: 14,
   },
 });

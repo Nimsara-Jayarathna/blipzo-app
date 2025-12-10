@@ -8,26 +8,25 @@ import {
   SafeAreaView,
   StyleSheet,
   View,
-  AccessibilityInfo,
+  Dimensions,
 } from 'react-native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/hooks/useAuth';
 import { HomeBackground } from './home/_components/HomeBackground';
 
+const { width } = Dimensions.get('window');
 const accentColor = '#3498db';
-const incomeColor = '#2ecc71';
-const expenseColor = '#e74c3c';
-const bottomSheetColor = 'rgba(255,255,255,0.96)';
 
 export default function WelcomeScreen() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
 
-  const sheetTranslateY = useRef(new Animated.Value(40)).current;
-  const sheetOpacity = useRef(new Animated.Value(0)).current;
-  const logoTranslateY = useRef(new Animated.Value(10)).current;
-  const logoOpacity = useRef(new Animated.Value(0)).current;
+  // Animations
+  const fadeAnim = useRef(new Animated.Value(0)).current; // Opacity for everything
+  const slideUpAnim = useRef(new Animated.Value(50)).current; // For text/logo
+  const sheetSlideAnim = useRef(new Animated.Value(100)).current; // For bottom sheet
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -36,215 +35,276 @@ export default function WelcomeScreen() {
   }, [isAuthenticated, router]);
 
   useEffect(() => {
-    let reduceMotion = false;
+    // Staggered Entrance Animation
+    Animated.parallel([
+      // 1. Fade in content
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      // 2. Slide up logo/text
+      Animated.timing(slideUpAnim, {
+        toValue: 0,
+        duration: 800,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      // 3. Slide up bottom sheet (slightly delayed)
+      Animated.timing(sheetSlideAnim, {
+        toValue: 0,
+        duration: 600,
+        delay: 300,
+        easing: Easing.out(Easing.back(1)), // Slight bounce effect
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [fadeAnim, slideUpAnim, sheetSlideAnim]);
 
-    AccessibilityInfo.isReduceMotionEnabled().then(value => {
-      reduceMotion = value;
-
-      if (reduceMotion) {
-        sheetTranslateY.setValue(0);
-        sheetOpacity.setValue(1);
-        logoTranslateY.setValue(0);
-        logoOpacity.setValue(1);
-        return;
-      }
-
-      Animated.parallel([
-        Animated.timing(sheetTranslateY, {
-          toValue: 0,
-          duration: 300,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(sheetOpacity, {
-          toValue: 1,
-          duration: 300,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(logoTranslateY, {
-          toValue: 0,
-          duration: 300,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(logoOpacity, {
-          toValue: 1,
-          duration: 300,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }),
-      ]).start();
-    });
-  }, [logoOpacity, logoTranslateY, sheetOpacity, sheetTranslateY]);
-
-  const handleLoginPress = () => {
-    router.navigate('/login'); // TODO: Implement /login screen
-  };
-
-  const handleRegisterPress = () => {
-    router.navigate('/register'); // TODO: Implement /register screen
-  };
+  const handleLoginPress = () => router.navigate('/login');
+  const handleRegisterPress = () => router.navigate('/register');
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.container}>
       <HomeBackground>
-        <Animated.View
-          style={[
-            styles.logoContainer,
-            {
-              opacity: logoOpacity,
-              transform: [{ translateY: logoTranslateY }],
-            },
-          ]}>
-          {/* TODO: Replace with real logo asset */}
-          <View style={styles.logoCircle}>
-            <View style={styles.logoAccentDot} />
-            <View style={styles.logoIncomeDot} />
-            <View style={styles.logoExpenseDot} />
+        <SafeAreaView style={styles.safeArea}>
+          
+          {/* --- TOP SECTION: BRANDING --- */}
+          <View style={styles.topSection}>
+            <Animated.View
+              style={{
+                opacity: fadeAnim,
+                transform: [{ translateY: slideUpAnim }],
+                alignItems: 'center',
+              }}>
+              
+              {/* Modern Glow Logo */}
+              <View style={styles.logoWrapper}>
+                <View style={styles.logoGlow} />
+                <View style={styles.logoCircle}>
+                  <MaterialIcons name="donut-large" size={48} color="#fff" />
+                </View>
+                {/* Decorative floating dot */}
+                <View style={styles.floatingDot} />
+              </View>
+
+              <ThemedText type="title" style={styles.appTitle}>
+                MyEx
+              </ThemedText>
+              <ThemedText style={styles.tagline}>
+                Master your finances.{'\n'}Effortlessly.
+              </ThemedText>
+            </Animated.View>
           </View>
-          <ThemedText type="title" style={styles.appTitle}>
-            MyEx
-          </ThemedText>
-          <ThemedText style={styles.tagline}>
-            Everything you earn and spend, beautifully organized.
-          </ThemedText>
-        </Animated.View>
 
-        <View style={styles.spacer} />
+          {/* --- BOTTOM SECTION: ACTIONS --- */}
+          <Animated.View
+            style={[
+              styles.bottomSheet,
+              { transform: [{ translateY: sheetSlideAnim }] },
+            ]}>
+            <View style={styles.sheetHandle} />
+            
+            <ThemedText style={styles.welcomeHeader}>Let's get started</ThemedText>
+            <ThemedText style={styles.welcomeSub}>
+              Track expenses, set budgets, and achieve your financial goals today.
+            </ThemedText>
 
-        <Animated.View
-          style={[
-            styles.bottomSheet,
-            {
-              opacity: sheetOpacity,
-              transform: [{ translateY: sheetTranslateY }],
-            },
-          ]}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Log in"
-            accessibilityHint="Opens the login screen so you can access your account"
-            style={({ pressed }) => [
-              styles.primaryButton,
-              pressed && styles.buttonPressed,
-            ]}
-            onPress={handleLoginPress}>
-            <ThemedText style={styles.primaryButtonText}>Log in</ThemedText>
-          </Pressable>
+            <View style={styles.buttonGroup}>
+              {/* Login Button */}
+              <Pressable
+                onPress={handleLoginPress}
+                style={({ pressed }) => [
+                  styles.primaryButton,
+                  pressed && styles.buttonPressed,
+                ]}>
+                <ThemedText style={styles.primaryButtonText}>Log In</ThemedText>
+                <View style={styles.iconCircle}>
+                  <MaterialIcons name="arrow-forward" size={18} color={accentColor} />
+                </View>
+              </Pressable>
 
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Create account"
-            accessibilityHint="Opens the registration screen so you can create a new account"
-            style={({ pressed }) => [
-              styles.secondaryButton,
-              pressed && styles.buttonPressed,
-            ]}
-            onPress={handleRegisterPress}>
-            <ThemedText style={styles.secondaryButtonText}>Create account</ThemedText>
-          </Pressable>
-        </Animated.View>
+              {/* Register Button */}
+              <Pressable
+                onPress={handleRegisterPress}
+                style={({ pressed }) => [
+                  styles.secondaryButton,
+                  pressed && styles.buttonPressed,
+                ]}>
+                <MaterialIcons name="person-add-alt-1" size={20} color={accentColor} />
+                <ThemedText style={styles.secondaryButtonText}>Create Account</ThemedText>
+              </Pressable>
+            </View>
+          </Animated.View>
+
+        </SafeAreaView>
       </HomeBackground>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  container: {
     flex: 1,
   },
-  logoContainer: {
+  safeArea: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  
+  // --- BRANDING STYLES ---
+  topSection: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 48,
+    paddingBottom: 60, // Push content slightly up visual center
+  },
+  logoWrapper: {
+    width: 100,
+    height: 100,
+    marginBottom: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoGlow: {
+    position: 'absolute',
+    width: 90,
+    height: 90,
+    borderRadius: 50,
+    backgroundColor: accentColor,
+    opacity: 0.3,
+    transform: [{ scale: 1.2 }],
+    shadowColor: accentColor,
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 10,
   },
   logoCircle: {
     width: 80,
     height: 80,
-    borderRadius: 40,
-    borderWidth: 2,
-    borderColor: accentColor,
-    marginBottom: 16,
+    borderRadius: 26, // Squircle
+    backgroundColor: accentColor,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 15,
+    elevation: 8,
+    transform: [{ rotate: '-10deg' }], // Stylish tilt
   },
-  logoAccentDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: accentColor,
+  floatingDot: {
     position: 'absolute',
-    top: 18,
-    left: 22,
-  },
-  logoIncomeDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: incomeColor,
-    position: 'absolute',
-    bottom: 18,
-    right: 18,
-  },
-  logoExpenseDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: expenseColor,
-    position: 'absolute',
-    bottom: 22,
-    left: 32,
+    top: 0,
+    right: 5,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#2ecc71',
+    borderWidth: 2,
+    borderColor: '#fff',
+    elevation: 5,
   },
   appTitle: {
+    fontSize: 42,
+    fontWeight: '800',
+    letterSpacing: -1,
+    color: '#2c3e50',
     marginBottom: 8,
   },
   tagline: {
+    fontSize: 16,
     textAlign: 'center',
-    paddingHorizontal: 32,
+    color: '#7f8c8d',
+    lineHeight: 24,
   },
-  spacer: {
-    flex: 1,
-  },
+
+  // --- BOTTOM SHEET STYLES ---
   bottomSheet: {
-    backgroundColor: bottomSheetColor,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    backgroundColor: '#fff',
+    width: '100%',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
     paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: Platform.select({ ios: 32, android: 24 }),
-    borderWidth: 1,
-    borderColor: 'rgba(211,216,224,0.9)',
+    paddingTop: 16,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 18,
-    elevation: 10,
+    shadowOffset: { width: 0, height: -10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 20,
   },
+  sheetHandle: {
+    width: 40,
+    height: 5,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 3,
+    alignSelf: 'center',
+    marginBottom: 24,
+  },
+  welcomeHeader: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#2c3e50',
+    marginBottom: 8,
+  },
+  welcomeSub: {
+    fontSize: 14,
+    color: '#95a5a6',
+    marginBottom: 32,
+    lineHeight: 20,
+  },
+  buttonGroup: {
+    gap: 16,
+  },
+  
+  // --- BUTTONS ---
   primaryButton: {
-    height: 48,
-    borderRadius: 999,
+    height: 56,
     backgroundColor: accentColor,
+    borderRadius: 18,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
+    justifyContent: 'space-between', // Text left, icon right
+    paddingHorizontal: 24,
+    shadowColor: accentColor,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
   },
   primaryButtonText: {
-    color: '#ffffff',
-    fontWeight: '600',
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
   },
-  secondaryButton: {
-    height: 48,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: accentColor,
+  iconCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
   },
+  
+  secondaryButton: {
+    height: 56,
+    backgroundColor: '#f8fafc',
+    borderRadius: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    gap: 8,
+  },
   secondaryButtonText: {
-    color: accentColor,
+    color: '#334155',
+    fontSize: 16,
     fontWeight: '600',
   },
   buttonPressed: {
-    opacity: 0.7,
+    transform: [{ scale: 0.98 }],
+    opacity: 0.9,
   },
 });

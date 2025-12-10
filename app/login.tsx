@@ -7,15 +7,24 @@ import {
   Platform,
   Pressable,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   TextInput,
   View,
+  LayoutAnimation,
+  UIManager,
 } from 'react-native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { login } from '@/api/auth';
 import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/hooks/useAuth';
 import { HomeBackground } from './home/_components/HomeBackground';
+
+// Enable LayoutAnimation on Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 const accentColor = '#3498db';
 
@@ -26,6 +35,9 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  
+  // Focus state for styling
+  const [focusedField, setFocusedField] = useState<'email' | 'password' | null>(null);
 
   const loginMutation = useMutation({
     mutationFn: login,
@@ -34,149 +46,150 @@ export default function LoginScreen() {
       setErrorMessage(null);
       router.replace('/home');
     },
-    onError: () => setErrorMessage('Invalid email or password'),
+    onError: () => {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setErrorMessage('Invalid email or password');
+    },
   });
 
   const isLoading = loginMutation.isPending;
 
-  const isEmailValid = useMemo(
-    () => /\S+@\S+\.\S+/.test(email.trim()),
-    [email]
-  );
-
-  const isPasswordValid = useMemo(
-    () => password.trim().length >= 6,
-    [password]
-  );
-
   const handleSubmit = () => {
-    const trimmedEmail = email.trim();
-    const trimmedPassword = password.trim();
-
-    if (!trimmedEmail || !trimmedPassword) {
-      setErrorMessage('Email and password are required');
+    if (!email.trim() || !password.trim()) {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setErrorMessage('Please fill in all fields');
       return;
     }
-
-    if (!isEmailValid) {
-      setErrorMessage('Please enter a valid email address');
-      return;
-    }
-
-    if (!isPasswordValid) {
-      setErrorMessage('Password should be at least 6 characters');
-      return;
-    }
-
     setErrorMessage(null);
-    loginMutation.reset();
-    loginMutation.mutate({
-      email: trimmedEmail,
-      password: trimmedPassword,
-    });
-  };
-
-  const handleGoToRegister = () => {
-    router.navigate('/register');
-  };
-
-  const handleForgotPassword = () => {
-    // TODO: Implement forgot password flow
+    loginMutation.mutate({ email, password });
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.select({ ios: 'padding', android: undefined })}>
-        <HomeBackground>
-          <View style={styles.content}>
-            <View style={styles.logoBlock}>
-              {/* TODO: Replace with real logo asset */}
-              <View style={styles.logoCircle} />
-              <ThemedText type="title" style={styles.title}>
-                Welcome back
-              </ThemedText>
+    <HomeBackground>
+      <SafeAreaView style={styles.safeArea}>
+        {/* Fix: KeyboardAvoidingView + ScrollView ensures inputs move up */}
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        >
+          <ScrollView 
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            
+            {/* --- Header Section --- */}
+            <View style={styles.header}>
+              <View style={styles.logoCircle}>
+                <MaterialIcons name="donut-large" size={32} color="#fff" />
+              </View>
+              <ThemedText type="title" style={styles.title}>Welcome Back!</ThemedText>
               <ThemedText style={styles.subtitle}>
-                Log in to review today&apos;s income, expenses, and balance.
+                Sign in to continue managing your finances.
               </ThemedText>
             </View>
 
+            {/* --- Form Section --- */}
             <View style={styles.card}>
-              <View style={styles.fieldGroup}>
-                <ThemedText style={styles.label}>Email</ThemedText>
-                <TextInput
-                  value={email}
-                  onChangeText={setEmail}
-                  placeholder="you@example.com"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoComplete="email"
-                  style={styles.input}
-                />
+              
+              {/* Error Banner */}
+              {errorMessage && (
+                <View style={styles.errorBanner}>
+                  <MaterialIcons name="error-outline" size={20} color="#c0392b" />
+                  <ThemedText style={styles.errorText}>{errorMessage}</ThemedText>
+                </View>
+              )}
+
+              {/* Email Input */}
+              <View style={styles.inputContainer}>
+                <ThemedText style={styles.label}>Email Address</ThemedText>
+                <View style={[
+                  styles.inputWrapper, 
+                  focusedField === 'email' && styles.inputWrapperFocused
+                ]}>
+                  <MaterialIcons 
+                    name="mail-outline" 
+                    size={20} 
+                    color={focusedField === 'email' ? accentColor : '#95a5a6'} 
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="name@example.com"
+                    placeholderTextColor="#bdc3c7"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    style={styles.input}
+                    onFocus={() => setFocusedField('email')}
+                    onBlur={() => setFocusedField(null)}
+                  />
+                </View>
               </View>
 
-              <View style={styles.fieldGroup}>
+              {/* Password Input */}
+              <View style={styles.inputContainer}>
                 <ThemedText style={styles.label}>Password</ThemedText>
-                <TextInput
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="••••••••"
-                  secureTextEntry
-                  autoCapitalize="none"
-                  style={styles.input}
-                />
+                <View style={[
+                  styles.inputWrapper, 
+                  focusedField === 'password' && styles.inputWrapperFocused
+                ]}>
+                  <MaterialIcons 
+                    name="lock-outline" 
+                    size={20} 
+                    color={focusedField === 'password' ? accentColor : '#95a5a6'} 
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder="Enter your password"
+                    placeholderTextColor="#bdc3c7"
+                    secureTextEntry
+                    style={styles.input}
+                    onFocus={() => setFocusedField('password')}
+                    onBlur={() => setFocusedField(null)}
+                  />
+                </View>
+                <Pressable onPress={() => { /* TODO */ }} style={styles.forgotPassRow}>
+                  <ThemedText style={styles.forgotPassText}>Forgot Password?</ThemedText>
+                </Pressable>
               </View>
 
-              {errorMessage ? (
-                <ThemedText style={styles.errorText}>{errorMessage}</ThemedText>
-              ) : null}
-
+              {/* Submit Button */}
               <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Log in"
-                accessibilityHint="Attempts to log in with the provided email and password"
+                onPress={handleSubmit}
+                disabled={isLoading}
                 style={({ pressed }) => [
                   styles.primaryButton,
                   pressed && styles.buttonPressed,
-                ]}
-                onPress={handleSubmit}
-                disabled={isLoading}>
+                  isLoading && styles.buttonLoading
+                ]}>
                 {isLoading ? (
                   <ActivityIndicator color="#ffffff" />
                 ) : (
-                  <ThemedText style={styles.primaryButtonText}>Log in</ThemedText>
+                  <View style={styles.btnContent}>
+                    <ThemedText style={styles.primaryButtonText}>Log In</ThemedText>
+                    <MaterialIcons name="arrow-forward" size={18} color="#fff" />
+                  </View>
                 )}
               </Pressable>
 
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Forgot password"
-                accessibilityHint="Starts the password reset process"
-                onPress={handleForgotPassword}
-                style={styles.forgotPasswordButton}>
-                <ThemedText style={styles.forgotPasswordText}>
-                  Forgot password?
-                </ThemedText>
+            </View>
+
+            {/* --- Footer Section --- */}
+            <View style={styles.footer}>
+              <ThemedText style={styles.footerText}>New to MyEx?</ThemedText>
+              <Pressable onPress={() => router.navigate('/register')} style={{ padding: 4 }}>
+                <ThemedText style={styles.footerLink}>Create Account</ThemedText>
               </Pressable>
             </View>
 
-            <View style={styles.footerRow}>
-              <ThemedText style={styles.footerText}>
-                Don&apos;t have an account?{' '}
-              </ThemedText>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Create account"
-                accessibilityHint="Opens the registration screen"
-                onPress={handleGoToRegister}>
-                <ThemedText style={styles.footerLink}>Create one</ThemedText>
-              </Pressable>
-            </View>
-          </View>
-        </HomeBackground>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </HomeBackground>
   );
 }
 
@@ -184,107 +197,170 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-  content: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingVertical: 24,
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingBottom: 40,
   },
-  logoBlock: {
+  
+  // --- Header ---
+  header: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 32,
   },
   logoCircle: {
     width: 64,
     height: 64,
-    borderRadius: 32,
+    borderRadius: 24,
     backgroundColor: accentColor,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 16,
+    shadowColor: accentColor,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+    transform: [{ rotate: '-10deg' }],
   },
   title: {
+    fontSize: 28,
+    fontWeight: 'bold',
     marginBottom: 8,
-    textAlign: 'center',
+    color: '#2c3e50',
   },
   subtitle: {
     textAlign: 'center',
     fontSize: 14,
-    paddingHorizontal: 24,
+    color: '#7f8c8d',
+    lineHeight: 20,
+    maxWidth: '80%',
   },
+
+  // --- Card Form ---
   card: {
-    borderRadius: 28,
-    paddingHorizontal: 20,
-    paddingVertical: 18,
-    borderWidth: 1,
-    borderColor: 'rgba(211,216,224,0.9)',
-    backgroundColor: 'rgba(255,255,255,0.96)',
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    padding: 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 16 },
+    shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.08,
-    shadowRadius: 24,
-    elevation: 8,
+    shadowRadius: 20,
+    elevation: 4,
+    marginBottom: 24,
   },
-  fieldGroup: {
-    marginBottom: 12,
+  
+  inputContainer: {
+    marginBottom: 20,
   },
   label: {
-    fontSize: 13,
-    marginBottom: 6,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#34495e',
+    marginBottom: 8,
+    marginLeft: 4,
   },
-  input: {
-    height: 44,
-    borderRadius: 12,
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 52,
     borderWidth: 1,
-    borderColor: '#dde1eb',
-    paddingHorizontal: 12,
-    backgroundColor: '#ffffff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    borderColor: '#e0e0e0',
+    borderRadius: 16,
+    backgroundColor: '#f8f9fa',
+    paddingHorizontal: 16,
+  },
+  inputWrapperFocused: {
+    borderColor: accentColor,
+    backgroundColor: '#fff',
+    shadowColor: accentColor,
+    shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
   },
-  errorText: {
-    marginTop: 4,
-    marginBottom: 10,
-    color: '#e74c3c',
-    fontSize: 13,
+  inputIcon: {
+    marginRight: 12,
   },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    color: '#2c3e50',
+    height: '100%',
+  },
+  
+  forgotPassRow: {
+    alignSelf: 'flex-end',
+    marginTop: 6,
+  },
+  forgotPassText: {
+    fontSize: 12,
+    color: accentColor,
+    fontWeight: '600',
+  },
+
+  // --- Buttons ---
   primaryButton: {
-    marginTop: 4,
-    height: 48,
-    borderRadius: 999,
+    height: 56,
     backgroundColor: accentColor,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 12,
+    shadowColor: accentColor,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  btnContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   primaryButtonText: {
     color: '#ffffff',
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
   },
   buttonPressed: {
     opacity: 0.8,
+    transform: [{ scale: 0.98 }],
   },
-  forgotPasswordButton: {
-    marginTop: 10,
-    alignSelf: 'flex-end',
+  buttonLoading: {
+    opacity: 0.7,
   },
-  forgotPasswordText: {
+
+  // --- Error ---
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fcebe6',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 16,
+    gap: 8,
+  },
+  errorText: {
+    color: '#c0392b',
     fontSize: 13,
-    textDecorationLine: 'underline',
+    fontWeight: '500',
   },
-  footerRow: {
+
+  // --- Footer ---
+  footer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 16,
+    gap: 4,
   },
   footerText: {
-    fontSize: 13,
+    color: '#7f8c8d',
+    fontSize: 14,
   },
   footerLink: {
-    fontSize: 13,
     color: accentColor,
-    fontWeight: '600',
-    textDecorationLine: 'underline',
+    fontWeight: '700',
+    fontSize: 14,
   },
 });
