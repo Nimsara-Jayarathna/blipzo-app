@@ -2,12 +2,12 @@ import React from 'react';
 import {
   Image,
   Pressable,
-  SafeAreaView,
   StyleSheet,
   View,
   type TextStyle,
   type ViewStyle,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
 import { ThemedText } from '@/components/themed-text';
