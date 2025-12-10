@@ -1,7 +1,7 @@
 import dayjs from 'dayjs';
 import { useQuery } from '@tanstack/react-query';
 import React, { useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
 
 import { getTransactionsFiltered, type TransactionFilters } from '@/api/transactions';
 import { ThemedText } from '@/components/themed-text';
@@ -11,6 +11,7 @@ import { useAuth } from '@/hooks/useAuth';
 import type { Transaction } from '@/types';
 import { TransactionRow } from './all/_components/TransactionRow';
 import { FilterCard } from './all/_components/FilterCard';
+import { AddTransactionSheet } from './_components/AddTransactionSheet';
 
 type TypeFilter = 'all' | 'income' | 'expense';
 
@@ -33,6 +34,7 @@ export default function AllTransactionsScreen() {
     sortField: 'date',
     sortDirection: 'desc',
   });
+  const [isAddOpen, setIsAddOpen] = useState(false);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['transactions', 'all', filters],
@@ -82,7 +84,23 @@ export default function AllTransactionsScreen() {
             renderItem={({ item }) => <TransactionRow transaction={item} />}
           />
         )}
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Add transaction"
+          style={({ pressed }) => [
+            styles.fab,
+            pressed && styles.fabPressed,
+          ]}
+          onPress={() => setIsAddOpen(true)}>
+          <ThemedText style={styles.fabText}>+</ThemedText>
+        </Pressable>
       </View>
+
+      <AddTransactionSheet
+        visible={isAddOpen}
+        onClose={() => setIsAddOpen(false)}
+      />
     </ThemedView>
   );
 }
@@ -113,5 +131,29 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 4,
     gap: 8,
+  },
+  fab: {
+    position: 'absolute',
+    right: 16,
+    bottom: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 999,
+    backgroundColor: '#3498db',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.18,
+    shadowRadius: 20,
+    elevation: 8,
+  },
+  fabPressed: {
+    opacity: 0.9,
+  },
+  fabText: {
+    color: '#ffffff',
+    fontSize: 28,
+    fontWeight: '600',
   },
 });

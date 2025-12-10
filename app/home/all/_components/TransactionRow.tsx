@@ -12,6 +12,7 @@ type TransactionRowProps = {
 export function TransactionRow({ transaction }: TransactionRowProps) {
   const isIncome = transaction.type === 'income';
   const amountColor = isIncome ? '#2ecc71' : '#e74c3c';
+  const isToday = dayjs(transaction.date).isSame(dayjs(), 'day');
 
   return (
     <View style={styles.row}>
@@ -21,6 +22,7 @@ export function TransactionRow({ transaction }: TransactionRowProps) {
         </ThemedText>
         <ThemedText style={styles.rowMeta}>
           {dayjs(transaction.date).format('MMM D, YYYY')}
+          {isToday ? ' • Today' : ''}
         </ThemedText>
       </View>
       <ThemedText style={[styles.rowAmount, { color: amountColor }]}>
@@ -64,4 +66,3 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
-
