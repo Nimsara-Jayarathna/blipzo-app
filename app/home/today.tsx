@@ -63,19 +63,6 @@ export default function TodayScreen() {
     logout();
   };
 
-  if (!isAuthenticated) {
-    return (
-      <ThemedView style={styles.container}>
-        <ThemedText type="title" style={styles.title}>
-          Welcome to MyEx
-        </ThemedText>
-        <ThemedText style={styles.subtitle}>
-          Please log in from the web app first. Your session will be reused here.
-        </ThemedText>
-      </ThemedView>
-    );
-  }
-
   return (
     <ThemedView style={styles.container}>
       <View style={styles.header}>

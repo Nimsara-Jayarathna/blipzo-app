@@ -42,6 +42,9 @@ app-example
 /ios
 /android
 
+# Local design notes (not for commit)
+myex-design-language.md
+
 # For JetBrains:
 /.idea
 

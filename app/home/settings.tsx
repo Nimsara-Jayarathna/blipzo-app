@@ -83,19 +83,6 @@ export default function SettingsScreen() {
     setDefaultExpenseId(expenseDefault ? resolveCategoryId(expenseDefault) : '');
   }, [categories, expenseCategories, incomeCategories]);
 
-  if (!isAuthenticated) {
-    return (
-      <ThemedView style={styles.container}>
-        <ThemedText type="title" style={styles.title}>
-          Settings
-        </ThemedText>
-        <ThemedText style={styles.subtitle}>
-          Log in on the web first to manage your categories.
-        </ThemedText>
-      </ThemedView>
-    );
-  }
-
   const handleDelete = (category: Category) => {
     const identifier = resolveCategoryId(category);
     if (!identifier) {
@@ -337,4 +324,3 @@ const styles = StyleSheet.create({
     color: '#e74c3c',
   },
 });
-

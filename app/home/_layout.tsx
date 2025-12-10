@@ -1,12 +1,26 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 
-import { Tabs } from 'expo-router';
+import { Tabs, useRouter } from 'expo-router';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function HomeTabLayout() {
+  const router = useRouter();
+  const { isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.replace('/welcome');
+    }
+  }, [isAuthenticated, router]);
+
+  if (!isAuthenticated) {
+    return null;
+  }
+
   return (
     <Tabs
       initialRouteName="today"
@@ -39,4 +53,3 @@ export default function HomeTabLayout() {
     </Tabs>
   );
 }
-

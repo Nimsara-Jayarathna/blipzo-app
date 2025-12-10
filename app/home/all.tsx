@@ -51,19 +51,6 @@ export default function AllTransactionsScreen() {
     [user]
   );
 
-  if (!isAuthenticated) {
-    return (
-      <ThemedView style={styles.container}>
-        <ThemedText type="title" style={styles.title}>
-          All Transactions
-        </ThemedText>
-        <ThemedText style={styles.subtitle}>
-          Log in on the web first so we can load your transactions.
-        </ThemedText>
-      </ThemedView>
-    );
-  }
-
   return (
     <ThemedView style={styles.container}>
       <View style={styles.header}>
