@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
 
+import { ProfileHeader } from '@/components/ProfileHeader';
 import { logoutSession } from '@/api/auth';
 import { getTransactionsFiltered, type TransactionFilters } from '@/api/transactions';
 import { ThemedText } from '@/components/themed-text';
@@ -64,51 +65,44 @@ export default function TodayScreen() {
   };
 
   return (
-    <ThemedView style={styles.container}>
-      <View style={styles.header}>
-        <ThemedText style={styles.greeting}>Hello</ThemedText>
-        <ThemedText style={styles.userName}>{displayName}</ThemedText>
-      </View>
+    <ThemedView style={styles.screen}>
+      <ProfileHeader user={user ? { name: user.name ?? user.email, avatarUrl: undefined } : null} />
 
-      <View style={styles.summaryRow}>
-        <SummaryCard label="Income" value={todayIncome} color="#2ecc71" />
-        <SummaryCard label="Expenses" value={todayExpense} color="#e74c3c" />
-        <SummaryCard label="Balance" value={todayBalance} color="#3498db" />
-      </View>
-
-      <ThemedText type="subtitle" style={styles.sectionTitle}>
-        Today's Activity
-      </ThemedText>
-
-      {isTodayLoading && (
-        <View style={styles.center}>
-          <ActivityIndicator />
+      <View style={styles.container}>
+        <View style={styles.summaryRow}>
+          <SummaryCard label="Income" value={todayIncome} color="#2ecc71" />
+          <SummaryCard label="Expenses" value={todayExpense} color="#e74c3c" />
+          <SummaryCard label="Balance" value={todayBalance} color="#3498db" />
         </View>
-      )}
 
-      {isTodayError && (
-        <View style={styles.center}>
-          <ThemedText>Unable to load dashboard data.</ThemedText>
-        </View>
-      )}
-
-      {!isTodayLoading && !isTodayError && todayTransactions.length === 0 ? (
-        <View style={styles.center}>
-          <ThemedText>No activity today. Add a transaction on the web to see it here.</ThemedText>
-        </View>
-      ) : (
-        <FlatList
-          data={todayTransactions}
-          keyExtractor={item => String(item.id ?? `${item.date}-${item.amount}-${item.title}`)}
-          contentContainerStyle={styles.listContent}
-          renderItem={({ item }) => <TransactionRow transaction={item} />}
-        />
-      )}
-
-      <View style={styles.footer}>
-        <ThemedText style={styles.logout} onPress={handleLogout}>
-          Log out
+        <ThemedText type="subtitle" style={styles.sectionTitle}>
+          Today's Activity
         </ThemedText>
+
+        {isTodayLoading && (
+          <View style={styles.center}>
+            <ActivityIndicator />
+          </View>
+        )}
+
+        {isTodayError && (
+          <View style={styles.center}>
+            <ThemedText>Unable to load dashboard data.</ThemedText>
+          </View>
+        )}
+
+        {!isTodayLoading && !isTodayError && todayTransactions.length === 0 ? (
+          <View style={styles.center}>
+            <ThemedText>No activity today. Add a transaction on the web to see it here.</ThemedText>
+          </View>
+        ) : (
+          <FlatList
+            data={todayTransactions}
+            keyExtractor={item => String(item.id ?? `${item.date}-${item.amount}-${item.title}`)}
+            contentContainerStyle={styles.listContent}
+            renderItem={({ item }) => <TransactionRow transaction={item} />}
+          />
+        )}
       </View>
     </ThemedView>
   );
@@ -147,6 +141,9 @@ const TransactionRow = ({ transaction }: { transaction: Transaction }) => {
 };
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     paddingHorizontal: 16,
@@ -158,21 +155,6 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     textAlign: 'center',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 8,
-    marginBottom: 16,
-  },
-  greeting: {
-    fontSize: 14,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-  },
-  userName: {
-    fontSize: 18,
-    fontWeight: '600',
   },
   summaryRow: {
     flexDirection: 'row',
@@ -229,14 +211,5 @@ const styles = StyleSheet.create({
   rowAmount: {
     fontSize: 16,
     fontWeight: '600',
-  },
-  footer: {
-    marginTop: 'auto',
-    alignItems: 'center',
-    paddingTop: 8,
-  },
-  logout: {
-    fontSize: 14,
-    textDecorationLine: 'underline',
   },
 });

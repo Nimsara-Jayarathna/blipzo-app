@@ -50,6 +50,13 @@ export default function HomeTabLayout() {
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="gearshape.fill" color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          // Not part of bottom nav
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

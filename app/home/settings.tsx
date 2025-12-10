@@ -10,13 +10,14 @@ import {
 } from '@/api/categories';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { ProfileHeader } from '@/components/ProfileHeader';
 import { useAuth } from '@/hooks/useAuth';
 import type { Category } from '@/types';
 
 const categoryKey = ['categories'];
 
 export default function SettingsScreen() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const queryClient = useQueryClient();
 
   const [defaultIncomeId, setDefaultIncomeId] = useState('');
@@ -127,87 +128,91 @@ export default function SettingsScreen() {
     isLoading || isFetching || deleteMutation.isPending || setDefaultMutation.isPending;
 
   return (
-    <ThemedView style={styles.container}>
-      <ThemedText type="title" style={styles.title}>
-        Settings
-      </ThemedText>
-      <ThemedText style={styles.subtitle}>
-        Manage your income and expense categories. These mirror the web dashboard settings.
-      </ThemedText>
+    <ThemedView style={styles.screen}>
+      <ProfileHeader user={user ? { name: user.name ?? user.email, avatarUrl: undefined } : null} />
 
-      {isError && (
-        <View style={styles.center}>
-          <ThemedText>Unable to load categories.</ThemedText>
-          <ThemedText style={styles.linkText} onPress={() => refetch()}>
-            Tap to retry
-          </ThemedText>
-        </View>
-      )}
-
-      {isBusy && (
-        <View style={styles.center}>
-          <ActivityIndicator />
-        </View>
-      )}
-
-      <View style={styles.section}>
-        <ThemedText type="subtitle" style={styles.sectionTitle}>
-          Add category
+      <View style={styles.container}>
+        <ThemedText type="title" style={styles.title}>
+          Settings
         </ThemedText>
-        <View style={styles.addRow}>
-          <TextInput
-            style={styles.input}
-            placeholder="Category name"
-            value={newCategoryName}
-            onChangeText={setNewCategoryName}
+        <ThemedText style={styles.subtitle}>
+          Manage your income and expense categories. These mirror the web dashboard settings.
+        </ThemedText>
+
+        {isError && (
+          <View style={styles.center}>
+            <ThemedText>Unable to load categories.</ThemedText>
+            <ThemedText style={styles.linkText} onPress={() => refetch()}>
+              Tap to retry
+            </ThemedText>
+          </View>
+        )}
+
+        {isBusy && (
+          <View style={styles.center}>
+            <ActivityIndicator />
+          </View>
+        )}
+
+        <View style={styles.section}>
+          <ThemedText type="subtitle" style={styles.sectionTitle}>
+            Add category
+          </ThemedText>
+          <View style={styles.addRow}>
+            <TextInput
+              style={styles.input}
+              placeholder="Category name"
+              value={newCategoryName}
+              onChangeText={setNewCategoryName}
+            />
+            <ThemedText
+              style={styles.typeToggle}
+              onPress={() =>
+                setNewCategoryType(current => (current === 'income' ? 'expense' : 'income'))
+              }>
+              {newCategoryType === 'income' ? 'Income' : 'Expense'}
+            </ThemedText>
+            <ThemedText style={styles.addButton} onPress={handleCreateCategory}>
+              Add
+            </ThemedText>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <ThemedText type="subtitle" style={styles.sectionTitle}>
+            Income categories
+          </ThemedText>
+          <FlatList
+            data={incomeCategories}
+            keyExtractor={item => resolveCategoryId(item)}
+            renderItem={({ item }) => (
+              <CategoryRow
+                category={item}
+                isDefault={resolveCategoryId(item) === defaultIncomeId}
+                onDelete={handleDelete}
+                onSetDefault={handleSetDefault}
+              />
+            )}
           />
-          <ThemedText
-            style={styles.typeToggle}
-            onPress={() =>
-              setNewCategoryType(current => (current === 'income' ? 'expense' : 'income'))
-            }>
-            {newCategoryType === 'income' ? 'Income' : 'Expense'}
-          </ThemedText>
-          <ThemedText style={styles.addButton} onPress={handleCreateCategory}>
-            Add
-          </ThemedText>
         </View>
-      </View>
 
-      <View style={styles.section}>
-        <ThemedText type="subtitle" style={styles.sectionTitle}>
-          Income categories
-        </ThemedText>
-        <FlatList
-          data={incomeCategories}
-          keyExtractor={item => resolveCategoryId(item)}
-          renderItem={({ item }) => (
-            <CategoryRow
-              category={item}
-              isDefault={resolveCategoryId(item) === defaultIncomeId}
-              onDelete={handleDelete}
-              onSetDefault={handleSetDefault}
-            />
-          )}
-        />
-      </View>
-
-      <View style={styles.section}>
-        <ThemedText type="subtitle" style={styles.sectionTitle}>
-          Expense categories
-        </ThemedText>
-        <FlatList
-          data={expenseCategories}
-          keyExtractor={item => resolveCategoryId(item)}
-          renderItem={({ item }) => (
-            <CategoryRow
-              category={item}
-              isDefault={resolveCategoryId(item) === defaultExpenseId}
-              onDelete={handleDelete}
-              onSetDefault={handleSetDefault}
-            />
-          )}
-        />
+        <View style={styles.section}>
+          <ThemedText type="subtitle" style={styles.sectionTitle}>
+            Expense categories
+          </ThemedText>
+          <FlatList
+            data={expenseCategories}
+            keyExtractor={item => resolveCategoryId(item)}
+            renderItem={({ item }) => (
+              <CategoryRow
+                category={item}
+                isDefault={resolveCategoryId(item) === defaultExpenseId}
+                onDelete={handleDelete}
+                onSetDefault={handleSetDefault}
+              />
+            )}
+          />
+        </View>
       </View>
     </ThemedView>
   );
@@ -244,6 +249,9 @@ const CategoryRow = ({
 };
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     paddingHorizontal: 16,

@@ -6,6 +6,7 @@ import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
 import { getTransactionsFiltered, type TransactionFilters } from '@/api/transactions';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { ProfileHeader } from '@/components/ProfileHeader';
 import { useAuth } from '@/hooks/useAuth';
 import type { Transaction } from '@/types';
 
@@ -46,133 +47,127 @@ export default function AllTransactionsScreen() {
 
   const transactions = data?.transactions ?? [];
 
-  const displayName = useMemo(
-    () => user?.name?.split(' ')[0] ?? user?.email ?? 'there',
-    [user]
-  );
-
   return (
-    <ThemedView style={styles.container}>
-      <View style={styles.header}>
-        <ThemedText style={styles.greeting}>All activity for</ThemedText>
-        <ThemedText style={styles.userName}>{displayName}</ThemedText>
+    <ThemedView style={styles.screen}>
+      <ProfileHeader user={user ? { name: user.name ?? user.email, avatarUrl: undefined } : null} />
+
+      <View style={styles.container}>
+        <View style={styles.filtersRow}>
+          <View style={styles.filterColumn}>
+            <ThemedText style={styles.filterLabel}>From</ThemedText>
+            <ThemedText
+              style={styles.filterValue}
+              onPress={() =>
+                setFilters(current => ({
+                  ...current,
+                  startDate: today,
+                }))
+              }>
+              {filters.startDate ?? 'Any'}
+            </ThemedText>
+          </View>
+          <View style={styles.filterColumn}>
+            <ThemedText style={styles.filterLabel}>To</ThemedText>
+            <ThemedText
+              style={styles.filterValue}
+              onPress={() =>
+                setFilters(current => ({
+                  ...current,
+                  endDate: today,
+                }))
+              }>
+              {filters.endDate ?? 'Any'}
+            </ThemedText>
+          </View>
+          <View style={styles.filterColumn}>
+            <ThemedText style={styles.filterLabel}>Type</ThemedText>
+            <ThemedText
+              style={styles.filterValue}
+              onPress={() =>
+                setFilters(current => ({
+                  ...current,
+                  typeFilter:
+                    current.typeFilter === 'all'
+                      ? 'income'
+                      : current.typeFilter === 'income'
+                      ? 'expense'
+                      : 'all',
+                }))
+              }>
+              {filters.typeFilter === 'all'
+                ? 'All'
+                : filters.typeFilter === 'income'
+                ? 'Income'
+                : 'Expense'}
+            </ThemedText>
+          </View>
+        </View>
+
+        <View style={styles.filtersRow}>
+          <View style={styles.filterColumn}>
+            <ThemedText style={styles.filterLabel}>Sort by</ThemedText>
+            <ThemedText
+              style={styles.filterValue}
+              onPress={() =>
+                setFilters(current => ({
+                  ...current,
+                  sortField:
+                    current.sortField === 'date'
+                      ? 'amount'
+                      : current.sortField === 'amount'
+                      ? 'category'
+                      : 'date',
+                }))
+              }>
+              {filters.sortField === 'date'
+                ? 'Date'
+                : filters.sortField === 'amount'
+                ? 'Amount'
+                : 'Category'}
+            </ThemedText>
+          </View>
+          <View style={styles.filterColumn}>
+            <ThemedText style={styles.filterLabel}>Direction</ThemedText>
+            <ThemedText
+              style={styles.filterValue}
+              onPress={() =>
+                setFilters(current => ({
+                  ...current,
+                  sortDirection: current.sortDirection === 'asc' ? 'desc' : 'asc',
+                }))
+              }>
+              {filters.sortDirection === 'asc' ? 'Ascending' : 'Descending'}
+            </ThemedText>
+          </View>
+        </View>
+
+        {isLoading && (
+          <View style={styles.center}>
+            <ActivityIndicator />
+          </View>
+        )}
+
+        {isError && (
+          <View style={styles.center}>
+            <ThemedText>Unable to load transactions. Try again later.</ThemedText>
+          </View>
+        )}
+
+        {!isLoading && !isError && transactions.length === 0 ? (
+          <View style={styles.center}>
+            <ThemedText>
+              No transactions found. Adjust filters or add one from the web.
+            </ThemedText>
+          </View>
+        ) : (
+          <FlatList
+            data={transactions}
+            keyExtractor={item => String(item.id ?? `${item.date}-${item.amount}-${item.title}`)}
+            contentContainerStyle={styles.listContent}
+            renderItem={({ item }) => <TransactionRow transaction={item} />}
+          />
+        )}
       </View>
-
-      <View style={styles.filtersRow}>
-        <View style={styles.filterColumn}>
-          <ThemedText style={styles.filterLabel}>From</ThemedText>
-          <ThemedText
-            style={styles.filterValue}
-            onPress={() =>
-              setFilters(current => ({
-                ...current,
-                startDate: today,
-              }))
-            }>
-            {filters.startDate ?? 'Any'}
-          </ThemedText>
-        </View>
-        <View style={styles.filterColumn}>
-          <ThemedText style={styles.filterLabel}>To</ThemedText>
-          <ThemedText
-            style={styles.filterValue}
-            onPress={() =>
-              setFilters(current => ({
-                ...current,
-                endDate: today,
-              }))
-            }>
-            {filters.endDate ?? 'Any'}
-          </ThemedText>
-        </View>
-        <View style={styles.filterColumn}>
-          <ThemedText style={styles.filterLabel}>Type</ThemedText>
-          <ThemedText
-            style={styles.filterValue}
-            onPress={() =>
-              setFilters(current => ({
-                ...current,
-                typeFilter:
-                  current.typeFilter === 'all'
-                    ? 'income'
-                    : current.typeFilter === 'income'
-                    ? 'expense'
-                    : 'all',
-              }))
-            }>
-            {filters.typeFilter === 'all'
-              ? 'All'
-              : filters.typeFilter === 'income'
-              ? 'Income'
-              : 'Expense'}
-          </ThemedText>
-        </View>
-      </View>
-
-      <View style={styles.filtersRow}>
-        <View style={styles.filterColumn}>
-          <ThemedText style={styles.filterLabel}>Sort by</ThemedText>
-          <ThemedText
-            style={styles.filterValue}
-            onPress={() =>
-              setFilters(current => ({
-                ...current,
-                sortField:
-                  current.sortField === 'date'
-                    ? 'amount'
-                    : current.sortField === 'amount'
-                    ? 'category'
-                    : 'date',
-              }))
-            }>
-            {filters.sortField === 'date'
-              ? 'Date'
-              : filters.sortField === 'amount'
-              ? 'Amount'
-              : 'Category'}
-          </ThemedText>
-        </View>
-        <View style={styles.filterColumn}>
-          <ThemedText style={styles.filterLabel}>Direction</ThemedText>
-          <ThemedText
-            style={styles.filterValue}
-            onPress={() =>
-              setFilters(current => ({
-                ...current,
-                sortDirection: current.sortDirection === 'asc' ? 'desc' : 'asc',
-              }))
-            }>
-            {filters.sortDirection === 'asc' ? 'Ascending' : 'Descending'}
-          </ThemedText>
-        </View>
-      </View>
-
-      {isLoading && (
-        <View style={styles.center}>
-          <ActivityIndicator />
-        </View>
-      )}
-
-      {isError && (
-        <View style={styles.center}>
-          <ThemedText>Unable to load transactions. Try again later.</ThemedText>
-        </View>
-      )}
-
-      {!isLoading && !isError && transactions.length === 0 ? (
-        <View style={styles.center}>
-          <ThemedText>
-            No transactions found. Adjust filters or add one from the web.
-          </ThemedText>
-        </View>
-      ) : (
-        <FlatList
-          data={transactions}
-          keyExtractor={item => String(item.id ?? `${item.date}-${item.amount}-${item.title}`)}
-          contentContainerStyle={styles.listContent}
-          renderItem={({ item }) => <TransactionRow transaction={item} />}
-        />
-      )}
     </ThemedView>
   );
 }
@@ -199,6 +194,9 @@ const TransactionRow = ({ transaction }: { transaction: Transaction }) => {
 };
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     paddingHorizontal: 16,
@@ -210,21 +208,6 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     textAlign: 'center',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 8,
-    marginBottom: 16,
-  },
-  greeting: {
-    fontSize: 14,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-  },
-  userName: {
-    fontSize: 18,
-    fontWeight: '600',
   },
   filtersRow: {
     flexDirection: 'row',
