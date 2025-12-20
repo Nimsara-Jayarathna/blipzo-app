@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { useAppTheme } from '@/context/ThemeContext';
 import type { AllFilters, Grouping } from '../_hooks/useTransactionLogic';
 
 interface Props {
@@ -17,11 +18,20 @@ export function SortGroupControls({
   onChangeFilter,
   onChangeGrouping,
 }: Props) {
+  const { colors } = useAppTheme();
   return (
     <View style={styles.grid}>
       {/* Sort: three criteria + separate direction */}
-      <View style={styles.section}>
-        <ThemedText style={styles.sectionTitle}>Sort</ThemedText>
+      <View
+        style={[
+          styles.section,
+          {
+            backgroundColor: colors.surface1,
+            borderColor: colors.borderSoft,
+            shadowColor: colors.textMain,
+          },
+        ]}>
+        <ThemedText style={[styles.sectionTitle, { color: colors.textSubtle }]}>Sort</ThemedText>
 
         <View style={styles.buttonRow}>
           {(['date', 'amount', 'category'] as const).map(field => (
@@ -29,6 +39,7 @@ export function SortGroupControls({
               key={field}
               label={field.charAt(0).toUpperCase() + field.slice(1)}
               isActive={filters.sortField === field}
+              colors={colors}
               onPress={() =>
                 onChangeFilter({
                   ...filters,
@@ -43,6 +54,7 @@ export function SortGroupControls({
           <ControlButton
             label="Asc ↑"
             isActive={filters.sortDirection === 'asc'}
+            colors={colors}
             onPress={() =>
               onChangeFilter({
                 ...filters,
@@ -53,6 +65,7 @@ export function SortGroupControls({
           <ControlButton
             label="Desc ↓"
             isActive={filters.sortDirection === 'desc'}
+            colors={colors}
             onPress={() =>
               onChangeFilter({
                 ...filters,
@@ -64,14 +77,25 @@ export function SortGroupControls({
       </View>
 
       {/* Grouping */}
-      <View style={styles.section}>
-        <ThemedText style={styles.sectionTitle}>Group by</ThemedText>
+      <View
+        style={[
+          styles.section,
+          {
+            backgroundColor: colors.surface1,
+            borderColor: colors.borderSoft,
+            shadowColor: colors.textMain,
+          },
+        ]}>
+        <ThemedText style={[styles.sectionTitle, { color: colors.textSubtle }]}>
+          Group by
+        </ThemedText>
         <View style={styles.buttonRow}>
           {(['none', 'month', 'category'] as const).map(g => (
             <ControlButton
               key={g}
               label={g === 'none' ? 'None' : g.charAt(0).toUpperCase() + g.slice(1)}
               isActive={grouping === g}
+              colors={colors}
               onPress={() => onChangeGrouping(g)}
             />
           ))}
@@ -84,14 +108,37 @@ export function SortGroupControls({
 const ControlButton = ({
   label,
   isActive,
+  colors,
   onPress,
 }: {
   label: string;
   isActive: boolean;
+  colors: {
+    surface1: string;
+    borderSoft: string;
+    primaryAccent: string;
+    textMain: string;
+    textMuted: string;
+  };
   onPress: () => void;
 }) => (
-  <Pressable onPress={onPress} style={[styles.button, isActive && styles.buttonActive]}>
-    <ThemedText style={[styles.buttonText, isActive && styles.buttonTextActive]}>
+  <Pressable
+    onPress={onPress}
+    style={[
+      styles.button,
+      { backgroundColor: 'transparent', borderColor: 'transparent' },
+      isActive && {
+        backgroundColor: colors.primaryAccent,
+        borderColor: colors.primaryAccent,
+        shadowColor: colors.primaryAccent,
+      },
+    ]}>
+    <ThemedText
+      style={[
+        styles.buttonText,
+        { color: colors.textMuted },
+        isActive && styles.buttonTextActive,
+      ]}>
       {label}
     </ThemedText>
   </Pressable>
@@ -100,12 +147,9 @@ const ControlButton = ({
 const styles = StyleSheet.create({
   grid: { gap: 12, marginTop: 12 },
   section: {
-    backgroundColor: '#fff',
     borderRadius: 16,
     padding: 10,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.05)',
-    shadowColor: '#000',
     shadowOpacity: 0.05,
     shadowRadius: 10,
     elevation: 2,
@@ -114,7 +158,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    color: '#95a5a6',
     marginBottom: 6,
     textAlign: 'center',
     fontWeight: '600',
@@ -133,18 +176,12 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#eee',
-    backgroundColor: '#fff',
   },
   buttonActive: {
-    backgroundColor: '#3498db',
-    borderColor: '#3498db',
-    shadowColor: '#3498db',
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 2,
   },
-  buttonText: { fontSize: 12, color: '#555', fontWeight: '500' },
+  buttonText: { fontSize: 12, fontWeight: '500' },
   buttonTextActive: { color: '#fff' },
 });
-

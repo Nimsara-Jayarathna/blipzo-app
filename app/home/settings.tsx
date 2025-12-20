@@ -18,6 +18,7 @@ import {
 } from '@/api/categories';
 import { ProfileHeader } from '@/components/ProfileHeader';
 import { ThemedText } from '@/components/themed-text';
+import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
 import type { Category } from '@/types';
 
@@ -33,6 +34,7 @@ const getCategoryId = (cat: Category) => cat._id ?? cat.id ?? '';
 
 export default function SettingsScreen() {
   const { isAuthenticated, user } = useAuth();
+  const { colors, resolvedTheme } = useAppTheme();
   const queryClient = useQueryClient();
 
   // State
@@ -141,8 +143,18 @@ export default function SettingsScreen() {
 
           {/* Error Message */}
           {isError && (
-            <TouchableOpacity onPress={() => refetch()} style={styles.errorBox}>
-              <ThemedText style={styles.errorText}>
+            <TouchableOpacity
+              onPress={() => refetch()}
+              style={[
+                styles.errorBox,
+                {
+                  backgroundColor:
+                    resolvedTheme === 'dark' ? 'rgba(239, 68, 68, 0.16)' : 'rgba(231,76,60,0.1)',
+                  borderColor:
+                    resolvedTheme === 'dark' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(231,76,60,0.2)',
+                },
+              ]}>
+              <ThemedText style={[styles.errorText, { color: '#ef4444' }]}>
                 Failed to load categories. Tap to retry.
               </ThemedText>
             </TouchableOpacity>
@@ -201,13 +213,12 @@ const styles = StyleSheet.create({
   },
   errorBox: {
     padding: 10,
-    backgroundColor: 'rgba(231,76,60,0.1)',
     borderRadius: 8,
     marginBottom: 16,
     alignItems: 'center',
+    borderWidth: 1,
   },
   errorText: {
-    color: '#e74c3c',
     textDecorationLine: 'underline',
   },
 });

@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { getTransactionsFiltered, type TransactionFilters } from '@/api/transactions';
 import { ProfileHeader } from '@/components/ProfileHeader';
+import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
 import { ThemedText } from '@/components/themed-text';
 import { HomeBackground } from './_components/HomeBackground';
@@ -21,6 +22,7 @@ import { AllFiltersSheet } from './all/_components/AllFiltersSheet';
 
 export default function AllTransactionsScreen() {
   const { isAuthenticated, user } = useAuth();
+  const { colors } = useAppTheme();
   const today = dayjs().format('YYYY-MM-DD');
 
   const [filters, setFilters] = useState<AllFilters>({
@@ -104,7 +106,11 @@ export default function AllTransactionsScreen() {
         />
 
         <Pressable
-          style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
+          style={({ pressed }) => [
+            styles.fab,
+            { backgroundColor: colors.primaryAccent },
+            pressed && styles.fabPressed,
+          ]}
           onPress={() => setIsAddOpen(true)}
         >
           <ThemedText style={styles.fabText}>+</ThemedText>
@@ -144,7 +150,6 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#3498db',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -154,7 +159,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   fabPressed: {
-    backgroundColor: '#2980b9',
+    opacity: 0.9,
     transform: [{ scale: 0.95 }],
   },
   fabText: {

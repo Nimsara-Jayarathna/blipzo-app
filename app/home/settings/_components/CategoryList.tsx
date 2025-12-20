@@ -1,6 +1,7 @@
 import React from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
+import { useAppTheme } from '@/context/ThemeContext';
 import type { Category } from '@/types';
 import { CategoryRow } from './CategoryRow';
 
@@ -26,8 +27,9 @@ export function CategoryList({
   onDelete,
   onSetDefault,
 }: Props) {
+  const { colors } = useAppTheme();
   if (isLoading) {
-    return <ActivityIndicator style={styles.loading} />;
+    return <ActivityIndicator style={styles.loading} color={colors.primaryAccent} />;
   }
 
   if (data.length === 0) {
@@ -41,7 +43,11 @@ export function CategoryList({
   }
 
   return (
-    <View style={styles.listContainer}>
+    <View
+      style={[
+        styles.listContainer,
+        { backgroundColor: colors.surfaceGlass, borderColor: colors.borderSoft },
+      ]}>
       {data.map(item => {
         const id = getCategoryId(item);
         const isDefault = id === defaultId;
@@ -67,17 +73,16 @@ export function CategoryList({
 const styles = StyleSheet.create({
   listContainer: {
     marginTop: 10,
-    backgroundColor: 'rgba(255,255,255,0.8)',
     borderRadius: 20,
     padding: 16,
     minHeight: 200,
+    borderWidth: 1,
   },
   loading: {
     marginTop: 30,
   },
   emptyText: {
     textAlign: 'center',
-    color: '#95a5a6',
     marginTop: 20,
   },
 });

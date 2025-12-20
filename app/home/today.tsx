@@ -13,6 +13,7 @@ import {
 import { ProfileHeader } from '@/components/ProfileHeader';
 import { getTransactionsFiltered, type TransactionFilters } from '@/api/transactions';
 import { ThemedText } from '@/components/themed-text';
+import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
 import type { Transaction } from '@/types';
 import { SummaryCard } from './today/_components/SummaryCard';
@@ -24,6 +25,7 @@ const transactionKey = ['transactions'];
 
 export default function TodayScreen() {
   const { user, isAuthenticated } = useAuth();
+  const { colors } = useAppTheme();
   const todayDate = dayjs().format('YYYY-MM-DD');
   const [isAddOpen, setIsAddOpen] = useState(false);
 
@@ -77,21 +79,27 @@ export default function TodayScreen() {
 
         {isLoading && (
           <View style={styles.center}>
-            <ActivityIndicator size="large" color="#3498db" />
+            <ActivityIndicator size="large" color={colors.primaryAccent} />
           </View>
         )}
 
         {isError && (
           <View style={styles.center}>
             <ThemedText>Unable to load dashboard data.</ThemedText>
-            <ThemedText onPress={() => refetch()} style={styles.retryText}>Tap to retry</ThemedText>
+            <ThemedText
+              onPress={() => refetch()}
+              style={[styles.retryText, { color: colors.primaryAccent }]}>
+              Tap to retry
+            </ThemedText>
           </View>
         )}
 
         {!isLoading && !isError && transactions.length === 0 ? (
           <View style={styles.center}>
             <ThemedText style={styles.emptyText}>No activity today.</ThemedText>
-            <ThemedText style={styles.emptySubText}>Tap the + button to add one.</ThemedText>
+            <ThemedText style={[styles.emptySubText, { color: colors.textMuted }]}>
+              Tap the + button to add one.
+            </ThemedText>
           </View>
         ) : (
           <FlatList
@@ -100,14 +108,22 @@ export default function TodayScreen() {
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#3498db" />
+              <RefreshControl
+                refreshing={isRefetching}
+                onRefresh={refetch}
+                tintColor={colors.primaryAccent}
+              />
             }
             renderItem={({ item }) => <TransactionRow transaction={item} />}
           />
         )}
 
         <Pressable
-          style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
+          style={({ pressed }) => [
+            styles.fab,
+            { backgroundColor: colors.primaryAccent },
+            pressed && styles.fabPressed,
+          ]}
           onPress={() => setIsAddOpen(true)}>
           <ThemedText style={styles.fabText}>+</ThemedText>
         </Pressable>
@@ -139,7 +155,6 @@ const styles = StyleSheet.create({
   retryText: {
     marginTop: 8,
     textDecorationLine: 'underline',
-    color: '#3498db',
   },
   emptyText: {
     fontSize: 18,
@@ -160,7 +175,6 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#3498db',
     alignItems: 'center',
     justifyContent: 'center',
     // Enhanced Shadow
@@ -171,7 +185,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   fabPressed: {
-    backgroundColor: '#2980b9',
+    opacity: 0.9,
     transform: [{ scale: 0.95 }],
   },
   fabText: {

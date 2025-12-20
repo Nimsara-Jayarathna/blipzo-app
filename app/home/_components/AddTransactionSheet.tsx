@@ -19,6 +19,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createTransaction } from '@/api/transactions';
 import { getCategories } from '@/api/categories';
 import { ThemedText } from '@/components/themed-text';
+import { useAppTheme } from '@/context/ThemeContext';
 import type { Category, Transaction, TransactionInput } from '@/types';
 
 type AddTransactionStep = 1 | 2;
@@ -38,7 +39,6 @@ type AddTransactionSheetProps = {
 
 const transactionKey = ['transactions'];
 const summaryKey = ['summary'];
-const accentColor = '#3498db';
 
 export function AddTransactionSheet({
   visible,
@@ -46,6 +46,7 @@ export function AddTransactionSheet({
   onTransactionCreated,
 }: AddTransactionSheetProps) {
   const queryClient = useQueryClient();
+  const { colors, resolvedTheme } = useAppTheme();
 
   // --- STATE ---
   const [step, setStep] = useState<AddTransactionStep>(1);
@@ -178,13 +179,19 @@ export function AddTransactionSheet({
       >
         <Pressable style={styles.backdropTouchable} onPress={onClose} />
 
-        <View style={styles.sheet}>
-          <View style={styles.handle} />
+        <View
+          style={[
+            styles.sheet,
+            { backgroundColor: colors.surface1, borderColor: colors.borderSoft },
+          ]}>
+          <View style={[styles.handle, { backgroundColor: colors.borderSoft }]} />
           <View style={styles.header}>
             <ThemedText type="title">New Transaction</ThemedText>
             {step === 2 && (
               <Pressable onPress={() => setStep(1)} style={styles.backButton}>
-                <ThemedText style={styles.backText}>Edit Amount</ThemedText>
+                <ThemedText style={[styles.backText, { color: colors.primaryAccent }]}>
+                  Edit Amount
+                </ThemedText>
               </Pressable>
             )}
           </View>
@@ -195,32 +202,56 @@ export function AddTransactionSheet({
             {step === 1 ? (
               <View style={styles.stepContainer}>
                 <View style={styles.amountWrapper}>
-                  <ThemedText style={styles.currencySymbol}>$</ThemedText>
+                  <ThemedText style={[styles.currencySymbol, { color: colors.textMain }]}>
+                    $
+                  </ThemedText>
                   <TextInput
                     value={amount}
                     onChangeText={setAmount}
                     keyboardType="numeric"
                     placeholder="0.00"
-                    placeholderTextColor="#ccc"
-                    style={styles.amountInput}
+                    placeholderTextColor={colors.textSubtle}
+                    style={[styles.amountInput, { color: colors.textMain }]}
                   />
                 </View>
 
-                <ThemedText style={styles.hintText}>Select type to continue</ThemedText>
+                <ThemedText style={[styles.hintText, { color: colors.textMuted }]}>
+                  Select type to continue
+                </ThemedText>
 
                 <View style={styles.typeRow}>
                   <Pressable
-                    style={[styles.typeButton, styles.incomeBtn]}
+                    style={[
+                      styles.typeButton,
+                      {
+                        backgroundColor:
+                          resolvedTheme === 'dark'
+                            ? 'rgba(34, 197, 94, 0.18)'
+                            : 'rgba(46, 204, 113, 0.1)',
+                      },
+                    ]}
                     onPress={() => handleNextStep('income')}>
-                    <MaterialIcons name="arrow-upward" size={20} color="#27ae60" />
-                    <ThemedText style={[styles.typeText, { color: '#27ae60' }]}>Income</ThemedText>
+                    <MaterialIcons name="arrow-upward" size={20} color="#22c55e" />
+                    <ThemedText style={[styles.typeText, { color: '#22c55e' }]}>
+                      Income
+                    </ThemedText>
                   </Pressable>
                   
                   <Pressable
-                    style={[styles.typeButton, styles.expenseBtn]}
+                    style={[
+                      styles.typeButton,
+                      {
+                        backgroundColor:
+                          resolvedTheme === 'dark'
+                            ? 'rgba(239, 68, 68, 0.18)'
+                            : 'rgba(231, 76, 60, 0.1)',
+                      },
+                    ]}
                     onPress={() => handleNextStep('expense')}>
-                    <MaterialIcons name="arrow-downward" size={20} color="#c0392b" />
-                    <ThemedText style={[styles.typeText, { color: '#c0392b' }]}>Expense</ThemedText>
+                    <MaterialIcons name="arrow-downward" size={20} color="#ef4444" />
+                    <ThemedText style={[styles.typeText, { color: '#ef4444' }]}>
+                      Expense
+                    </ThemedText>
                   </Pressable>
                 </View>
               </View>
@@ -231,22 +262,41 @@ export function AddTransactionSheet({
                 
                 {/* Category Selection */}
                 <View style={styles.section}>
-                  <ThemedText style={styles.label}>Category</ThemedText>
+                  <ThemedText style={[styles.label, { color: colors.textSubtle }]}>
+                    Category
+                  </ThemedText>
                   <View style={styles.categoriesGrid}>
                     {isLoadingCategories ? (
-                      <ActivityIndicator />
+                      <ActivityIndicator color={colors.primaryAccent} />
                     ) : filteredCategories.map(cat => (
                       <Pressable
                         key={cat.id}
                         style={[
                           styles.catPill,
-                          selectedCategory === cat.id && styles.catPillActive
+                          {
+                            backgroundColor: colors.surface2,
+                            borderColor: colors.borderSoft,
+                          },
+                          selectedCategory === cat.id && [
+                            styles.catPillActive,
+                            {
+                              backgroundColor:
+                                resolvedTheme === 'dark'
+                                  ? 'rgba(96, 165, 250, 0.16)'
+                                  : 'rgba(59, 130, 246, 0.12)',
+                              borderColor: colors.primaryAccent,
+                            },
+                          ],
                         ]}
                         onPress={() => setSelectedCategory(cat.id)}>
                         <ThemedText 
                           style={[
                             styles.catText,
-                            selectedCategory === cat.id && styles.catTextActive
+                            { color: colors.textMain },
+                            selectedCategory === cat.id && [
+                              styles.catTextActive,
+                              { color: colors.primaryAccent },
+                            ],
                           ]}>
                           {cat.name}
                         </ThemedText>
@@ -258,13 +308,16 @@ export function AddTransactionSheet({
 
                 {/* Date Picker */}
                 <View style={styles.section}>
-                  <ThemedText style={styles.label}>Date</ThemedText>
+                  <ThemedText style={[styles.label, { color: colors.textSubtle }]}>Date</ThemedText>
                   <Pressable 
-                    style={styles.dateInput}
+                    style={[
+                      styles.dateInput,
+                      { backgroundColor: colors.surface2, borderColor: colors.borderSoft },
+                    ]}
                     onPress={() => setShowDatePicker(true)}
                   >
-                    <MaterialIcons name="calendar-today" size={18} color="#555" />
-                    <ThemedText style={styles.dateText}>
+                    <MaterialIcons name="calendar-today" size={18} color={colors.textMuted} />
+                    <ThemedText style={[styles.dateText, { color: colors.textMain }]}>
                       {dayjs(date).format('MMMM D, YYYY')}
                     </ThemedText>
                   </Pressable>
@@ -272,16 +325,24 @@ export function AddTransactionSheet({
                   {/* Native Picker Logic */}
                   {showDatePicker && (
                      Platform.OS === 'ios' ? (
-                       <View style={styles.iosPickerContainer}>
+                       <View
+                         style={[
+                           styles.iosPickerContainer,
+                           { backgroundColor: colors.surface2 },
+                         ]}>
                          <DateTimePicker
                            value={date}
                            mode="date"
                            display="spinner"
                            onChange={handleDateChange}
-                           textColor="#000"
+                           textColor={resolvedTheme === 'dark' ? '#f1f5f9' : '#0f172a'}
                          />
-                         <Pressable onPress={() => setShowDatePicker(false)} style={styles.closePicker}>
-                           <ThemedText style={{color: accentColor, fontWeight:'bold'}}>Done</ThemedText>
+                         <Pressable
+                           onPress={() => setShowDatePicker(false)}
+                           style={[styles.closePicker, { backgroundColor: colors.surface3 }]}>
+                           <ThemedText style={{color: colors.primaryAccent, fontWeight:'bold'}}>
+                             Done
+                           </ThemedText>
                          </Pressable>
                        </View>
                      ) : (
@@ -297,12 +358,22 @@ export function AddTransactionSheet({
 
                 {/* Note Input */}
                 <View style={styles.section}>
-                  <ThemedText style={styles.label}>Note (Optional)</ThemedText>
+                  <ThemedText style={[styles.label, { color: colors.textSubtle }]}>
+                    Note (Optional)
+                  </ThemedText>
                   <TextInput
                     value={note}
                     onChangeText={setNote}
                     placeholder="What was this for?"
-                    style={styles.noteInput}
+                    placeholderTextColor={colors.textSubtle}
+                    style={[
+                      styles.noteInput,
+                      {
+                        backgroundColor: colors.surface2,
+                        borderColor: colors.borderSoft,
+                        color: colors.textMain,
+                      },
+                    ]}
                     multiline
                   />
                 </View>
@@ -311,7 +382,11 @@ export function AddTransactionSheet({
                 <Pressable
                   onPress={handleSubmit}
                   disabled={mutation.isPending}
-                  style={[styles.submitBtn, mutation.isPending && {opacity: 0.7}]}>
+                  style={[
+                    styles.submitBtn,
+                    { backgroundColor: colors.primaryAccent, shadowColor: colors.primaryAccent },
+                    mutation.isPending && {opacity: 0.7},
+                  ]}>
                   {mutation.isPending ? (
                     <ActivityIndicator color="#fff" />
                   ) : (
@@ -337,16 +412,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sheet: {
-    backgroundColor: '#fff',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     maxHeight: '85%',
     paddingTop: 12,
+    borderWidth: 1,
   },
   handle: {
     width: 40,
     height: 4,
-    backgroundColor: '#e0e0e0',
     borderRadius: 2,
     alignSelf: 'center',
     marginBottom: 16,
@@ -362,7 +436,6 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   backText: {
-    color: accentColor,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -387,19 +460,16 @@ const styles = StyleSheet.create({
   currencySymbol: {
     fontSize: 32,
     fontWeight: '600',
-    color: '#333',
     marginRight: 4,
   },
   amountInput: {
     fontSize: 48,
     fontWeight: 'bold',
-    color: '#333',
     minWidth: 100,
     textAlign: 'center',
   },
   hintText: {
     textAlign: 'center',
-    color: '#95a5a6',
     marginBottom: 24,
   },
   typeRow: {
@@ -415,8 +485,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
-  incomeBtn: { backgroundColor: 'rgba(46, 204, 113, 0.1)' },
-  expenseBtn: { backgroundColor: 'rgba(231, 76, 60, 0.1)' },
   typeText: { fontSize: 16, fontWeight: '700' },
 
   // Step 2
@@ -426,7 +494,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#7f8c8d',
     marginBottom: 8,
     textTransform: 'uppercase',
   },
@@ -441,47 +508,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#f8f9fa',
     borderWidth: 1,
-    borderColor: '#e0e0e0',
   },
-  catPillActive: {
-    backgroundColor: '#ebf5fb',
-    borderColor: accentColor,
-  },
-  catText: { fontSize: 14, color: '#333' },
-  catTextActive: { color: accentColor, fontWeight: '600' },
+  catText: { fontSize: 14 },
+  catTextActive: { fontWeight: '600' },
   
   // Date Picker
   dateInput: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
     padding: 14,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
     gap: 10,
   },
-  dateText: { fontSize: 16, color: '#333' },
+  dateText: { fontSize: 16 },
   iosPickerContainer: {
     marginTop: 10,
-    backgroundColor: '#f0f0f0',
     borderRadius: 12,
     overflow: 'hidden',
   },
   closePicker: {
     alignItems: 'flex-end',
     padding: 10,
-    backgroundColor: '#e8e8e8',
   },
   
   // Note
   noteInput: {
-    backgroundColor: '#f8f9fa',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
     padding: 14,
     fontSize: 16,
     minHeight: 80,
@@ -490,13 +545,11 @@ const styles = StyleSheet.create({
   
   // Submit
   submitBtn: {
-    backgroundColor: accentColor,
     height: 56,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 10,
-    shadowColor: accentColor,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 12,

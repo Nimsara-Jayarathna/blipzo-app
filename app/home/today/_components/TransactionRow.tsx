@@ -3,30 +3,49 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { useAppTheme } from '@/context/ThemeContext';
 import type { Transaction } from '@/types';
 
 export function TransactionRow({ transaction }: { transaction: Transaction }) {
+  const { colors, resolvedTheme } = useAppTheme();
   const isIncome = transaction.type === 'income';
-  const color = isIncome ? '#27ae60' : '#c0392b';
+  const color = resolvedTheme === 'dark'
+    ? isIncome
+      ? '#22c55e'
+      : '#ef4444'
+    : isIncome
+      ? '#16a34a'
+      : '#dc2626';
+  const dotBackground = resolvedTheme === 'dark'
+    ? isIncome
+      ? 'rgba(34, 197, 94, 0.2)'
+      : 'rgba(239, 68, 68, 0.2)'
+    : isIncome
+      ? '#d4efdf'
+      : '#fadbd8';
   const displayTitle = transaction.title || transaction.categoryName || 'Untitled';
   const timeString = dayjs(transaction.date).format('h:mm A');
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: colors.surfaceGlass, borderColor: colors.borderSoft },
+      ]}>
       <View
         style={[
           styles.iconDot,
-          { backgroundColor: isIncome ? '#d4efdf' : '#fadbd8' },
+          { backgroundColor: dotBackground },
         ]}
       >
         <View style={[styles.innerDot, { backgroundColor: color }]} />
       </View>
 
       <View style={styles.info}>
-        <ThemedText style={styles.title} numberOfLines={1}>
+        <ThemedText style={[styles.title, { color: colors.textMain }]} numberOfLines={1}>
           {displayTitle}
         </ThemedText>
-        <ThemedText style={styles.meta}>
+        <ThemedText style={[styles.meta, { color: colors.textMuted }]}>
           {transaction.categoryName ? `${transaction.categoryName} • ` : ''}
           {timeString}
         </ThemedText>
@@ -46,9 +65,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.7)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.5)',
   },
   iconDot: {
     width: 40,
@@ -70,12 +87,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2c3e50',
     marginBottom: 2,
   },
   meta: {
     fontSize: 12,
-    color: '#7f8c8d',
   },
   amount: {
     fontSize: 16,
@@ -84,4 +99,3 @@ const styles = StyleSheet.create({
 });
 
 export default TransactionRow;
-

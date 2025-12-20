@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { useAppTheme } from '@/context/ThemeContext';
 import type { AllFilters, Grouping } from '../_hooks/useTransactionLogic';
 
 type SmartFilterHeaderProps = {
@@ -17,6 +18,7 @@ export function SmartFilterHeader({
   isLoading,
   onOpenFilters,
 }: SmartFilterHeaderProps) {
+  const { colors } = useAppTheme();
   const typeLabel =
     filters.typeFilter === 'all'
       ? 'All types'
@@ -37,32 +39,48 @@ export function SmartFilterHeader({
   return (
     <View style={styles.container}>
       <Pressable
-        style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+        style={({ pressed }) => [
+          styles.card,
+          {
+            backgroundColor: colors.surfaceGlassThick,
+            borderColor: colors.borderGlass,
+            shadowColor: colors.textMain,
+          },
+          pressed && styles.cardPressed,
+        ]}
         onPress={onOpenFilters}
       >
         <View style={styles.header}>
-          <ThemedText style={styles.label}>Filters overview</ThemedText>
-          <ThemedText style={styles.primary}>
+          <ThemedText style={[styles.label, { color: colors.textSubtle }]}>
+            Filters overview
+          </ThemedText>
+          <ThemedText style={[styles.primary, { color: colors.textMain }]}>
             {filters.startDate} → {filters.endDate}
           </ThemedText>
         </View>
 
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: colors.borderSoft }]} />
 
         <View style={styles.row}>
           <View style={styles.column}>
-            <ThemedText style={styles.subLabel}>Type</ThemedText>
-            <ThemedText style={styles.valueAccent}>{typeLabel}</ThemedText>
+            <ThemedText style={[styles.subLabel, { color: colors.textSubtle }]}>
+              Type
+            </ThemedText>
+            <ThemedText style={[styles.valueAccent, { color: colors.primaryAccent }]}>
+              {typeLabel}
+            </ThemedText>
           </View>
 
-          <View style={styles.verticalDivider} />
+          <View style={[styles.verticalDivider, { backgroundColor: colors.borderSoft }]} />
 
           <View style={styles.column}>
-            <ThemedText style={styles.subLabel}>Sort / Group</ThemedText>
-            <ThemedText style={styles.valueMuted} numberOfLines={1}>
+            <ThemedText style={[styles.subLabel, { color: colors.textSubtle }]}>
+              Sort / Group
+            </ThemedText>
+            <ThemedText style={[styles.valueMuted, { color: colors.textMuted }]} numberOfLines={1}>
               {sortLabel}
             </ThemedText>
-            <ThemedText style={styles.valueMuted} numberOfLines={1}>
+            <ThemedText style={[styles.valueMuted, { color: colors.textMuted }]} numberOfLines={1}>
               Group: {groupLabel}
             </ThemedText>
           </View>
@@ -85,10 +103,7 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 24,
     padding: 20,
-    backgroundColor: 'rgba(255,255,255,0.9)',
     borderWidth: 1,
-    borderColor: '#fff',
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.1,
     shadowRadius: 20,
@@ -103,7 +118,6 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    color: '#7f8c8d',
     marginBottom: 4,
     textTransform: 'uppercase',
     letterSpacing: 1,
@@ -111,11 +125,9 @@ const styles = StyleSheet.create({
   primary: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#2c3e50',
   },
   divider: {
     height: 1,
-    backgroundColor: 'rgba(0,0,0,0.05)',
     marginBottom: 16,
   },
   row: {
@@ -128,22 +140,18 @@ const styles = StyleSheet.create({
   },
   verticalDivider: {
     width: 1,
-    backgroundColor: 'rgba(0,0,0,0.05)',
   },
   subLabel: {
     fontSize: 12,
-    color: '#95a5a6',
     marginBottom: 4,
   },
   valueAccent: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#3498db',
   },
   valueMuted: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#7f8c8d',
   },
   loadingRow: {
     marginTop: 8,
