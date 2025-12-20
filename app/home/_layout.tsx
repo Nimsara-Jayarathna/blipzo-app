@@ -9,11 +9,12 @@ import Animated, {
   Easing 
 } from 'react-native-reanimated';
 
-import { Colors } from '@/constants/theme';
+import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
 
 function CustomTabBar({ state, descriptors, navigation }: any) {
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  const { colors, resolvedTheme } = useAppTheme();
   
   // Filter to only show specific tabs
   const visibleRoutes = state.routes.filter((route: any) => 
@@ -45,12 +46,30 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
 
   return (
     <View 
-      style={styles.tabBarContainer} 
+      style={[
+        styles.tabBarContainer,
+        {
+          backgroundColor: colors.surfaceGlassThick,
+          borderColor: colors.borderGlass,
+          shadowColor: colors.textMain,
+        },
+      ]}
       onLayout={(e) => setDimensions(e.nativeEvent.layout)}
     >
       {/* Sliding Background */}
       {dimensions.width > 0 && (
-        <Animated.View style={[styles.slidingBubble, animatedStyle]} />
+        <Animated.View
+          style={[
+            styles.slidingBubble,
+            {
+              backgroundColor:
+                resolvedTheme === 'dark'
+                  ? 'rgba(96, 165, 250, 0.18)'
+                  : 'rgba(59, 130, 246, 0.12)',
+            },
+            animatedStyle,
+          ]}
+        />
       )}
 
       {/* Tabs */}
@@ -85,11 +104,11 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
               <MaterialIcons
                 name={iconName}
                 size={22}
-                color={isFocused ? Colors.light.tabIconSelected : Colors.light.tabIconDefault}
+                color={isFocused ? colors.primaryAccent : colors.textMuted}
               />
               <Text style={[
                 styles.tabLabel, 
-                { color: isFocused ? Colors.light.tabIconSelected : Colors.light.tabIconDefault }
+                { color: isFocused ? colors.primaryAccent : colors.textMuted }
               ]}>
                 {options.title}
               </Text>

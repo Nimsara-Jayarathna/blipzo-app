@@ -12,6 +12,7 @@ import { useRouter } from 'expo-router';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { useAppTheme } from '@/context/ThemeContext';
 
 type UserSummary = {
   name: string;
@@ -25,8 +26,6 @@ type ProfileHeaderProps = {
   nameStyle?: TextStyle;
 };
 
-const accentColor = '#3498db';
-
 export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   user,
   containerStyle,
@@ -34,6 +33,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   nameStyle,
 }) => {
   const router = useRouter();
+  const { colors } = useAppTheme();
 
   const handlePressProfile = () => {
     router.navigate('/home/profile');
@@ -48,9 +48,18 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
     .join('');
 
   return (
-    <SafeAreaView style={[styles.safeArea, containerStyle]}>
-      <ThemedView style={styles.headerShadowWrapper}>
-        <ThemedView style={[styles.header, contentStyle]}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.surface1 }, containerStyle]}>
+      <ThemedView
+        style={[
+          styles.headerShadowWrapper,
+          { backgroundColor: colors.surface1, shadowColor: colors.textMain },
+        ]}>
+        <ThemedView
+          style={[
+            styles.header,
+            { backgroundColor: colors.surface1 },
+            contentStyle,
+          ]}>
           <Pressable
             onPress={handlePressProfile}
             style={styles.leftContent}
@@ -60,7 +69,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             {user?.avatarUrl ? (
               <Image source={{ uri: user.avatarUrl }} style={styles.avatar} />
             ) : (
-              <View style={styles.avatarPlaceholder}>
+              <View style={[styles.avatarPlaceholder, { backgroundColor: colors.primaryAccent }]}>
                 <ThemedText style={styles.avatarInitials}>{initials || '?'}</ThemedText>
               </View>
             )}
@@ -78,15 +87,12 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: '#ffffff',
   },
   headerShadowWrapper: {
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.06,
     shadowRadius: 10,
     elevation: 4,
-    backgroundColor: '#ffffff',
   },
   header: {
     flexDirection: 'row',
@@ -108,7 +114,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: accentColor,
     alignItems: 'center',
     justifyContent: 'center',
   },
