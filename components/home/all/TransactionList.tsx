@@ -5,7 +5,7 @@ import { FlatList, SectionList, StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { useAppTheme } from '@/context/ThemeContext';
 import type { Transaction } from '@/types';
-import type { GroupedSection } from '../_hooks/useTransactionLogic';
+import type { GroupedSection } from '@/hooks/home/useTransactionLogic';
 import { TransactionRow } from './TransactionRow';
 
 interface Props {

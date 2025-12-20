@@ -14,7 +14,7 @@ import dayjs from 'dayjs';
 
 import { ThemedText } from '@/components/themed-text';
 import { useAppTheme } from '@/context/ThemeContext';
-import type { AllFilters } from '../_hooks/useTransactionLogic';
+import type { AllFilters } from '@/hooks/home/useTransactionLogic';
 
 interface Props {
   filters: AllFilters;

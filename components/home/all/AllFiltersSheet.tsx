@@ -9,7 +9,7 @@ import {
 
 import { ThemedText } from '@/components/themed-text';
 import { useAppTheme } from '@/context/ThemeContext';
-import type { AllFilters, Grouping } from '../_hooks/useTransactionLogic';
+import type { AllFilters, Grouping } from '@/hooks/home/useTransactionLogic';
 import { FilterControls } from './FilterControls';
 import { SortGroupControls } from './SortGroupControls';
 

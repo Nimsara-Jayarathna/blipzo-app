@@ -14,7 +14,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/hooks/useAuth';
-import { HomeBackground } from './home/_components/HomeBackground';
+import { HomeBackground } from '@/components/home/HomeBackground';
 
 const { width } = Dimensions.get('window');
 const accentColor = '#3498db';

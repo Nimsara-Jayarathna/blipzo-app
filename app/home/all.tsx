@@ -8,17 +8,17 @@ import { ProfileHeader } from '@/components/ProfileHeader';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
 import { ThemedText } from '@/components/themed-text';
-import { HomeBackground } from './_components/HomeBackground';
-import { AddTransactionSheet } from './_components/AddTransactionSheet';
-import { TransactionList } from './all/_components/TransactionList';
-import SmartFilterHeader from './all/_components/SmartFilterHeader';
+import { HomeBackground } from '@/components/home/HomeBackground';
+import { AddTransactionSheet } from '@/components/home/AddTransactionSheet';
+import { TransactionList } from '@/components/home/all/TransactionList';
+import SmartFilterHeader from '@/components/home/all/SmartFilterHeader';
 import {
   type AllFilters,
   type Grouping,
   useGroupedTransactions,
   useTransactionCategories,
-} from './all/_hooks/useTransactionLogic';
-import { AllFiltersSheet } from './all/_components/AllFiltersSheet';
+} from '@/hooks/home/useTransactionLogic';
+import { AllFiltersSheet } from '@/components/home/all/AllFiltersSheet';
 
 export default function AllTransactionsScreen() {
   const { isAuthenticated, user } = useAuth();

@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { useAppTheme } from '@/context/ThemeContext';
-import type { AllFilters, Grouping } from '../_hooks/useTransactionLogic';
+import type { AllFilters, Grouping } from '@/hooks/home/useTransactionLogic';
 
 type SmartFilterHeaderProps = {
   filters: AllFilters;

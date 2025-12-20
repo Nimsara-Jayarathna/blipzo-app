@@ -7,7 +7,7 @@ import { ProfileHeader } from '@/components/ProfileHeader';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
-import { HomeBackground } from './_components/HomeBackground';
+import { HomeBackground } from '@/components/home/HomeBackground';
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();

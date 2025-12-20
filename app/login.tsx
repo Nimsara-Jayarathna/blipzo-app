@@ -19,7 +19,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { login } from '@/api/auth';
 import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/hooks/useAuth';
-import { HomeBackground } from './home/_components/HomeBackground';
+import { HomeBackground } from '@/components/home/HomeBackground';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {

@@ -22,12 +22,12 @@ import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
 import type { Category } from '@/types';
 
-import { HomeBackground } from './_components/HomeBackground';
+import { HomeBackground } from '@/components/home/HomeBackground';
 
 // Importing components directly from their files
-import { CategoryTabs } from './settings/_components/CategoryTabs';
-import { AddCategoryInput } from './settings/_components/AddCategoryInput';
-import { CategoryList } from './settings/_components/CategoryList';
+import { CategoryTabs } from '@/components/home/settings/CategoryTabs';
+import { AddCategoryInput } from '@/components/home/settings/AddCategoryInput';
+import { CategoryList } from '@/components/home/settings/CategoryList';
 
 const categoryKey = ['categories'];
 const getCategoryId = (cat: Category) => cat._id ?? cat.id ?? '';

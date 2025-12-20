@@ -16,10 +16,10 @@ import { ThemedText } from '@/components/themed-text';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
 import type { Transaction } from '@/types';
-import { SummaryCard } from './today/_components/SummaryCard';
-import { TransactionRow } from './today/_components/TransactionRow';
-import { AddTransactionSheet } from './_components/AddTransactionSheet';
-import { HomeBackground } from './_components/HomeBackground';
+import { SummaryCard } from '@/components/home/today/SummaryCard';
+import { TransactionRow } from '@/components/home/today/TransactionRow';
+import { AddTransactionSheet } from '@/components/home/AddTransactionSheet';
+import { HomeBackground } from '@/components/home/HomeBackground';
 
 const transactionKey = ['transactions'];
 
