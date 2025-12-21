@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   createCategory,
@@ -39,6 +40,7 @@ export default function SettingsScreen() {
   const { resolvedTheme, colors } = useAppTheme();
   const queryClient = useQueryClient();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   // State
   const [activeTab, setActiveTab] = useState<'income' | 'expense'>('income');
@@ -131,7 +133,10 @@ export default function SettingsScreen() {
       style={styles.screen}
     >
       <ScrollView
-        contentContainerStyle={homeContentStyles.scrollContent}
+        contentContainerStyle={[
+          homeContentStyles.scrollContent,
+          { paddingTop: homeContentStyles.scrollContent.paddingTop + insets.top },
+        ]}
         contentInsetAdjustmentBehavior="never"
         keyboardShouldPersistTaps="handled"
       >
@@ -139,7 +144,7 @@ export default function SettingsScreen() {
           onPress={() => router.navigate('/home/profile')}
           style={styles.backLink}
           accessibilityRole="button"
-          accessibilityLabel="Back to profile"
+          accessibilityLabel="Back to category setting"
         >
           <View
             style={[
@@ -150,7 +155,7 @@ export default function SettingsScreen() {
             <MaterialIcons name="chevron-left" size={18} color={colors.textMain} />
           </View>
           <ThemedText style={[styles.backLabel, { color: colors.textMain }]}>
-            Profile
+            Category setting
           </ThemedText>
         </Pressable>
         {/* Header */}
@@ -237,7 +242,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   backLabel: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '500',
   },
   errorBox: {

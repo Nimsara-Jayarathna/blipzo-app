@@ -105,15 +105,7 @@ export function AddCategoryInput({
         </TouchableOpacity>
       </View>
 
-      {/* Warning Banner */}
-      {isFull && (
-        <View style={styles.warningBanner}>
-          <MaterialIcons name="error-outline" size={16} color="#d35400" />
-          <ThemedText style={styles.warningText}>
-            Maximum of 10 {activeTab} categories reached.
-          </ThemedText>
-        </View>
-      )}
+      {/* Warning Banner removed */}
     </View>
   );
 }

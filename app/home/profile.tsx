@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { logoutSession } from '@/api/auth';
@@ -14,7 +16,13 @@ export default function ProfileScreen() {
   const { user, logout } = useAuth();
   const { colors } = useAppTheme();
   const router = useRouter();
+  const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const [activeSection, setActiveSection] = useState<'menu' | 'profile'>('menu');
+
+  useEffect(() => {
+    navigation.setOptions({ headerShown: activeSection !== 'profile' });
+  }, [activeSection, navigation]);
 
   const handleLogout = async () => {
     try {
@@ -26,7 +34,13 @@ export default function ProfileScreen() {
   };
 
   return (
-    <HomeContent>
+    <HomeContent
+      style={
+        activeSection === 'profile'
+          ? { paddingTop: insets.top + 12 }
+          : undefined
+      }
+    >
       {activeSection === 'menu' ? (
         <>
           <View
@@ -39,13 +53,13 @@ export default function ProfileScreen() {
               onPress={() => setActiveSection('profile')}
               style={styles.listRow}
               accessibilityRole="button"
-              accessibilityLabel="Profile settings"
+              accessibilityLabel="Profile setting"
             >
               <View style={styles.listRowLeft}>
                 <View style={[styles.iconBadge, { backgroundColor: colors.surface2 }]}>
                   <MaterialIcons name="person" size={18} color={colors.textMuted} />
                 </View>
-                <ThemedText style={styles.listLabel}>Profile settings</ThemedText>
+                <ThemedText style={styles.listLabel}>Profile setting</ThemedText>
               </View>
               <MaterialIcons name="chevron-right" size={20} color={colors.textMuted} />
             </Pressable>
@@ -54,13 +68,13 @@ export default function ProfileScreen() {
               onPress={() => router.navigate('/home/settings')}
               style={styles.listRow}
               accessibilityRole="button"
-              accessibilityLabel="Category settings"
+              accessibilityLabel="Category setting"
             >
               <View style={styles.listRowLeft}>
                 <View style={[styles.iconBadge, { backgroundColor: colors.surface2 }]}>
                   <MaterialIcons name="category" size={18} color={colors.textMuted} />
                 </View>
-                <ThemedText style={styles.listLabel}>Category settings</ThemedText>
+                <ThemedText style={styles.listLabel}>Category setting</ThemedText>
               </View>
               <MaterialIcons name="chevron-right" size={20} color={colors.textMuted} />
             </Pressable>
@@ -95,7 +109,7 @@ export default function ProfileScreen() {
                 <MaterialIcons name="chevron-left" size={18} color={colors.textMain} />
               </View>
               <ThemedText style={[styles.backLabel, { color: colors.textMain }]}>
-                Profile
+                Profile setting
               </ThemedText>
             </Pressable>
           </View>
@@ -189,7 +203,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   backLabel: {
-    fontSize: 16,
+    fontSize: 19,
     fontWeight: '500',
   },
   card: {

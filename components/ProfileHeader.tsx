@@ -150,13 +150,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   greeting: {
-    fontSize: 11,
+    fontSize: 12,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
     opacity: 0.7,
   },
   name: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
   },
 });
