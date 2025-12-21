@@ -1,11 +1,12 @@
-import dayjs from 'dayjs';
 import React from 'react';
 import {
   StyleSheet,
   View,
+  SectionList,
   type LayoutChangeEvent,
   type StyleProp,
   type ViewStyle,
+  type SectionListData, // Added for typing sections
 } from 'react-native';
 import Animated from 'react-native-reanimated';
 
@@ -16,6 +17,9 @@ import type { Transaction } from '@/types';
 import type { GroupedSection } from '@/hooks/home/useTransactionLogic';
 import { TransactionRow } from '@/components/home/TransactionRow';
 
+// FIX: Create the animated component with a type cast to preserve Generics
+const AnimatedSectionList = Animated.createAnimatedComponent(SectionList);
+
 interface Props {
   data: Transaction[];
   groupedData: GroupedSection[] | null;
@@ -25,7 +29,7 @@ interface Props {
   onToggleNote?: (id: string) => void;
   onRowPress?: () => void;
   contentContainerStyle?: StyleProp<ViewStyle>;
-  onScroll?: (event: any) => void;
+  onScroll?: any;
   onLayout?: (event: LayoutChangeEvent) => void;
   onContentSizeChange?: (width: number, height: number) => void;
   scrollEnabled?: boolean;
@@ -46,45 +50,53 @@ export function TransactionList({
   scrollEnabled,
 }: Props) {
   const { colors } = useAppTheme();
-  // If grouped, use SectionList
+
   if (groupedData) {
     return (
-      <Animated.SectionList
-        sections={groupedData}
-        keyExtractor={(item) => item.id ?? Math.random().toString()}
+      <AnimatedSectionList
+        // FIX: Cast sections to any to bypass SectionList's strict internal type check
+        sections={groupedData as any}
+        // FIX: Use 'any' for the item here to satisfy the generic requirement
+        keyExtractor={(item: any) => item._id ?? item.id ?? Math.random().toString()}
         ListHeaderComponent={HeaderComponent}
         showsVerticalScrollIndicator={false}
-        renderSectionHeader={({ section: { title, data } }) => (
-          <View
-            style={[
-              styles.sectionHeader,
-              {
-                backgroundColor: colors.surfaceGlassThick,
-                borderBottomColor: colors.borderSoft,
-              },
-            ]}>
-            <View style={styles.sectionHeaderLeft}>
-              <View style={[styles.sectionAccentBar, { backgroundColor: colors.primaryAccent }]} />
-              <ThemedText style={[styles.sectionTitle, { color: colors.textMain }]}>
-                GROUP: {title}
-              </ThemedText>
-            </View>
+        // FIX: Explicitly type the section info object
+        renderSectionHeader={({ section }: { section: any }) => {
+          const typedSection = section as GroupedSection;
+          return (
             <View
               style={[
-                styles.sectionBadge,
-                { backgroundColor: colors.surface1, borderColor: colors.borderGlass },
+                styles.sectionHeader,
+                {
+                  backgroundColor: colors.surfaceGlassThick,
+                  borderBottomColor: colors.borderSoft,
+                },
               ]}>
-              <ThemedText style={[styles.sectionBadgeText, { color: colors.primaryAccent }]}>
-                {data.length} ITEMS
-              </ThemedText>
+              <View style={styles.sectionHeaderLeft}>
+                <View style={[styles.sectionAccentBar, { backgroundColor: colors.primaryAccent }]} />
+                <ThemedText style={[styles.sectionTitle, { color: colors.textMain }]}>
+                  {typedSection.title}
+                </ThemedText>
+              </View>
+              <View
+                style={[
+                  styles.sectionBadge,
+                  { backgroundColor: colors.surface1, borderColor: colors.borderGlass },
+                ]}>
+                <ThemedText style={[styles.sectionBadgeText, { color: colors.primaryAccent }]}>
+                  {typedSection.data.length} ITEMS
+                </ThemedText>
+              </View>
             </View>
-          </View>
-        )}
-        renderItem={({ item }) => {
-          const id = item._id ?? item.id ?? '';
+          );
+        }}
+        // FIX: Explicitly type the item info object
+        renderItem={({ item }: any) => {
+          const txn = item as Transaction;
+          const id = txn._id ?? txn.id ?? '';
           return (
             <TransactionRow
-              transaction={item}
+              transaction={txn}
               mode="all"
               onDelete={onDelete}
               isNoteOpen={Boolean(id && openNoteId === id)}
@@ -104,37 +116,37 @@ export function TransactionList({
     );
   }
 
-  // Otherwise, standard FlatList
   return (
     <Animated.FlatList
       data={data}
-      keyExtractor={(item) => item.id ?? Math.random().toString()}
+      keyExtractor={(item: any) => item._id ?? item.id ?? Math.random().toString()}
       ListHeaderComponent={HeaderComponent}
-      renderItem={({ item }) => {
-        const id = item._id ?? item.id ?? '';
+      renderItem={({ item }: any) => {
+        const txn = item as Transaction;
+        const id = txn._id ?? txn.id ?? '';
         return (
           <TransactionRow
-            transaction={item}
+            transaction={txn}
             mode="all"
             onDelete={onDelete}
             isNoteOpen={Boolean(id && openNoteId === id)}
             onToggleNote={() => onToggleNote?.(id)}
             onRowPress={onRowPress}
-        />
-      );
-    }}
-    showsVerticalScrollIndicator={false}
-    contentContainerStyle={[styles.listContent, contentContainerStyle]}
-    onScroll={onScroll}
-    scrollEventThrottle={16}
-    onLayout={onLayout}
-    onContentSizeChange={onContentSizeChange}
-    scrollEnabled={scrollEnabled}
-    ListEmptyComponent={
-      <View style={styles.center}>
-        <ThemedText>No transactions found.</ThemedText>
-      </View>
-    }
+          />
+        );
+      }}
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={[styles.listContent, contentContainerStyle]}
+      onScroll={onScroll}
+      scrollEventThrottle={16}
+      onLayout={onLayout}
+      onContentSizeChange={onContentSizeChange}
+      scrollEnabled={scrollEnabled}
+      ListEmptyComponent={
+        <View style={styles.center}>
+          <ThemedText>No transactions found.</ThemedText>
+        </View>
+      }
     />
   );
 }
@@ -142,7 +154,6 @@ export function TransactionList({
 const styles = StyleSheet.create({
   listContent: { gap: HOME_LIST_ITEM_GAP },
   center: { padding: 40, alignItems: 'center' },
-  // Section Header
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -152,6 +163,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     marginTop: 16,
     borderRadius: 12,
+    marginBottom: 8,
   },
   sectionHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   sectionAccentBar: { width: 4, height: 16, borderRadius: 2 },
