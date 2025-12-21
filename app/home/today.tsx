@@ -1,14 +1,14 @@
 import dayjs from 'dayjs';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import React, { useMemo, useState } from 'react';
-import { 
-  ActivityIndicator, 
-  FlatList, 
+import {
+  ActivityIndicator,
   Pressable,
-  StyleSheet, 
-  View, 
-  RefreshControl 
+  StyleSheet,
+  View,
+  RefreshControl,
 } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import { deleteTransaction, getTransactionsFiltered, type TransactionFilters } from '@/api/transactions';
 import { ThemedText } from '@/components/themed-text';
@@ -19,15 +19,23 @@ import { SummaryCard } from '@/components/home/today/SummaryCard';
 import { TransactionRow } from '@/components/home/TransactionRow';
 import { HOME_LIST_BOTTOM_PADDING } from '@/components/home/layout/spacing';
 import { HomeContent } from '@/components/home/layout/HomeContent';
+import { StickyHeaderShell } from '@/components/home/layout/StickyHeaderShell';
 
 const transactionKey = ['transactions'];
+const SUMMARY_EXPANDED_HEIGHT = 224;
+const SUMMARY_COLLAPSED_HEIGHT = 56;
+const SUMMARY_LIST_GAP = 20;
 
 export default function TodayScreen() {
   const { isAuthenticated } = useAuth();
-  const { colors } = useAppTheme();
+  const { colors, resolvedTheme } = useAppTheme();
   const queryClient = useQueryClient();
   const todayDate = dayjs().format('YYYY-MM-DD');
   const [openNoteId, setOpenNoteId] = useState<string | null>(null);
+  const [summaryHeight, setSummaryHeight] = useState(0);
+  const expenseColor = resolvedTheme === 'dark' ? '#ef4444' : '#dc2626';
+  const formatMoney = (val: number) =>
+    `$${(Number.isFinite(val) ? Math.abs(val) : 0).toFixed(2)}`;
 
   const {
     data: todayData,
@@ -74,19 +82,16 @@ export default function TodayScreen() {
     },
   });
 
-  return (
-    <HomeContent bleedBottom>
-      <View style={styles.summaryWrapper}>
-        <SummaryCard income={income} expense={expense} balance={balance} />
-      </View>
-
-      {isLoading && (
+  const renderEmptyState = () => {
+    if (isLoading) {
+      return (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.primaryAccent} />
         </View>
-      )}
-
-      {isError && (
+      );
+    }
+    if (isError) {
+      return (
         <View style={styles.center}>
           <ThemedText>Unable to load dashboard data.</ThemedText>
           <ThemedText
@@ -95,21 +100,63 @@ export default function TodayScreen() {
             Tap to retry
           </ThemedText>
         </View>
-      )}
+      );
+    }
+    return (
+      <View style={styles.center}>
+        <ThemedText style={styles.emptyText}>No activity today.</ThemedText>
+        <ThemedText style={[styles.emptySubText, { color: colors.textMuted }]}>
+          Tap the + button to add one.
+        </ThemedText>
+      </View>
+    );
+  };
 
-        {!isLoading && !isError && transactions.length === 0 ? (
-          <View style={styles.center}>
-            <ThemedText style={styles.emptyText}>No activity today.</ThemedText>
-            <ThemedText style={[styles.emptySubText, { color: colors.textMuted }]}>
-              Tap the + button to add one.
+  return (
+    <HomeContent bleedBottom>
+      <StickyHeaderShell
+        expandedHeight={Math.max(SUMMARY_EXPANDED_HEIGHT, summaryHeight + SUMMARY_LIST_GAP)}
+        collapsedHeight={SUMMARY_COLLAPSED_HEIGHT}
+        contentTopPadding={SUMMARY_LIST_GAP}
+        renderExpanded={() => (
+          <View
+            style={styles.summaryWrapper}
+            onLayout={(event) => setSummaryHeight(event.nativeEvent.layout.height)}
+          >
+            <SummaryCard income={income} expense={expense} balance={balance} />
+          </View>
+        )}
+        renderCollapsed={() => (
+          <View
+            style={[
+              styles.summaryCollapsed,
+              { backgroundColor: colors.surfaceGlassThick, borderColor: colors.borderGlass },
+            ]}
+          >
+            <ThemedText style={[styles.collapsedLabel, { color: colors.textSubtle }]}>
+              Today's Balance
+            </ThemedText>
+            <ThemedText
+              style={[
+                styles.collapsedValue,
+                { color: balance >= 0 ? colors.primaryAccent : expenseColor },
+              ]}
+            >
+              {balance < 0 ? '-' : ''}{formatMoney(balance)}
             </ThemedText>
           </View>
-        ) : (
+        )}
+      >
+        {({ onScroll, contentContainerStyle }) => (
           <Pressable style={styles.listWrapper} onPress={() => setOpenNoteId(null)}>
-            <FlatList
+            <Animated.FlatList
               data={transactions}
               keyExtractor={getKey}
-              contentContainerStyle={styles.listContent}
+              contentContainerStyle={[
+                styles.listContent,
+                contentContainerStyle,
+                transactions.length === 0 ? styles.listEmptyContent : null,
+              ]}
               showsVerticalScrollIndicator={false}
               refreshControl={
                 <RefreshControl
@@ -118,6 +165,9 @@ export default function TodayScreen() {
                   tintColor={colors.primaryAccent}
                 />
               }
+              onScroll={onScroll}
+              scrollEventThrottle={16}
+              ListEmptyComponent={renderEmptyState}
               renderItem={({ item }) => {
                 const id = item._id ?? item.id ?? '';
                 return (
@@ -136,6 +186,7 @@ export default function TodayScreen() {
             />
           </Pressable>
         )}
+      </StickyHeaderShell>
     </HomeContent>
   );
 }
@@ -145,7 +196,24 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   summaryWrapper: {
-    marginBottom: 20,
+    marginBottom: 0,
+  },
+  summaryCollapsed: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: SUMMARY_COLLAPSED_HEIGHT,
+    borderRadius: 18,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+  },
+  collapsedLabel: {
+    fontSize: 11,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  collapsedValue: {
+    fontSize: 18,
+    fontWeight: '700',
   },
   center: {
     flex: 1,
@@ -168,5 +236,8 @@ const styles = StyleSheet.create({
   listContent: {
     paddingBottom: HOME_LIST_BOTTOM_PADDING,
     gap: 12,
+  },
+  listEmptyContent: {
+    flexGrow: 1,
   },
 });

@@ -90,6 +90,8 @@ const styles = StyleSheet.create({
   balanceValue: {
     fontSize: 32,
     fontWeight: '700',
+    lineHeight: 38,
+    paddingVertical: 2,
   },
   divider: {
     height: 1,

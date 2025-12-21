@@ -1,6 +1,7 @@
 import dayjs from 'dayjs';
 import React from 'react';
-import { FlatList, SectionList, StyleSheet, View } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/themed-text';
 import { useAppTheme } from '@/context/ThemeContext';
@@ -17,6 +18,8 @@ interface Props {
   openNoteId?: string | null;
   onToggleNote?: (id: string) => void;
   onRowPress?: () => void;
+  contentContainerStyle?: StyleProp<ViewStyle>;
+  onScroll?: (event: any) => void;
 }
 
 export function TransactionList({
@@ -27,12 +30,14 @@ export function TransactionList({
   openNoteId,
   onToggleNote,
   onRowPress,
+  contentContainerStyle,
+  onScroll,
 }: Props) {
   const { colors } = useAppTheme();
   // If grouped, use SectionList
   if (groupedData) {
     return (
-      <SectionList
+      <Animated.SectionList
         sections={groupedData}
         keyExtractor={(item) => item.id ?? Math.random().toString()}
         ListHeaderComponent={HeaderComponent}
@@ -76,7 +81,9 @@ export function TransactionList({
             />
           );
         }}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, contentContainerStyle]}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         stickySectionHeadersEnabled={false}
       />
     );
@@ -84,7 +91,7 @@ export function TransactionList({
 
   // Otherwise, standard FlatList
   return (
-    <FlatList
+    <Animated.FlatList
       data={data}
       keyExtractor={(item) => item.id ?? Math.random().toString()}
       ListHeaderComponent={HeaderComponent}
@@ -98,16 +105,18 @@ export function TransactionList({
             isNoteOpen={Boolean(id && openNoteId === id)}
             onToggleNote={() => onToggleNote?.(id)}
             onRowPress={onRowPress}
-          />
-        );
-      }}
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={styles.listContent}
-      ListEmptyComponent={
-        <View style={styles.center}>
-          <ThemedText>No transactions found.</ThemedText>
-        </View>
-      }
+        />
+      );
+    }}
+    showsVerticalScrollIndicator={false}
+    contentContainerStyle={[styles.listContent, contentContainerStyle]}
+    onScroll={onScroll}
+    scrollEventThrottle={16}
+    ListEmptyComponent={
+      <View style={styles.center}>
+        <ThemedText>No transactions found.</ThemedText>
+      </View>
+    }
     />
   );
 }
