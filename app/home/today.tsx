@@ -75,7 +75,7 @@ export default function TodayScreen() {
   });
 
   return (
-    <HomeContent>
+    <HomeContent bleedBottom>
       <View style={styles.summaryWrapper}>
         <SummaryCard income={income} expense={expense} balance={balance} />
       </View>

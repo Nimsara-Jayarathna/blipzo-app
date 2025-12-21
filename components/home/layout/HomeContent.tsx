@@ -5,11 +5,13 @@ import {
   HOME_CONTENT_PADDING_BOTTOM,
   HOME_CONTENT_PADDING_H,
   HOME_CONTENT_PADDING_TOP,
+  HOME_TAB_BAR_MARGIN,
 } from '@/components/home/layout/spacing';
 
 type HomeContentProps = {
   children: ReactNode;
   style?: ViewStyle;
+  bleedBottom?: boolean;
 };
 
 const styles = StyleSheet.create({
@@ -28,6 +30,16 @@ const styles = StyleSheet.create({
 
 export const homeContentStyles = styles;
 
-export function HomeContent({ children, style }: HomeContentProps) {
-  return <View style={[styles.container, style]}>{children}</View>;
+export function HomeContent({ children, style, bleedBottom = false }: HomeContentProps) {
+  return (
+    <View
+      style={[
+        styles.container,
+        bleedBottom ? { paddingBottom: HOME_TAB_BAR_MARGIN } : null,
+        style,
+      ]}
+    >
+      {children}
+    </View>
+  );
 }

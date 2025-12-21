@@ -84,7 +84,7 @@ export default function AllTransactionsScreen() {
     grouping === 'none' ? 'None' : grouping === 'month' ? 'Month' : 'Category';
 
   return (
-    <HomeContent>
+    <HomeContent bleedBottom>
       <View style={styles.summaryWrapper}>
         <SmartFilterHeader
           filters={filters}

@@ -30,6 +30,15 @@ export function HomeTabBar({ state, descriptors, navigation, onAddPress }: HomeT
   const insets = useSafeAreaInsets();
   const extraBottom = Math.max(insets.bottom, 0);
   const translateX = useSharedValue(0);
+  const isDark = resolvedTheme === 'dark';
+  const wrapperBlurIntensity = isDark ? 25 : 20;
+  const innerBlurIntensity = isDark ? 45 : 75;
+  const glassContainerColor = isDark ? 'rgba(15, 23, 42, 0.2)' : 'rgba(255, 255, 255, 0.45)';
+  const glassOverlayColor = isDark ? 'rgba(15, 23, 42, 0.2)' : 'rgba(241, 245, 249, 0.35)';
+  const barGradient = isDark ? 'rgba(2, 6, 23, 0.45)' : 'rgba(203, 213, 225, 0.15)';
+  const highlightGradient: readonly [string, string] = isDark
+    ? ['rgba(255, 255, 255, 0.08)', 'transparent']
+    : ['rgba(255, 255, 255, 0.85)', 'rgba(255, 255, 255, 0.1)'];
 
   const visibleRoutes = state.routes.filter((route: any) =>
     ['today', 'all'].includes(route.name)
@@ -67,17 +76,15 @@ export function HomeTabBar({ state, descriptors, navigation, onAddPress }: HomeT
       ]}
     >
       <BlurView
-        intensity={resolvedTheme === 'dark' ? 25 : 35}
-        tint={resolvedTheme === 'dark' ? 'dark' : 'light'}
+        intensity={wrapperBlurIntensity}
+        tint={isDark ? 'dark' : 'light'}
         style={StyleSheet.absoluteFill}
         pointerEvents="none"
       />
       <LinearGradient
         colors={[
           'transparent',
-          resolvedTheme === 'dark'
-            ? 'rgba(2, 6, 23, 0.45)'
-            : 'rgba(248, 250, 252, 0.7)',
+          barGradient,
         ]}
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}
@@ -90,15 +97,24 @@ export function HomeTabBar({ state, descriptors, navigation, onAddPress }: HomeT
           {
             borderColor: colors.borderGlass,
             height: HOME_TAB_BAR_HEIGHT,
+            backgroundColor: glassContainerColor,
           },
         ]}
         onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
       >
         <View style={styles.glassLayer}>
           <BlurView
-            intensity={resolvedTheme === 'dark' ? 45 : 60}
-            tint={resolvedTheme === 'dark' ? 'dark' : 'light'}
+            intensity={innerBlurIntensity}
+            tint={isDark ? 'dark' : 'light'}
             style={StyleSheet.absoluteFill}
+          />
+          <View style={[styles.glassOverlay, { backgroundColor: glassOverlayColor }]} />
+          <LinearGradient
+            colors={highlightGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={StyleSheet.absoluteFill}
+            pointerEvents="none"
           />
         </View>
         {width > 0 && showPill && (
@@ -108,9 +124,9 @@ export function HomeTabBar({ state, descriptors, navigation, onAddPress }: HomeT
               styles.activePill,
               {
                 backgroundColor:
-                  resolvedTheme === 'dark'
+                  isDark
                     ? 'rgba(96, 165, 250, 0.18)'
-                    : 'rgba(59, 130, 246, 0.14)',
+                    : 'rgba(59, 130, 246, 0.08)',
               },
               pillStyle,
             ]}
@@ -243,6 +259,10 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     borderRadius: 24,
     overflow: 'hidden',
+  },
+  glassOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 24,
   },
   activePill: {
     position: 'absolute',
