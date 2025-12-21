@@ -7,7 +7,6 @@ import {
   type TextStyle,
   type ViewStyle,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
@@ -37,7 +36,6 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 }) => {
   const router = useRouter();
   const { colors } = useAppTheme();
-  const insets = useSafeAreaInsets();
 
   const handlePressProfile = () => {
     router.navigate('/home/profile');
@@ -56,13 +54,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
     .join('');
 
   return (
-    <View
-      style={[
-        styles.safeArea,
-        { backgroundColor: colors.surface1, paddingTop: insets.top },
-        containerStyle,
-      ]}
-    >
+    <View style={[styles.safeArea, { backgroundColor: colors.surface1 }, containerStyle]}>
       <ThemedView
         style={[
           styles.headerShadowWrapper,
