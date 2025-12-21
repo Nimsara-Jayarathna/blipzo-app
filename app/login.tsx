@@ -6,7 +6,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -15,23 +14,25 @@ import {
   UIManager,
   Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { login } from '@/api/auth';
 import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/hooks/useAuth';
 import { HomeBackground } from '@/components/home/HomeBackground';
+import { useAppTheme } from '@/context/ThemeContext';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const accentColor = '#3498db';
-
 export default function LoginScreen() {
   const router = useRouter();
   const { setAuth } = useAuth();
+  const { colors } = useAppTheme();
+  const accentColor = colors.primaryAccent;
   const appIcon = require('../assets/images/icon.png');
 
   const [email, setEmail] = useState('');
@@ -80,69 +81,89 @@ export default function LoginScreen() {
             
             {/* --- Header Section --- */}
             <View style={styles.header}>
-              <View style={styles.logoCircle}>
+              <View style={[styles.logoCircle, { backgroundColor: accentColor, shadowColor: accentColor }]}>
                 <Image source={appIcon} style={styles.logoImage} resizeMode="contain" />
               </View>
-              <ThemedText type="title" style={styles.title}>Welcome Back!</ThemedText>
-              <ThemedText style={styles.subtitle}>
+              <ThemedText type="title" style={[styles.title, { color: colors.textMain }]}>
+                Welcome Back!
+              </ThemedText>
+              <ThemedText style={[styles.subtitle, { color: colors.textMuted }]}>
                 Sign in to continue managing your finances.
               </ThemedText>
             </View>
 
             {/* --- Form Section --- */}
-            <View style={styles.card}>
+            <View style={[styles.card, { backgroundColor: colors.surface1 }]}>
               
               {/* Error Banner */}
               {errorMessage && (
-                <View style={styles.errorBanner}>
+                <View style={[styles.errorBanner, { backgroundColor: colors.surface2 }]}>
                   <MaterialIcons name="error-outline" size={20} color="#c0392b" />
-                  <ThemedText style={styles.errorText}>{errorMessage}</ThemedText>
+                  <ThemedText style={[styles.errorText, { color: colors.textMain }]}>
+                    {errorMessage}
+                  </ThemedText>
                 </View>
               )}
 
               {/* Email Input */}
               <View style={styles.inputContainer}>
-                <ThemedText style={styles.label}>Email Address</ThemedText>
-                <View style={styles.inputWrapper}>
+                <ThemedText style={[styles.label, { color: colors.textSubtle }]}>
+                  Email Address
+                </ThemedText>
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    { backgroundColor: colors.inputBg, borderColor: colors.inputBorder },
+                  ]}
+                >
                   <MaterialIcons 
                     name="mail-outline" 
                     size={20} 
-                    color="#95a5a6"
+                    color={colors.textMuted}
                     style={styles.inputIcon}
                   />
                   <TextInput
                     value={email}
                     onChangeText={setEmail}
                     placeholder="name@example.com"
-                    placeholderTextColor="#bdc3c7"
+                    placeholderTextColor={colors.textMuted}
                     keyboardType="email-address"
                     autoCapitalize="none"
-                    style={styles.input}
+                    style={[styles.input, { color: colors.textMain }]}
                   />
                 </View>
               </View>
 
               {/* Password Input */}
               <View style={styles.inputContainer}>
-                <ThemedText style={styles.label}>Password</ThemedText>
-                <View style={styles.inputWrapper}>
+                <ThemedText style={[styles.label, { color: colors.textSubtle }]}>
+                  Password
+                </ThemedText>
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    { backgroundColor: colors.inputBg, borderColor: colors.inputBorder },
+                  ]}
+                >
                   <MaterialIcons 
                     name="lock-outline" 
                     size={20} 
-                    color="#95a5a6"
+                    color={colors.textMuted}
                     style={styles.inputIcon}
                   />
                   <TextInput
                     value={password}
                     onChangeText={setPassword}
                     placeholder="Enter your password"
-                    placeholderTextColor="#bdc3c7"
+                    placeholderTextColor={colors.textMuted}
                     secureTextEntry
-                    style={styles.input}
+                    style={[styles.input, { color: colors.textMain }]}
                   />
                 </View>
                 <Pressable onPress={() => { /* TODO */ }} style={styles.forgotPassRow}>
-                  <ThemedText style={styles.forgotPassText}>Forgot Password?</ThemedText>
+                  <ThemedText style={[styles.forgotPassText, { color: accentColor }]}>
+                    Forgot Password?
+                  </ThemedText>
                 </Pressable>
               </View>
 
@@ -152,6 +173,7 @@ export default function LoginScreen() {
                 disabled={isLoading}
                 style={({ pressed }) => [
                   styles.primaryButton,
+                  { backgroundColor: accentColor, shadowColor: accentColor },
                   pressed && styles.buttonPressed,
                   isLoading && styles.buttonLoading
                 ]}>
@@ -169,9 +191,13 @@ export default function LoginScreen() {
 
             {/* --- Footer Section --- */}
             <View style={styles.footer}>
-              <ThemedText style={styles.footerText}>New to MyEx?</ThemedText>
+              <ThemedText style={[styles.footerText, { color: colors.textMuted }]}>
+                New to MyEx?
+              </ThemedText>
               <Pressable onPress={() => router.navigate('/register')} style={{ padding: 4 }}>
-                <ThemedText style={styles.footerLink}>Create Account</ThemedText>
+                <ThemedText style={[styles.footerLink, { color: accentColor }]}>
+                  Create Account
+                </ThemedText>
               </Pressable>
             </View>
 
@@ -202,11 +228,9 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 24,
-    backgroundColor: accentColor,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
-    shadowColor: accentColor,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
@@ -221,19 +245,16 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
     marginBottom: 8,
-    color: '#2c3e50',
   },
   subtitle: {
     textAlign: 'center',
     fontSize: 14,
-    color: '#7f8c8d',
     lineHeight: 20,
     maxWidth: '80%',
   },
 
   // --- Card Form ---
   card: {
-    backgroundColor: '#fff',
     borderRadius: 24,
     padding: 24,
     shadowColor: '#000',
@@ -250,7 +271,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#34495e',
     marginBottom: 8,
     marginLeft: 4,
   },
@@ -259,18 +279,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     height: 52,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
     borderRadius: 16,
-    backgroundColor: '#f8f9fa',
     paddingHorizontal: 16,
-  },
-  inputWrapperFocused: {
-    borderColor: accentColor,
-    backgroundColor: '#fff',
-    shadowColor: accentColor,
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
   inputIcon: {
     marginRight: 12,
@@ -278,7 +288,6 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    color: '#2c3e50',
     height: '100%',
   },
   
@@ -288,19 +297,16 @@ const styles = StyleSheet.create({
   },
   forgotPassText: {
     fontSize: 12,
-    color: accentColor,
     fontWeight: '600',
   },
 
   // --- Buttons ---
   primaryButton: {
     height: 56,
-    backgroundColor: accentColor,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 12,
-    shadowColor: accentColor,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.25,
     shadowRadius: 12,
@@ -328,14 +334,12 @@ const styles = StyleSheet.create({
   errorBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fcebe6',
     padding: 12,
     borderRadius: 12,
     marginBottom: 16,
     gap: 8,
   },
   errorText: {
-    color: '#c0392b',
     fontSize: 13,
     fontWeight: '500',
   },
@@ -348,11 +352,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   footerText: {
-    color: '#7f8c8d',
     fontSize: 14,
   },
   footerLink: {
-    color: accentColor,
     fontWeight: '700',
     fontSize: 14,
   },

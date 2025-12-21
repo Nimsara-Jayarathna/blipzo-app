@@ -7,7 +7,6 @@ import {
   LayoutAnimation,
   Platform,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -15,23 +14,25 @@ import {
   View,
   Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { register } from '@/api/auth';
 import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/hooks/useAuth';
 import { HomeBackground } from '@/components/home/HomeBackground';
+import { useAppTheme } from '@/context/ThemeContext';
 
 // Enable animations for Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const accentColor = '#3498db';
-
 export default function RegisterScreen() {
   const router = useRouter();
   const { setAuth } = useAuth();
+  const { colors } = useAppTheme();
+  const accentColor = colors.primaryAccent;
   const appIcon = require('../assets/images/icon.png');
 
   const [firstName, setFirstName] = useState('');
@@ -94,50 +95,68 @@ export default function RegisterScreen() {
             
             {/* --- Header --- */}
             <View style={styles.header}>
-              <View style={styles.logoCircle}>
+              <View style={[styles.logoCircle, { backgroundColor: accentColor, shadowColor: accentColor }]}>
                 <Image source={appIcon} style={styles.logoImage} resizeMode="contain" />
               </View>
-              <ThemedText type="title" style={styles.title}>Create Account</ThemedText>
-              <ThemedText style={styles.subtitle}>
+              <ThemedText type="title" style={[styles.title, { color: colors.textMain }]}>
+                Create Account
+              </ThemedText>
+              <ThemedText style={[styles.subtitle, { color: colors.textMuted }]}>
                 Start tracking your finances in seconds.
               </ThemedText>
             </View>
 
             {/* --- Card Form --- */}
-            <View style={styles.card}>
+            <View style={[styles.card, { backgroundColor: colors.surface1 }]}>
               
               {/* Error Banner */}
               {errorMessage && (
-                <View style={styles.errorBanner}>
+                <View style={[styles.errorBanner, { backgroundColor: colors.surface2 }]}>
                   <MaterialIcons name="error-outline" size={20} color="#c0392b" />
-                  <ThemedText style={styles.errorText}>{errorMessage}</ThemedText>
+                  <ThemedText style={[styles.errorText, { color: colors.textMain }]}>
+                    {errorMessage}
+                  </ThemedText>
                 </View>
               )}
 
               {/* Row: First & Last Name */}
               <View style={styles.row}>
                 <View style={styles.fieldGroupHalf}>
-                  <ThemedText style={styles.label}>First Name</ThemedText>
-                  <View style={styles.inputWrapper}>
+                  <ThemedText style={[styles.label, { color: colors.textSubtle }]}>
+                    First Name
+                  </ThemedText>
+                  <View
+                    style={[
+                      styles.inputWrapper,
+                      { backgroundColor: colors.inputBg, borderColor: colors.inputBorder },
+                    ]}
+                  >
                     <TextInput
                       value={firstName}
                       onChangeText={setFirstName}
                       placeholder="Alex"
-                      placeholderTextColor="#bdc3c7"
-                      style={styles.input}
+                      placeholderTextColor={colors.textMuted}
+                      style={[styles.input, { color: colors.textMain }]}
                     />
                   </View>
                 </View>
 
                 <View style={styles.fieldGroupHalf}>
-                  <ThemedText style={styles.label}>Last Name</ThemedText>
-                  <View style={styles.inputWrapper}>
+                  <ThemedText style={[styles.label, { color: colors.textSubtle }]}>
+                    Last Name
+                  </ThemedText>
+                  <View
+                    style={[
+                      styles.inputWrapper,
+                      { backgroundColor: colors.inputBg, borderColor: colors.inputBorder },
+                    ]}
+                  >
                     <TextInput
                       value={lastName}
                       onChangeText={setLastName}
                       placeholder="Doe"
-                      placeholderTextColor="#bdc3c7"
-                      style={styles.input}
+                      placeholderTextColor={colors.textMuted}
+                      style={[styles.input, { color: colors.textMain }]}
                     />
                   </View>
                 </View>
@@ -145,43 +164,57 @@ export default function RegisterScreen() {
 
               {/* Email */}
               <View style={styles.fieldGroup}>
-                <ThemedText style={styles.label}>Email Address</ThemedText>
-                <View style={styles.inputWrapper}>
+                <ThemedText style={[styles.label, { color: colors.textSubtle }]}>
+                  Email Address
+                </ThemedText>
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    { backgroundColor: colors.inputBg, borderColor: colors.inputBorder },
+                  ]}
+                >
                   <MaterialIcons 
                     name="mail-outline" 
                     size={20} 
-                    color="#95a5a6"
+                    color={colors.textMuted}
                     style={styles.inputIcon} 
                   />
                   <TextInput
                     value={email}
                     onChangeText={setEmail}
                     placeholder="you@example.com"
-                    placeholderTextColor="#bdc3c7"
+                    placeholderTextColor={colors.textMuted}
                     keyboardType="email-address"
                     autoCapitalize="none"
-                    style={styles.input}
+                    style={[styles.input, { color: colors.textMain }]}
                   />
                 </View>
               </View>
 
               {/* Password */}
               <View style={styles.fieldGroup}>
-                <ThemedText style={styles.label}>Password</ThemedText>
-                <View style={styles.inputWrapper}>
+                <ThemedText style={[styles.label, { color: colors.textSubtle }]}>
+                  Password
+                </ThemedText>
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    { backgroundColor: colors.inputBg, borderColor: colors.inputBorder },
+                  ]}
+                >
                   <MaterialIcons 
                     name="lock-outline" 
                     size={20} 
-                    color="#95a5a6"
+                    color={colors.textMuted}
                     style={styles.inputIcon} 
                   />
                   <TextInput
                     value={password}
                     onChangeText={setPassword}
                     placeholder="Min. 6 characters"
-                    placeholderTextColor="#bdc3c7"
+                    placeholderTextColor={colors.textMuted}
                     secureTextEntry
-                    style={styles.input}
+                    style={[styles.input, { color: colors.textMain }]}
                   />
                 </View>
               </View>
@@ -192,6 +225,7 @@ export default function RegisterScreen() {
                 disabled={isLoading}
                 style={({ pressed }) => [
                   styles.primaryButton,
+                  { backgroundColor: accentColor, shadowColor: accentColor },
                   pressed && styles.buttonPressed,
                 ]}>
                 {isLoading ? (
@@ -208,9 +242,13 @@ export default function RegisterScreen() {
 
             {/* --- Footer --- */}
             <View style={styles.footer}>
-              <ThemedText style={styles.footerText}>Already have an account?</ThemedText>
+              <ThemedText style={[styles.footerText, { color: colors.textMuted }]}>
+                Already have an account?
+              </ThemedText>
               <Pressable onPress={() => router.navigate('/login')} style={{ padding: 4 }}>
-                <ThemedText style={styles.footerLink}>Log in</ThemedText>
+                <ThemedText style={[styles.footerLink, { color: accentColor }]}>
+                  Log in
+                </ThemedText>
               </Pressable>
             </View>
 
@@ -241,11 +279,9 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 22,
-    backgroundColor: accentColor,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
-    shadowColor: accentColor,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
@@ -260,18 +296,15 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: 'bold',
     marginBottom: 6,
-    color: '#2c3e50',
   },
   subtitle: {
     textAlign: 'center',
     fontSize: 14,
-    color: '#7f8c8d',
     maxWidth: '80%',
   },
 
   // --- Card ---
   card: {
-    backgroundColor: '#fff',
     borderRadius: 24,
     padding: 24,
     shadowColor: '#000',
@@ -296,7 +329,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#34495e',
     marginBottom: 8,
     marginLeft: 4,
   },
@@ -307,18 +339,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     height: 50,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
     borderRadius: 14,
-    backgroundColor: '#f8f9fa',
     paddingHorizontal: 14,
-  },
-  inputFocused: {
-    borderColor: accentColor,
-    backgroundColor: '#fff',
-    shadowColor: accentColor,
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
   inputIcon: {
     marginRight: 10,
@@ -326,7 +348,6 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 15,
-    color: '#2c3e50',
     height: '100%',
   },
 
@@ -334,14 +355,12 @@ const styles = StyleSheet.create({
   errorBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fcebe6',
     padding: 12,
     borderRadius: 12,
     marginBottom: 16,
     gap: 8,
   },
   errorText: {
-    color: '#c0392b',
     fontSize: 13,
     fontWeight: '500',
     flex: 1,
@@ -350,12 +369,10 @@ const styles = StyleSheet.create({
   // Button
   primaryButton: {
     height: 54,
-    backgroundColor: accentColor,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 8,
-    shadowColor: accentColor,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.25,
     shadowRadius: 12,
@@ -384,11 +401,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   footerText: {
-    color: '#7f8c8d',
     fontSize: 14,
   },
   footerLink: {
-    color: accentColor,
     fontWeight: '700',
     fontSize: 14,
   },
