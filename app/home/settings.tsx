@@ -132,6 +132,7 @@ export default function SettingsScreen() {
     >
       <ScrollView
         contentContainerStyle={homeContentStyles.scrollContent}
+        contentInsetAdjustmentBehavior="never"
         keyboardShouldPersistTaps="handled"
       >
         <Pressable
@@ -218,14 +219,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
-    minHeight: 20,
+    marginBottom: 8,
+    minHeight: 0,
   },
   backLink: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   backIconCircle: {
     width: 32,
