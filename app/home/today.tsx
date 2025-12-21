@@ -15,27 +15,19 @@ import { ThemedText } from '@/components/themed-text';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
 import type { Transaction } from '@/types';
-import { SummaryCard } from '@/components/home/today/SummaryCard';
 import { TransactionRow } from '@/components/home/TransactionRow';
-import { HOME_LIST_BOTTOM_PADDING } from '@/components/home/layout/spacing';
+import { HOME_LIST_BOTTOM_PADDING, HOME_LIST_ITEM_GAP } from '@/components/home/layout/spacing';
 import { HomeContent } from '@/components/home/layout/HomeContent';
-import { StickyHeaderShell } from '@/components/home/layout/StickyHeaderShell';
+import { HomeStickyHeader } from '@/components/home/layout/HomeStickyHeader';
 
 const transactionKey = ['transactions'];
-const SUMMARY_EXPANDED_HEIGHT = 224;
-const SUMMARY_COLLAPSED_HEIGHT = 56;
-const SUMMARY_LIST_GAP = 20;
 
 export default function TodayScreen() {
   const { isAuthenticated } = useAuth();
-  const { colors, resolvedTheme } = useAppTheme();
+  const { colors } = useAppTheme();
   const queryClient = useQueryClient();
   const todayDate = dayjs().format('YYYY-MM-DD');
   const [openNoteId, setOpenNoteId] = useState<string | null>(null);
-  const [summaryHeight, setSummaryHeight] = useState(0);
-  const expenseColor = resolvedTheme === 'dark' ? '#ef4444' : '#dc2626';
-  const formatMoney = (val: number) =>
-    `$${(Number.isFinite(val) ? Math.abs(val) : 0).toFixed(2)}`;
 
   const {
     data: todayData,
@@ -114,39 +106,7 @@ export default function TodayScreen() {
 
   return (
     <HomeContent bleedBottom>
-      <StickyHeaderShell
-        expandedHeight={Math.max(SUMMARY_EXPANDED_HEIGHT, summaryHeight + SUMMARY_LIST_GAP)}
-        collapsedHeight={SUMMARY_COLLAPSED_HEIGHT}
-        contentTopPadding={SUMMARY_LIST_GAP}
-        renderExpanded={() => (
-          <View
-            style={styles.summaryWrapper}
-            onLayout={(event) => setSummaryHeight(event.nativeEvent.layout.height)}
-          >
-            <SummaryCard income={income} expense={expense} balance={balance} />
-          </View>
-        )}
-        renderCollapsed={() => (
-          <View
-            style={[
-              styles.summaryCollapsed,
-              { backgroundColor: colors.surfaceGlassThick, borderColor: colors.borderGlass },
-            ]}
-          >
-            <ThemedText style={[styles.collapsedLabel, { color: colors.textSubtle }]}>
-              Today's Balance
-            </ThemedText>
-            <ThemedText
-              style={[
-                styles.collapsedValue,
-                { color: balance >= 0 ? colors.primaryAccent : expenseColor },
-              ]}
-            >
-              {balance < 0 ? '-' : ''}{formatMoney(balance)}
-            </ThemedText>
-          </View>
-        )}
-      >
+      <HomeStickyHeader variant="today" income={income} expense={expense} balance={balance}>
         {({ onScroll, contentContainerStyle }) => (
           <Pressable style={styles.listWrapper} onPress={() => setOpenNoteId(null)}>
             <Animated.FlatList
@@ -186,7 +146,7 @@ export default function TodayScreen() {
             />
           </Pressable>
         )}
-      </StickyHeaderShell>
+      </HomeStickyHeader>
     </HomeContent>
   );
 }
@@ -194,26 +154,6 @@ export default function TodayScreen() {
 const styles = StyleSheet.create({
   listWrapper: {
     flex: 1,
-  },
-  summaryWrapper: {
-    marginBottom: 0,
-  },
-  summaryCollapsed: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: SUMMARY_COLLAPSED_HEIGHT,
-    borderRadius: 18,
-    borderWidth: 1,
-    paddingHorizontal: 16,
-  },
-  collapsedLabel: {
-    fontSize: 11,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-  },
-  collapsedValue: {
-    fontSize: 18,
-    fontWeight: '700',
   },
   center: {
     flex: 1,
@@ -235,7 +175,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: HOME_LIST_BOTTOM_PADDING,
-    gap: 12,
+    gap: HOME_LIST_ITEM_GAP,
   },
   listEmptyContent: {
     flexGrow: 1,

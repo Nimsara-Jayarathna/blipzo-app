@@ -5,7 +5,7 @@ import Animated from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/themed-text';
 import { useAppTheme } from '@/context/ThemeContext';
-import { HOME_LIST_BOTTOM_PADDING } from '@/components/home/layout/spacing';
+import { HOME_LIST_BOTTOM_PADDING, HOME_LIST_ITEM_GAP } from '@/components/home/layout/spacing';
 import type { Transaction } from '@/types';
 import type { GroupedSection } from '@/hooks/home/useTransactionLogic';
 import { TransactionRow } from '@/components/home/TransactionRow';
@@ -122,7 +122,7 @@ export function TransactionList({
 }
 
 const styles = StyleSheet.create({
-  listContent: { paddingBottom: HOME_LIST_BOTTOM_PADDING, gap: 12 },
+  listContent: { paddingBottom: HOME_LIST_BOTTOM_PADDING, gap: HOME_LIST_ITEM_GAP },
   center: { padding: 40, alignItems: 'center' },
   // Section Header
   sectionHeader: {

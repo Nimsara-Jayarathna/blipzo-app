@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 18,
     borderWidth: 1,
-    marginBottom: 8,
+    marginBottom: 4,
     width: '100%',
   },
   iconBadge: {

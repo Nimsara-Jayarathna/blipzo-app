@@ -5,12 +5,9 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { deleteTransaction, getTransactionsFiltered, type TransactionFilters } from '@/api/transactions';
 import { useAuth } from '@/hooks/useAuth';
-import { useAppTheme } from '@/context/ThemeContext';
-import { ThemedText } from '@/components/themed-text';
 import { TransactionList } from '@/components/home/all/TransactionList';
-import SmartFilterHeader from '@/components/home/all/SmartFilterHeader';
 import { HomeContent } from '@/components/home/layout/HomeContent';
-import { StickyHeaderShell } from '@/components/home/layout/StickyHeaderShell';
+import { HomeStickyHeader } from '@/components/home/layout/HomeStickyHeader';
 import {
   type AllFilters,
   type Grouping,
@@ -19,12 +16,8 @@ import {
 } from '@/hooks/home/useTransactionLogic';
 import { AllFiltersSheet } from '@/components/home/all/AllFiltersSheet';
 
-const FILTER_EXPANDED_HEIGHT = 196;
-const FILTER_COLLAPSED_HEIGHT = 52;
-
 export default function AllTransactionsScreen() {
   const { isAuthenticated } = useAuth();
-  const { colors } = useAppTheme();
   const queryClient = useQueryClient();
   const today = dayjs().format('YYYY-MM-DD');
 
@@ -97,38 +90,13 @@ export default function AllTransactionsScreen() {
 
   return (
     <HomeContent bleedBottom>
-      <StickyHeaderShell
-        expandedHeight={FILTER_EXPANDED_HEIGHT}
-        collapsedHeight={FILTER_COLLAPSED_HEIGHT}
-        renderExpanded={() => (
-          <View style={styles.summaryWrapper}>
-            <SmartFilterHeader
-              filters={filters}
-              grouping={grouping}
-              isLoading={isLoading}
-              onOpenFilters={() => setIsFiltersOpen(true)}
-            />
-          </View>
-        )}
-        renderCollapsed={() => (
-          <Pressable
-            onPress={() => setIsFiltersOpen(true)}
-            style={[
-              styles.filterCollapsed,
-              { backgroundColor: colors.surfaceGlassThick, borderColor: colors.borderGlass },
-            ]}
-          >
-            <ThemedText style={[styles.collapsedLabel, { color: colors.textSubtle }]}>
-              Filters summary
-            </ThemedText>
-            <ThemedText
-              style={[styles.collapsedValue, { color: colors.textMain }]}
-              numberOfLines={1}
-            >
-              {collapsedSummary}
-            </ThemedText>
-          </Pressable>
-        )}
+      <HomeStickyHeader
+        variant="all"
+        filters={filters}
+        grouping={grouping}
+        isLoading={isLoading}
+        onOpenFilters={() => setIsFiltersOpen(true)}
+        collapsedSummary={collapsedSummary}
       >
         {({ onScroll, contentContainerStyle }) => (
           <Pressable style={styles.listWrapper} onPress={() => setOpenNoteId(null)}>
@@ -147,7 +115,7 @@ export default function AllTransactionsScreen() {
             />
           </Pressable>
         )}
-      </StickyHeaderShell>
+      </HomeStickyHeader>
 
       <AllFiltersSheet
         visible={isFiltersOpen}
@@ -165,26 +133,6 @@ export default function AllTransactionsScreen() {
 }
 
 const styles = StyleSheet.create({
-  summaryWrapper: {
-    marginBottom: 12,
-  },
-  filterCollapsed: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: FILTER_COLLAPSED_HEIGHT,
-    borderRadius: 18,
-    borderWidth: 1,
-    paddingHorizontal: 16,
-  },
-  collapsedLabel: {
-    fontSize: 11,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-  },
-  collapsedValue: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
   listWrapper: {
     flex: 1,
   },
