@@ -36,11 +36,12 @@ export function HomeTabBar({ state, descriptors, navigation, onAddPress }: HomeT
   );
   const todayRoute = visibleRoutes.find((route: any) => route.name === 'today');
   const allRoute = visibleRoutes.find((route: any) => route.name === 'all');
+  const activeRouteName = state.routes[state.index].name;
+  const showPill = activeRouteName === 'today' || activeRouteName === 'all';
 
   const slotWidth = width / 3;
 
   useEffect(() => {
-    const activeRouteName = state.routes[state.index].name;
     const activeSlot = activeRouteName === 'today' ? 0 : activeRouteName === 'all' ? 2 : -1;
 
     if (activeSlot >= 0 && slotWidth > 0) {
@@ -100,7 +101,7 @@ export function HomeTabBar({ state, descriptors, navigation, onAddPress }: HomeT
             style={StyleSheet.absoluteFill}
           />
         </View>
-        {width > 0 && (
+        {width > 0 && showPill && (
           <Animated.View
             pointerEvents="none"
             style={[
