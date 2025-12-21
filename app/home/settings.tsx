@@ -8,7 +8,10 @@ import {
   StyleSheet,
   TouchableOpacity,
   View,
+  Pressable,
 } from 'react-native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useRouter } from 'expo-router';
 
 import {
   createCategory,
@@ -33,8 +36,9 @@ const getCategoryId = (cat: Category) => cat._id ?? cat.id ?? '';
 
 export default function SettingsScreen() {
   const { isAuthenticated } = useAuth();
-  const { resolvedTheme } = useAppTheme();
+  const { resolvedTheme, colors } = useAppTheme();
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   // State
   const [activeTab, setActiveTab] = useState<'income' | 'expense'>('income');
@@ -130,6 +134,24 @@ export default function SettingsScreen() {
         contentContainerStyle={homeContentStyles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
+        <Pressable
+          onPress={() => router.navigate('/home/profile')}
+          style={styles.backLink}
+          accessibilityRole="button"
+          accessibilityLabel="Back to profile"
+        >
+          <View
+            style={[
+              styles.backIconCircle,
+              { backgroundColor: colors.surfaceGlass, borderColor: colors.borderGlass },
+            ]}
+          >
+            <MaterialIcons name="chevron-left" size={18} color={colors.textMain} />
+          </View>
+          <ThemedText style={[styles.backLabel, { color: colors.textMain }]}>
+            Profile
+          </ThemedText>
+        </Pressable>
         {/* Header */}
         <View style={styles.headerRow}>
           {createMutation.isPending && <ActivityIndicator size="small" />}
@@ -198,6 +220,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
     minHeight: 20,
+  },
+  backLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  backIconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  backLabel: {
+    fontSize: 16,
+    fontWeight: '500',
   },
   errorBox: {
     padding: 10,

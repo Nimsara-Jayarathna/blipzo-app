@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { logoutSession } from '@/api/auth';
 import { ThemedText } from '@/components/themed-text';
@@ -11,6 +13,8 @@ import { HomeContent } from '@/components/home/layout/HomeContent';
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
   const { colors } = useAppTheme();
+  const router = useRouter();
+  const [activeSection, setActiveSection] = useState<'menu' | 'profile'>('menu');
 
   const handleLogout = async () => {
     try {
@@ -23,21 +27,95 @@ export default function ProfileScreen() {
 
   return (
     <HomeContent>
-      {/* TODO: Implement full profile management (edit name, avatar, etc.) */}
-      <View
-        style={[
-          styles.card,
-          { backgroundColor: colors.surfaceGlassThick, borderColor: colors.borderGlass },
-        ]}>
-        <ThemedText style={[styles.label, { color: colors.textMuted }]}>Name</ThemedText>
-        <ThemedText style={styles.value}>{user?.name ?? 'Not set'}</ThemedText>
+      {activeSection === 'menu' ? (
+        <>
+          <View
+            style={[
+              styles.groupCard,
+              { backgroundColor: colors.surfaceGlassThick, borderColor: colors.borderGlass },
+            ]}
+          >
+            <Pressable
+              onPress={() => setActiveSection('profile')}
+              style={styles.listRow}
+              accessibilityRole="button"
+              accessibilityLabel="Profile settings"
+            >
+              <View style={styles.listRowLeft}>
+                <View style={[styles.iconBadge, { backgroundColor: colors.surface2 }]}>
+                  <MaterialIcons name="person" size={18} color={colors.textMuted} />
+                </View>
+                <ThemedText style={styles.listLabel}>Profile settings</ThemedText>
+              </View>
+              <MaterialIcons name="chevron-right" size={20} color={colors.textMuted} />
+            </Pressable>
+            <View style={[styles.rowDivider, { backgroundColor: colors.borderSoft }]} />
+            <Pressable
+              onPress={() => router.navigate('/home/settings')}
+              style={styles.listRow}
+              accessibilityRole="button"
+              accessibilityLabel="Category settings"
+            >
+              <View style={styles.listRowLeft}>
+                <View style={[styles.iconBadge, { backgroundColor: colors.surface2 }]}>
+                  <MaterialIcons name="category" size={18} color={colors.textMuted} />
+                </View>
+                <ThemedText style={styles.listLabel}>Category settings</ThemedText>
+              </View>
+              <MaterialIcons name="chevron-right" size={20} color={colors.textMuted} />
+            </Pressable>
+          </View>
 
-        <ThemedText style={[styles.label, { color: colors.textMuted }]}>Email</ThemedText>
-        <ThemedText style={styles.value}>{user?.email ?? 'Not set'}</ThemedText>
+          {/* TODO: Implement full profile management (edit name, avatar, etc.) */}
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: colors.surfaceGlassThick, borderColor: colors.borderGlass },
+            ]}
+          >
+            <ThemedText style={[styles.label, { color: colors.textMuted }]}>Theme</ThemedText>
+            <ThemeSwitcher />
+          </View>
+        </>
+      ) : (
+        <>
+          <View style={styles.sectionHeader}>
+            <Pressable
+              onPress={() => setActiveSection('menu')}
+              style={styles.backLink}
+              accessibilityRole="button"
+              accessibilityLabel="Back to profile menu"
+            >
+              <View
+                style={[
+                  styles.backIconCircle,
+                  { backgroundColor: colors.surfaceGlass, borderColor: colors.borderGlass },
+                ]}
+              >
+                <MaterialIcons name="chevron-left" size={18} color={colors.textMain} />
+              </View>
+              <ThemedText style={[styles.backLabel, { color: colors.textMain }]}>
+                Profile
+              </ThemedText>
+            </Pressable>
+          </View>
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: colors.surfaceGlassThick, borderColor: colors.borderGlass },
+            ]}
+          >
+            <ThemedText style={[styles.label, { color: colors.textMuted }]}>Name</ThemedText>
+            <ThemedText style={styles.value}>{user?.name ?? 'Not set'}</ThemedText>
 
-        <ThemedText style={[styles.label, { color: colors.textMuted }]}>Theme</ThemedText>
-        <ThemeSwitcher />
-      </View>
+            <ThemedText style={[styles.label, { color: colors.textMuted }]}>Email</ThemedText>
+            <ThemedText style={styles.value}>{user?.email ?? 'Not set'}</ThemedText>
+
+            <ThemedText style={[styles.label, { color: colors.textMuted }]}>Theme</ThemedText>
+            <ThemeSwitcher />
+          </View>
+        </>
+      )}
 
       <View style={styles.footer}>
         <Pressable
@@ -47,7 +125,7 @@ export default function ProfileScreen() {
           accessibilityHint="Signs you out of your MyEx account"
           style={({ pressed }) => [
             styles.logoutButton,
-            { backgroundColor: colors.primaryAccent },
+            { backgroundColor: '#ef4444' },
             pressed && styles.logoutButtonPressed,
           ]}>
           <ThemedText style={styles.logoutText}>Log out</ThemedText>
@@ -58,6 +136,62 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  groupCard: {
+    borderRadius: 20,
+    borderWidth: 1,
+    paddingVertical: 6,
+    marginBottom: 16,
+  },
+  listRow: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  listRowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  iconBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  listLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  rowDivider: {
+    height: 1,
+    marginHorizontal: 16,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  backLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 4,
+  },
+  backIconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  backLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
   card: {
     borderRadius: 24,
     paddingHorizontal: 20,

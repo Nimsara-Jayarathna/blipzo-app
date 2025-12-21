@@ -13,7 +13,7 @@ export function HomeHeader({ user }: HomeHeaderProps) {
 
   return (
     <View style={{ paddingTop: insets.top }}>
-      <ProfileHeader user={user} showSettingsButton />
+      <ProfileHeader user={user} />
     </View>
   );
 }
