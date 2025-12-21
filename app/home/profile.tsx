@@ -6,11 +6,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
-import {
-  HOME_CONTENT_PADDING_H,
-  HOME_CONTENT_PADDING_TOP,
-  HOME_CONTENT_PADDING_BOTTOM,
-} from '@/components/home/layout/spacing';
+import { HomeContent } from '@/components/home/layout/HomeContent';
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
@@ -26,7 +22,7 @@ export default function ProfileScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <HomeContent>
       {/* TODO: Implement full profile management (edit name, avatar, etc.) */}
       <View
         style={[
@@ -57,20 +53,11 @@ export default function ProfileScreen() {
           <ThemedText style={styles.logoutText}>Log out</ThemedText>
         </Pressable>
       </View>
-    </View>
+    </HomeContent>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-  },
-  container: {
-    flex: 1,
-    paddingHorizontal: HOME_CONTENT_PADDING_H,
-    paddingTop: HOME_CONTENT_PADDING_TOP,
-    paddingBottom: HOME_CONTENT_PADDING_BOTTOM,
-  },
   card: {
     borderRadius: 24,
     paddingHorizontal: 20,

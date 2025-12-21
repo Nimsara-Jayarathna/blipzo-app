@@ -7,10 +7,7 @@ import { getTransactionsFiltered, type TransactionFilters } from '@/api/transact
 import { useAuth } from '@/hooks/useAuth';
 import { TransactionList } from '@/components/home/all/TransactionList';
 import SmartFilterHeader from '@/components/home/all/SmartFilterHeader';
-import {
-  HOME_CONTENT_PADDING_H,
-  HOME_CONTENT_PADDING_TOP,
-} from '@/components/home/layout/spacing';
+import { HomeContent } from '@/components/home/layout/HomeContent';
 import {
   type AllFilters,
   type Grouping,
@@ -79,7 +76,7 @@ export default function AllTransactionsScreen() {
     grouping === 'none' ? 'None' : grouping === 'month' ? 'Month' : 'Category';
 
   return (
-    <View style={styles.container}>
+    <HomeContent>
       <View style={styles.summaryWrapper}>
         <SmartFilterHeader
           filters={filters}
@@ -106,16 +103,11 @@ export default function AllTransactionsScreen() {
           setGrouping(nextGrouping);
         }}
       />
-    </View>
+    </HomeContent>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: HOME_CONTENT_PADDING_H,
-    paddingTop: HOME_CONTENT_PADDING_TOP,
-  },
   summaryWrapper: {
     marginBottom: 12,
   },

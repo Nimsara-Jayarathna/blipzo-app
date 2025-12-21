@@ -4,6 +4,7 @@ import { FlatList, SectionList, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { useAppTheme } from '@/context/ThemeContext';
+import { HOME_LIST_BOTTOM_PADDING } from '@/components/home/layout/spacing';
 import type { Transaction } from '@/types';
 import type { GroupedSection } from '@/hooks/home/useTransactionLogic';
 import { TransactionRow } from './TransactionRow';
@@ -76,7 +77,7 @@ export function TransactionList({ data, groupedData, HeaderComponent }: Props) {
 }
 
 const styles = StyleSheet.create({
-  listContent: { paddingBottom: 140, gap: 12 },
+  listContent: { paddingBottom: HOME_LIST_BOTTOM_PADDING, gap: 12 },
   center: { padding: 40, alignItems: 'center' },
   // Section Header
   sectionHeader: {

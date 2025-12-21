@@ -21,11 +21,7 @@ import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
 import type { Category } from '@/types';
 
-import {
-  HOME_CONTENT_PADDING_H,
-  HOME_CONTENT_PADDING_TOP,
-  HOME_CONTENT_PADDING_BOTTOM,
-} from '@/components/home/layout/spacing';
+import { homeContentStyles } from '@/components/home/layout/HomeContent';
 
 // Importing components directly from their files
 import { CategoryTabs } from '@/components/home/settings/CategoryTabs';
@@ -131,7 +127,7 @@ export default function SettingsScreen() {
       style={styles.screen}
     >
       <ScrollView
-        contentContainerStyle={styles.container}
+        contentContainerStyle={homeContentStyles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
         {/* Header */}
@@ -195,11 +191,6 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-  },
-  container: {
-    paddingHorizontal: HOME_CONTENT_PADDING_H,
-    paddingTop: HOME_CONTENT_PADDING_TOP,
-    paddingBottom: HOME_CONTENT_PADDING_BOTTOM,
   },
   headerRow: {
     flexDirection: 'row',

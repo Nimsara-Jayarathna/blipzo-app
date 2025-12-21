@@ -16,11 +16,8 @@ import { useAuth } from '@/hooks/useAuth';
 import type { Transaction } from '@/types';
 import { SummaryCard } from '@/components/home/today/SummaryCard';
 import { TransactionRow } from '@/components/home/today/TransactionRow';
-import {
-  HOME_CONTENT_PADDING_H,
-  HOME_CONTENT_PADDING_TOP,
-  HOME_LIST_BOTTOM_PADDING,
-} from '@/components/home/layout/spacing';
+import { HOME_LIST_BOTTOM_PADDING } from '@/components/home/layout/spacing';
+import { HomeContent } from '@/components/home/layout/HomeContent';
 
 const transactionKey = ['transactions'];
 
@@ -69,7 +66,7 @@ export default function TodayScreen() {
   const getKey = (item: Transaction) => item._id ?? item.id ?? Math.random().toString();
 
   return (
-    <View style={styles.container}>
+    <HomeContent>
       <View style={styles.summaryWrapper}>
         <SummaryCard income={income} expense={expense} balance={balance} />
       </View>
@@ -114,16 +111,11 @@ export default function TodayScreen() {
           renderItem={({ item }) => <TransactionRow transaction={item} />}
         />
       )}
-    </View>
+    </HomeContent>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: HOME_CONTENT_PADDING_H,
-    paddingTop: HOME_CONTENT_PADDING_TOP,
-  },
   summaryWrapper: {
     marginBottom: 20,
   },
