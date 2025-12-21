@@ -1,9 +1,15 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { useAppTheme } from '@/context/ThemeContext';
 import {
@@ -19,15 +25,36 @@ type HomeTabBarProps = {
 };
 
 export function HomeTabBar({ state, descriptors, navigation, onAddPress }: HomeTabBarProps) {
+  const [width, setWidth] = useState(0);
   const { colors, resolvedTheme } = useAppTheme();
   const insets = useSafeAreaInsets();
   const extraBottom = Math.max(insets.bottom, 0);
+  const translateX = useSharedValue(0);
 
   const visibleRoutes = state.routes.filter((route: any) =>
     ['today', 'all'].includes(route.name)
   );
   const todayRoute = visibleRoutes.find((route: any) => route.name === 'today');
   const allRoute = visibleRoutes.find((route: any) => route.name === 'all');
+
+  const slotWidth = width / 3;
+
+  useEffect(() => {
+    const activeRouteName = state.routes[state.index].name;
+    const activeSlot = activeRouteName === 'today' ? 0 : activeRouteName === 'all' ? 2 : -1;
+
+    if (activeSlot >= 0 && slotWidth > 0) {
+      translateX.value = withTiming(activeSlot * slotWidth, {
+        duration: 250,
+        easing: Easing.out(Easing.cubic),
+      });
+    }
+  }, [slotWidth, state.index, state.routes, translateX]);
+
+  const pillStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value + 6 }],
+    width: Math.max(slotWidth - 12, 0),
+  }));
 
   return (
     <View
@@ -64,12 +91,30 @@ export function HomeTabBar({ state, descriptors, navigation, onAddPress }: HomeT
             height: HOME_TAB_BAR_HEIGHT,
           },
         ]}
+        onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
       >
-        <BlurView
-          intensity={resolvedTheme === 'dark' ? 45 : 60}
-          tint={resolvedTheme === 'dark' ? 'dark' : 'light'}
-          style={StyleSheet.absoluteFill}
-        />
+        <View style={styles.glassLayer}>
+          <BlurView
+            intensity={resolvedTheme === 'dark' ? 45 : 60}
+            tint={resolvedTheme === 'dark' ? 'dark' : 'light'}
+            style={StyleSheet.absoluteFill}
+          />
+        </View>
+        {width > 0 && (
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.activePill,
+              {
+                backgroundColor:
+                  resolvedTheme === 'dark'
+                    ? 'rgba(96, 165, 250, 0.18)'
+                    : 'rgba(59, 130, 246, 0.14)',
+              },
+              pillStyle,
+            ]}
+          />
+        )}
 
         {todayRoute && (() => {
           const route = todayRoute;
@@ -115,15 +160,15 @@ export function HomeTabBar({ state, descriptors, navigation, onAddPress }: HomeT
 
         <Pressable
           onPress={onAddPress}
-          style={styles.tabItem}
+          style={styles.addItem}
           accessibilityRole="button"
           accessibilityLabel="Add transaction"
           accessibilityHint="Opens the add transaction form"
         >
-          <View style={styles.iconContainer}>
-            <MaterialIcons name="add-circle-outline" size={24} color={colors.primaryAccent} />
-            <Text style={[styles.tabLabel, { color: colors.textMuted }]}>Add</Text>
+          <View style={[styles.addButton, { backgroundColor: colors.primaryAccent }]}>
+            <MaterialIcons name="add" size={24} color="#ffffff" />
           </View>
+          <Text style={[styles.tabLabel, { color: colors.textMuted }]}>Add</Text>
         </Pressable>
 
         {allRoute && (() => {
@@ -191,13 +236,45 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 20,
     elevation: 12,
+    overflow: 'visible',
+  },
+  glassLayer: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 24,
     overflow: 'hidden',
+  },
+  activePill: {
+    position: 'absolute',
+    top: 6,
+    bottom: 6,
+    borderRadius: 18,
+    zIndex: 0,
   },
   tabItem: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1,
+  },
+  addItem: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 2,
+    gap: 4,
+  },
+  addButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: -10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 8,
   },
   iconContainer: {
     alignItems: 'center',
