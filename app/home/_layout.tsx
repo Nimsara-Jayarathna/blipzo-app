@@ -8,17 +8,23 @@ import Animated, {
   withTiming,
   Easing 
 } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
+import { ProfileHeader } from '@/components/ProfileHeader';
+
+const TAB_BAR_HEIGHT = 60;
 
 function CustomTabBar({ state, descriptors, navigation }: any) {
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const { colors, resolvedTheme } = useAppTheme();
+  const insets = useSafeAreaInsets();
+  const extraBottom = Math.max(insets.bottom, 8);
   
   // Filter to only show specific tabs
   const visibleRoutes = state.routes.filter((route: any) => 
-    ['today', 'all', 'settings'].includes(route.name)
+    ['today', 'all'].includes(route.name)
   );
 
   const tabWidth = dimensions.width / visibleRoutes.length;
@@ -52,6 +58,8 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
           backgroundColor: colors.surfaceGlassThick,
           borderColor: colors.borderGlass,
           shadowColor: colors.textMain,
+          height: TAB_BAR_HEIGHT + extraBottom,
+          paddingBottom: extraBottom,
         },
       ]}
       onLayout={(e) => setDimensions(e.nativeEvent.layout)}
@@ -122,7 +130,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
 
 export default function HomeTabLayout() {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -135,11 +143,19 @@ export default function HomeTabLayout() {
   return (
     <Tabs
       tabBar={(props) => <CustomTabBar {...props} />}
-      screenOptions={{ headerShown: false }}
+      screenOptions={{
+        header: () => (
+          <ProfileHeader
+            user={user ? { name: user.name ?? user.email, avatarUrl: undefined } : null}
+            showSettingsButton
+          />
+        ),
+        headerShadowVisible: false,
+      }}
     >
       <Tabs.Screen name="today" options={{ title: 'Today' }} />
       <Tabs.Screen name="all" options={{ title: 'All' }} />
-      <Tabs.Screen name="settings" options={{ title: 'Settings' }} />
+      <Tabs.Screen name="settings" options={{ title: 'Settings', href: null }} />
       <Tabs.Screen name="profile" options={{ href: null }} />
     </Tabs>
   );
@@ -147,12 +163,8 @@ export default function HomeTabLayout() {
 
 const styles = StyleSheet.create({
   tabBarContainer: {
-    position: 'absolute',
-    bottom: 18,
-    left: 16,
-    right: 16,
     flexDirection: 'row',
-    height: 60,
+    height: TAB_BAR_HEIGHT,
     borderRadius: 24,
     backgroundColor: 'rgba(255,255,255,0.88)',
     borderWidth: 1,
@@ -163,6 +175,9 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 12,
     overflow: 'hidden',
+    marginHorizontal: 16,
+    marginBottom: 12,
+    marginTop: 6,
   },
   slidingBubble: {
     position: 'absolute',

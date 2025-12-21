@@ -3,7 +3,6 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { logoutSession } from '@/api/auth';
 import { ThemedText } from '@/components/themed-text';
-import { ProfileHeader } from '@/components/ProfileHeader';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -24,8 +23,6 @@ export default function ProfileScreen() {
 
   return (
     <HomeBackground>
-      <ProfileHeader user={user ? { name: user.name ?? user.email, avatarUrl: undefined } : null} />
-
       <View style={styles.container}>
         {/* TODO: Implement full profile management (edit name, avatar, etc.) */}
         <View

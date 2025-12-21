@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { getTransactionsFiltered, type TransactionFilters } from '@/api/transactions';
-import { ProfileHeader } from '@/components/ProfileHeader';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
 import { ThemedText } from '@/components/themed-text';
@@ -21,7 +20,7 @@ import {
 import { AllFiltersSheet } from '@/components/home/all/AllFiltersSheet';
 
 export default function AllTransactionsScreen() {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { colors } = useAppTheme();
   const today = dayjs().format('YYYY-MM-DD');
 
@@ -83,12 +82,6 @@ export default function AllTransactionsScreen() {
 
   return (
     <HomeBackground>
-      <ProfileHeader
-        user={
-          user ? { name: user.name ?? user.email, avatarUrl: undefined } : null
-        }
-      />
-
       <View style={styles.container}>
         <View style={styles.summaryWrapper}>
           <SmartFilterHeader

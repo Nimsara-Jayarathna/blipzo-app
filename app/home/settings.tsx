@@ -16,7 +16,6 @@ import {
   getCategories,
   setDefaultCategory,
 } from '@/api/categories';
-import { ProfileHeader } from '@/components/ProfileHeader';
 import { ThemedText } from '@/components/themed-text';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -33,7 +32,7 @@ const categoryKey = ['categories'];
 const getCategoryId = (cat: Category) => cat._id ?? cat.id ?? '';
 
 export default function SettingsScreen() {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { colors, resolvedTheme } = useAppTheme();
   const queryClient = useQueryClient();
 
@@ -124,10 +123,6 @@ export default function SettingsScreen() {
 
   return (
     <HomeBackground>
-      <ProfileHeader
-        user={user ? { name: user.name ?? user.email, avatarUrl: undefined } : null}
-      />
-
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.screen}

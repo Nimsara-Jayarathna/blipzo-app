@@ -7,8 +7,9 @@ import {
   type TextStyle,
   type ViewStyle,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -24,6 +25,7 @@ type ProfileHeaderProps = {
   containerStyle?: ViewStyle;
   contentStyle?: ViewStyle;
   nameStyle?: TextStyle;
+  showSettingsButton?: boolean;
 };
 
 export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
@@ -31,12 +33,18 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   containerStyle,
   contentStyle,
   nameStyle,
+  showSettingsButton = false,
 }) => {
   const router = useRouter();
   const { colors } = useAppTheme();
+  const insets = useSafeAreaInsets();
 
   const handlePressProfile = () => {
     router.navigate('/home/profile');
+  };
+
+  const handlePressSettings = () => {
+    router.navigate('/home/settings');
   };
 
   const displayName = user?.name?.trim() || 'Guest';
@@ -48,7 +56,13 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
     .join('');
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.surface1 }, containerStyle]}>
+    <View
+      style={[
+        styles.safeArea,
+        { backgroundColor: colors.surface1, paddingTop: insets.top },
+        containerStyle,
+      ]}
+    >
       <ThemedView
         style={[
           styles.headerShadowWrapper,
@@ -79,9 +93,22 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
               <ThemedText style={[styles.name, nameStyle]}>{displayName}</ThemedText>
             </View>
           </Pressable>
+          {showSettingsButton ? (
+            <Pressable
+              onPress={handlePressSettings}
+              style={[
+                styles.settingsButton,
+                { backgroundColor: colors.surfaceGlassThick, borderColor: colors.borderSoft },
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Open settings"
+              accessibilityHint="Opens your settings">
+              <MaterialIcons name="settings" size={18} color={colors.textMain} />
+            </Pressable>
+          ) : null}
         </ThemedView>
       </ThemedView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -99,6 +126,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 10,
+    justifyContent: 'space-between',
+  },
+  settingsButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
   },
   leftContent: {
     flexDirection: 'row',

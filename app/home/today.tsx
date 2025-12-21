@@ -10,7 +10,6 @@ import {
   RefreshControl 
 } from 'react-native';
 
-import { ProfileHeader } from '@/components/ProfileHeader';
 import { getTransactionsFiltered, type TransactionFilters } from '@/api/transactions';
 import { ThemedText } from '@/components/themed-text';
 import { useAppTheme } from '@/context/ThemeContext';
@@ -24,7 +23,7 @@ import { HomeBackground } from '@/components/home/HomeBackground';
 const transactionKey = ['transactions'];
 
 export default function TodayScreen() {
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { colors } = useAppTheme();
   const todayDate = dayjs().format('YYYY-MM-DD');
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -70,8 +69,6 @@ export default function TodayScreen() {
 
   return (
     <HomeBackground>
-      <ProfileHeader user={user ? { name: user.name ?? user.email, avatarUrl: undefined } : null} />
-
       <View style={styles.container}>
         <View style={styles.summaryWrapper}>
           <SummaryCard income={income} expense={expense} balance={balance} />
