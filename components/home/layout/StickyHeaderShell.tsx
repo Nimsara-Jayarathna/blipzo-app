@@ -15,6 +15,7 @@ type StickyHeaderShellProps = {
   renderExpanded: () => ReactNode;
   renderCollapsed: () => ReactNode;
   contentTopPadding?: number;
+  disableTransition?: boolean;
   children: (props: {
     onScroll: ReturnType<typeof useAnimatedScrollHandler>;
     contentContainerStyle: ViewStyle;
@@ -27,6 +28,7 @@ export function StickyHeaderShell({
   renderExpanded,
   renderCollapsed,
   contentTopPadding = 12,
+  disableTransition = false,
   children,
 }: StickyHeaderShellProps) {
   const scrollY = useSharedValue(0);
@@ -34,28 +36,37 @@ export function StickyHeaderShell({
 
   const onScroll = useAnimatedScrollHandler({
     onScroll: (event) => {
-      scrollY.value = event.contentOffset.y;
+      if (!disableTransition) {
+        scrollY.value = event.contentOffset.y;
+      } else {
+        scrollY.value = 0;
+      }
     },
   });
 
+  const activeScrollY = useDerivedValue(() => {
+    return disableTransition ? 0 : scrollY.value;
+  });
+
   const progress = useDerivedValue(() =>
-    interpolate(scrollY.value, [0, collapseDistance], [0, 1], Extrapolate.CLAMP)
+    interpolate(activeScrollY.value, [0, collapseDistance], [0, 1], Extrapolate.CLAMP)
   );
 
   const headerStyle = useAnimatedStyle(() => ({
     height: interpolate(
-      scrollY.value,
+      activeScrollY.value,
       [0, collapseDistance],
       [expandedHeight, collapsedHeight],
       Extrapolate.CLAMP
     ),
+    // THE FIX: Ensure no background color is applied to the header container
+    backgroundColor: 'transparent', 
   }));
 
   const expandedStyle = useAnimatedStyle(() => ({
     opacity: interpolate(progress.value, [0, 1], [1, 0], Extrapolate.CLAMP),
     transform: [
       { translateY: interpolate(progress.value, [0, 1], [0, -8], Extrapolate.CLAMP) },
-      { scale: interpolate(progress.value, [0, 1], [1, 0.96], Extrapolate.CLAMP) },
     ],
   }));
 
@@ -63,12 +74,15 @@ export function StickyHeaderShell({
     opacity: interpolate(progress.value, [0, 1], [0, 1], Extrapolate.CLAMP),
     transform: [
       { translateY: interpolate(progress.value, [0, 1], [8, 0], Extrapolate.CLAMP) },
-      { scale: interpolate(progress.value, [0, 1], [0.96, 1], Extrapolate.CLAMP) },
     ],
   }));
 
   return (
     <View style={styles.container}>
+      {/* 
+          The header container is now transparent. 
+          The 'ash color' was the default background here.
+      */}
       <Animated.View style={[styles.header, headerStyle]}>
         <Animated.View style={[styles.expandedSlot, expandedStyle]}>
           {renderExpanded()}
@@ -77,6 +91,7 @@ export function StickyHeaderShell({
           {renderCollapsed()}
         </Animated.View>
       </Animated.View>
+
       {children({
         onScroll,
         contentContainerStyle: {
@@ -90,18 +105,22 @@ export function StickyHeaderShell({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: 'transparent',
   },
   header: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    zIndex: 5,
+    zIndex: 10,
+    // Ensure no hidden overflow is causing visual artifacts
+    backgroundColor: 'transparent',
   },
   expandedSlot: {
     position: 'absolute',
     left: 0,
     right: 0,
+    top: 0,
   },
   collapsedSlot: {
     position: 'absolute',

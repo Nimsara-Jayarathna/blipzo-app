@@ -13,13 +13,17 @@ import {
 import { useAppTheme } from '@/context/ThemeContext';
 import type { AllFilters, Grouping } from '@/hooks/home/useTransactionLogic';
 
+type BaseProps = {
+  children: Parameters<typeof StickyHeaderShell>[0]['children'];
+  disableTransition?: boolean; // Pass down to shell
+};
+
 type TodayVariant = {
   variant: 'today';
   income: number;
   expense: number;
   balance: number;
-  children: Parameters<typeof StickyHeaderShell>[0]['children'];
-};
+} & BaseProps;
 
 type AllVariant = {
   variant: 'all';
@@ -28,10 +32,9 @@ type AllVariant = {
   isLoading: boolean;
   onOpenFilters: () => void;
   collapsedSummary: string;
-  children: Parameters<typeof StickyHeaderShell>[0]['children'];
-};
+} & BaseProps;
 
-type HomeStickyHeaderProps = TodayVariant | AllVariant;
+export type HomeStickyHeaderProps = TodayVariant | AllVariant;
 
 export function HomeStickyHeader(props: HomeStickyHeaderProps) {
   const { colors, resolvedTheme } = useAppTheme();
@@ -44,15 +47,12 @@ export function HomeStickyHeader(props: HomeStickyHeaderProps) {
       expandedHeight={HOME_STICKY_HEADER_EXPANDED_HEIGHT}
       collapsedHeight={HOME_STICKY_HEADER_COLLAPSED_HEIGHT}
       contentTopPadding={HOME_STICKY_HEADER_LIST_GAP}
+      disableTransition={props.disableTransition}
       renderExpanded={() => {
         if (props.variant === 'today') {
           return (
             <View style={styles.expandedWrapper}>
-              <SummaryCard
-                income={props.income}
-                expense={props.expense}
-                balance={props.balance}
-              />
+              <SummaryCard income={props.income} expense={props.expense} balance={props.balance} />
             </View>
           );
         }
@@ -70,41 +70,18 @@ export function HomeStickyHeader(props: HomeStickyHeaderProps) {
       renderCollapsed={() => {
         if (props.variant === 'today') {
           return (
-            <View
-              style={[
-                styles.collapsedCard,
-                { backgroundColor: colors.surfaceGlassThick, borderColor: colors.borderGlass },
-              ]}
-            >
-              <ThemedText style={[styles.collapsedLabel, { color: colors.textSubtle }]}>
-                Today's Balance
-              </ThemedText>
-              <ThemedText
-                style={[
-                  styles.collapsedValue,
-                  { color: props.balance >= 0 ? colors.primaryAccent : expenseColor },
-                ]}
-              >
+            <View style={[styles.collapsedCard, { backgroundColor: colors.surfaceGlassThick, borderColor: colors.borderGlass }]}>
+              <ThemedText style={[styles.collapsedLabel, { color: colors.textSubtle }]}>Today's Balance</ThemedText>
+              <ThemedText style={[styles.collapsedValue, { color: props.balance >= 0 ? colors.primaryAccent : expenseColor }]}>
                 {props.balance < 0 ? '-' : ''}{formatMoney(props.balance)}
               </ThemedText>
             </View>
           );
         }
         return (
-          <Pressable
-            onPress={props.onOpenFilters}
-            style={[
-              styles.collapsedCard,
-              { backgroundColor: colors.surfaceGlassThick, borderColor: colors.borderGlass },
-            ]}
-          >
-            <ThemedText style={[styles.collapsedLabel, { color: colors.textSubtle }]}>
-              Filters summary
-            </ThemedText>
-            <ThemedText
-              style={[styles.collapsedValue, { color: colors.textMain }]}
-              numberOfLines={1}
-            >
+          <Pressable onPress={props.onOpenFilters} style={[styles.collapsedCard, { backgroundColor: colors.surfaceGlassThick, borderColor: colors.borderGlass }]}>
+            <ThemedText style={[styles.collapsedLabel, { color: colors.textSubtle }]}>Filters summary</ThemedText>
+            <ThemedText style={[styles.collapsedValue, { color: colors.textMain }]} numberOfLines={1}>
               {props.collapsedSummary}
             </ThemedText>
           </Pressable>
@@ -117,9 +94,7 @@ export function HomeStickyHeader(props: HomeStickyHeaderProps) {
 }
 
 const styles = StyleSheet.create({
-  expandedWrapper: {
-    marginBottom: 0,
-  },
+  expandedWrapper: { marginBottom: 0 },
   collapsedCard: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -128,13 +103,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: 16,
   },
-  collapsedLabel: {
-    fontSize: 11,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-  },
-  collapsedValue: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
+  collapsedLabel: { fontSize: 11, letterSpacing: 1, textTransform: 'uppercase' },
+  collapsedValue: { fontSize: 18, fontWeight: '700' },
 });

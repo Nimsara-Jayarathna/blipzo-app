@@ -16,7 +16,12 @@ import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
 import type { Transaction } from '@/types';
 import { TransactionRow } from '@/components/home/TransactionRow';
-import { HOME_LIST_BOTTOM_PADDING, HOME_LIST_ITEM_GAP } from '@/components/home/layout/spacing';
+import {
+  HOME_BOTTOM_BAR_CLEARANCE,
+  HOME_LIST_ITEM_GAP,
+  HOME_STICKY_HEADER_COLLAPSED_HEIGHT,
+  HOME_STICKY_HEADER_EXPANDED_HEIGHT,
+} from '@/components/home/layout/spacing';
 import { HomeContent } from '@/components/home/layout/HomeContent';
 import { HomeStickyHeader } from '@/components/home/layout/HomeStickyHeader';
 
@@ -27,6 +32,10 @@ export default function TodayScreen() {
   const { colors } = useAppTheme();
   const queryClient = useQueryClient();
   const todayDate = dayjs().format('YYYY-MM-DD');
+  
+  // PRECISION MEASUREMENTS
+  const [listLayoutHeight, setListLayoutHeight] = useState(0); 
+  const [contentHeight, setContentHeight] = useState(0); 
   const [openNoteId, setOpenNoteId] = useState<string | null>(null);
 
   const {
@@ -45,18 +54,14 @@ export default function TodayScreen() {
     enabled: isAuthenticated,
   });
 
-  // PERF: Calculate derived state directly (no useEffect needed)
   const { transactions, income, expense, balance } = useMemo(() => {
     const items = todayData?.transactions ?? [];
-    
     let inc = 0;
     let exp = 0;
-
     items.forEach(item => {
       if (item.type === 'income') inc += item.amount;
       else if (item.type === 'expense') exp += item.amount;
     });
-
     return {
       transactions: items,
       income: inc,
@@ -65,8 +70,29 @@ export default function TodayScreen() {
     };
   }, [todayData]);
 
-  // Helper for IDs
-  const getKey = (item: Transaction) => item._id ?? item.id ?? Math.random().toString();
+  // --- THE BULLETPROOF LOGIC (SAME AS ALL SCREEN) ---
+  const { canScroll, enableTransition } = useMemo(() => {
+    // 1. Distance header needs to move (168px)
+    const distanceToCollapse = HOME_STICKY_HEADER_EXPANDED_HEIGHT - HOME_STICKY_HEADER_COLLAPSED_HEIGHT;
+
+    // 2. The Total Available Scroll distance (Total Height minus the visible box)
+    const totalAvailableScroll = contentHeight - listLayoutHeight;
+
+    // CASE 1: Content fits perfectly within the window.
+    if (totalAvailableScroll <= 1) {
+      return { canScroll: false, enableTransition: false };
+    }
+
+    // CASE 2: Scrolling is possible, but NOT enough for full header transformation.
+    // Buffer of 10px added for sub-pixel stability.
+    if (totalAvailableScroll < (distanceToCollapse + 10)) {
+      return { canScroll: true, enableTransition: false };
+    }
+
+    // CASE 3: Full transition allowed.
+    return { canScroll: true, enableTransition: true };
+  }, [contentHeight, listLayoutHeight]);
+
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteTransaction(id),
     onSuccess: () => {
@@ -82,18 +108,6 @@ export default function TodayScreen() {
         </View>
       );
     }
-    if (isError) {
-      return (
-        <View style={styles.center}>
-          <ThemedText>Unable to load dashboard data.</ThemedText>
-          <ThemedText
-            onPress={() => refetch()}
-            style={[styles.retryText, { color: colors.primaryAccent }]}>
-            Tap to retry
-          </ThemedText>
-        </View>
-      );
-    }
     return (
       <View style={styles.center}>
         <ThemedText style={styles.emptyText}>No activity today.</ThemedText>
@@ -106,15 +120,30 @@ export default function TodayScreen() {
 
   return (
     <HomeContent bleedBottom>
-      <HomeStickyHeader variant="today" income={income} expense={expense} balance={balance}>
+      <HomeStickyHeader 
+        variant="today" 
+        income={income} 
+        expense={expense} 
+        balance={balance}
+        // MASTER SWITCH: Prevents halfway overlap in Case 2
+        disableTransition={!enableTransition} 
+      >
         {({ onScroll, contentContainerStyle }) => (
           <Pressable style={styles.listWrapper} onPress={() => setOpenNoteId(null)}>
             <Animated.FlatList
               data={transactions}
-              keyExtractor={getKey}
+              keyExtractor={(item) => item._id ?? item.id ?? Math.random().toString()}
+              
+              // Apply Threshold Logic
+              scrollEnabled={canScroll}
+              onScroll={enableTransition ? onScroll : undefined}
+              scrollEventThrottle={16}
+              
               contentContainerStyle={[
                 styles.listContent,
                 contentContainerStyle,
+                // Ensure list ends clearly above the navigation bar
+                { paddingBottom: HOME_BOTTOM_BAR_CLEARANCE },
                 transactions.length === 0 ? styles.listEmptyContent : null,
               ]}
               showsVerticalScrollIndicator={false}
@@ -125,8 +154,11 @@ export default function TodayScreen() {
                   tintColor={colors.primaryAccent}
                 />
               }
-              onScroll={onScroll}
-              scrollEventThrottle={16}
+              
+              // Measurement Hooks
+              onLayout={(event) => setListLayoutHeight(event.nativeEvent.layout.height)}
+              onContentSizeChange={(_, height) => setContentHeight(height)}
+              
               ListEmptyComponent={renderEmptyState}
               renderItem={({ item }) => {
                 const id = item._id ?? item.id ?? '';
@@ -134,11 +166,9 @@ export default function TodayScreen() {
                   <TransactionRow
                     transaction={item}
                     mode="today"
-                    onDelete={(deleteId) => deleteMutation.mutate(deleteId)}
+                    onDelete={(delId) => deleteMutation.mutate(delId)}
                     isNoteOpen={Boolean(id && openNoteId === id)}
-                    onToggleNote={() =>
-                      setOpenNoteId(current => (current === id ? null : id))
-                    }
+                    onToggleNote={() => setOpenNoteId(curr => (curr === id ? null : id))}
                     onRowPress={() => setOpenNoteId(null)}
                   />
                 );
@@ -159,11 +189,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingBottom: 50,
-  },
-  retryText: {
-    marginTop: 8,
-    textDecorationLine: 'underline',
+    paddingVertical: 80,
   },
   emptyText: {
     fontSize: 18,
@@ -174,7 +200,6 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   listContent: {
-    paddingBottom: HOME_LIST_BOTTOM_PADDING,
     gap: HOME_LIST_ITEM_GAP,
   },
   listEmptyContent: {

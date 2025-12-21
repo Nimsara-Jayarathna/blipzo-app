@@ -1,11 +1,17 @@
 import dayjs from 'dayjs';
 import React from 'react';
-import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  type LayoutChangeEvent,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/themed-text';
 import { useAppTheme } from '@/context/ThemeContext';
-import { HOME_LIST_BOTTOM_PADDING, HOME_LIST_ITEM_GAP } from '@/components/home/layout/spacing';
+import { HOME_LIST_ITEM_GAP } from '@/components/home/layout/spacing';
 import type { Transaction } from '@/types';
 import type { GroupedSection } from '@/hooks/home/useTransactionLogic';
 import { TransactionRow } from '@/components/home/TransactionRow';
@@ -20,6 +26,9 @@ interface Props {
   onRowPress?: () => void;
   contentContainerStyle?: StyleProp<ViewStyle>;
   onScroll?: (event: any) => void;
+  onLayout?: (event: LayoutChangeEvent) => void;
+  onContentSizeChange?: (width: number, height: number) => void;
+  scrollEnabled?: boolean;
 }
 
 export function TransactionList({
@@ -32,6 +41,9 @@ export function TransactionList({
   onRowPress,
   contentContainerStyle,
   onScroll,
+  onLayout,
+  onContentSizeChange,
+  scrollEnabled,
 }: Props) {
   const { colors } = useAppTheme();
   // If grouped, use SectionList
@@ -84,6 +96,9 @@ export function TransactionList({
         contentContainerStyle={[styles.listContent, contentContainerStyle]}
         onScroll={onScroll}
         scrollEventThrottle={16}
+        onLayout={onLayout}
+        onContentSizeChange={onContentSizeChange}
+        scrollEnabled={scrollEnabled}
         stickySectionHeadersEnabled={false}
       />
     );
@@ -112,6 +127,9 @@ export function TransactionList({
     contentContainerStyle={[styles.listContent, contentContainerStyle]}
     onScroll={onScroll}
     scrollEventThrottle={16}
+    onLayout={onLayout}
+    onContentSizeChange={onContentSizeChange}
+    scrollEnabled={scrollEnabled}
     ListEmptyComponent={
       <View style={styles.center}>
         <ThemedText>No transactions found.</ThemedText>
@@ -122,7 +140,7 @@ export function TransactionList({
 }
 
 const styles = StyleSheet.create({
-  listContent: { paddingBottom: HOME_LIST_BOTTOM_PADDING, gap: HOME_LIST_ITEM_GAP },
+  listContent: { gap: HOME_LIST_ITEM_GAP },
   center: { padding: 40, alignItems: 'center' },
   // Section Header
   sectionHeader: {
