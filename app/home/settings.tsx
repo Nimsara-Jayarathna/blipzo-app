@@ -21,7 +21,11 @@ import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
 import type { Category } from '@/types';
 
-import { HomeBackground } from '@/components/home/HomeBackground';
+import {
+  HOME_CONTENT_PADDING_H,
+  HOME_CONTENT_PADDING_TOP,
+  HOME_CONTENT_PADDING_BOTTOM,
+} from '@/components/home/layout/spacing';
 
 // Importing components directly from their files
 import { CategoryTabs } from '@/components/home/settings/CategoryTabs';
@@ -33,7 +37,7 @@ const getCategoryId = (cat: Category) => cat._id ?? cat.id ?? '';
 
 export default function SettingsScreen() {
   const { isAuthenticated } = useAuth();
-  const { colors, resolvedTheme } = useAppTheme();
+  const { resolvedTheme } = useAppTheme();
   const queryClient = useQueryClient();
 
   // State
@@ -122,71 +126,69 @@ export default function SettingsScreen() {
   const deletingId = deleteMutation.isPending ? deleteMutation.variables : undefined;
 
   return (
-    <HomeBackground>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.screen}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.screen}
+    >
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
       >
-        <ScrollView
-          contentContainerStyle={styles.container}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* Header */}
-          <View style={styles.headerRow}>
-            {createMutation.isPending && <ActivityIndicator size="small" />}
-          </View>
+        {/* Header */}
+        <View style={styles.headerRow}>
+          {createMutation.isPending && <ActivityIndicator size="small" />}
+        </View>
 
-          {/* Error Message */}
-          {isError && (
-            <TouchableOpacity
-              onPress={() => refetch()}
-              style={[
-                styles.errorBox,
-                {
-                  backgroundColor:
-                    resolvedTheme === 'dark' ? 'rgba(239, 68, 68, 0.16)' : 'rgba(231,76,60,0.1)',
-                  borderColor:
-                    resolvedTheme === 'dark' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(231,76,60,0.2)',
-                },
-              ]}>
-              <ThemedText style={[styles.errorText, { color: '#ef4444' }]}>
-                Failed to load categories. Tap to retry.
-              </ThemedText>
-            </TouchableOpacity>
-          )}
+        {/* Error Message */}
+        {isError && (
+          <TouchableOpacity
+            onPress={() => refetch()}
+            style={[
+              styles.errorBox,
+              {
+                backgroundColor:
+                  resolvedTheme === 'dark' ? 'rgba(239, 68, 68, 0.16)' : 'rgba(231,76,60,0.1)',
+                borderColor:
+                  resolvedTheme === 'dark' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(231,76,60,0.2)',
+              },
+            ]}>
+            <ThemedText style={[styles.errorText, { color: '#ef4444' }]}>
+              Failed to load categories. Tap to retry.
+            </ThemedText>
+          </TouchableOpacity>
+        )}
 
-          {/* Tab Selection */}
-          <CategoryTabs
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            incomeCount={incomeCategories.length}
-            expenseCount={expenseCategories.length}
-            maxCount={MAX_PER_TYPE}
-          />
+        {/* Tab Selection */}
+        <CategoryTabs
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          incomeCount={incomeCategories.length}
+          expenseCount={expenseCategories.length}
+          maxCount={MAX_PER_TYPE}
+        />
 
-          {/* Input Field */}
-          <AddCategoryInput
-            value={newCategoryName}
-            onChangeText={setNewCategoryName}
-            onAdd={handleCreateCategory}
-            activeTab={activeTab}
-            isFull={isFull}
-            isLoading={createMutation.isPending}
-          />
+        {/* Input Field */}
+        <AddCategoryInput
+          value={newCategoryName}
+          onChangeText={setNewCategoryName}
+          onAdd={handleCreateCategory}
+          activeTab={activeTab}
+          isFull={isFull}
+          isLoading={createMutation.isPending}
+        />
 
-          {/* List Display */}
-          <CategoryList
-            data={currentList}
-            activeTab={activeTab}
-            isLoading={isLoading}
-            defaultId={currentDefaultId}
-            deletingId={deletingId}
-            onDelete={handleDelete}
-            onSetDefault={handleSetDefault}
-          />
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </HomeBackground>
+        {/* List Display */}
+        <CategoryList
+          data={currentList}
+          activeTab={activeTab}
+          isLoading={isLoading}
+          defaultId={currentDefaultId}
+          deletingId={deletingId}
+          onDelete={handleDelete}
+          onSetDefault={handleSetDefault}
+        />
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -195,9 +197,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   container: {
-    paddingHorizontal: 16,
-    paddingVertical: 24,
-    paddingBottom: 50,
+    paddingHorizontal: HOME_CONTENT_PADDING_H,
+    paddingTop: HOME_CONTENT_PADDING_TOP,
+    paddingBottom: HOME_CONTENT_PADDING_BOTTOM,
   },
   headerRow: {
     flexDirection: 'row',

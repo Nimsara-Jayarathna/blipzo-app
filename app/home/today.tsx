@@ -1,10 +1,9 @@
 import dayjs from 'dayjs';
 import { useQuery } from '@tanstack/react-query';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { 
   ActivityIndicator, 
   FlatList, 
-  Pressable, 
   StyleSheet, 
   View, 
   RefreshControl 
@@ -17,8 +16,11 @@ import { useAuth } from '@/hooks/useAuth';
 import type { Transaction } from '@/types';
 import { SummaryCard } from '@/components/home/today/SummaryCard';
 import { TransactionRow } from '@/components/home/today/TransactionRow';
-import { AddTransactionSheet } from '@/components/home/AddTransactionSheet';
-import { HomeBackground } from '@/components/home/HomeBackground';
+import {
+  HOME_CONTENT_PADDING_H,
+  HOME_CONTENT_PADDING_TOP,
+  HOME_LIST_BOTTOM_PADDING,
+} from '@/components/home/layout/spacing';
 
 const transactionKey = ['transactions'];
 
@@ -26,7 +28,6 @@ export default function TodayScreen() {
   const { isAuthenticated } = useAuth();
   const { colors } = useAppTheme();
   const todayDate = dayjs().format('YYYY-MM-DD');
-  const [isAddOpen, setIsAddOpen] = useState(false);
 
   const {
     data: todayData,
@@ -68,77 +69,60 @@ export default function TodayScreen() {
   const getKey = (item: Transaction) => item._id ?? item.id ?? Math.random().toString();
 
   return (
-    <HomeBackground>
-      <View style={styles.container}>
-        <View style={styles.summaryWrapper}>
-          <SummaryCard income={income} expense={expense} balance={balance} />
-        </View>
-
-        {isLoading && (
-          <View style={styles.center}>
-            <ActivityIndicator size="large" color={colors.primaryAccent} />
-          </View>
-        )}
-
-        {isError && (
-          <View style={styles.center}>
-            <ThemedText>Unable to load dashboard data.</ThemedText>
-            <ThemedText
-              onPress={() => refetch()}
-              style={[styles.retryText, { color: colors.primaryAccent }]}>
-              Tap to retry
-            </ThemedText>
-          </View>
-        )}
-
-        {!isLoading && !isError && transactions.length === 0 ? (
-          <View style={styles.center}>
-            <ThemedText style={styles.emptyText}>No activity today.</ThemedText>
-            <ThemedText style={[styles.emptySubText, { color: colors.textMuted }]}>
-              Tap the + button to add one.
-            </ThemedText>
-          </View>
-        ) : (
-          <FlatList
-            data={transactions}
-            keyExtractor={getKey}
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl
-                refreshing={isRefetching}
-                onRefresh={refetch}
-                tintColor={colors.primaryAccent}
-              />
-            }
-            renderItem={({ item }) => <TransactionRow transaction={item} />}
-          />
-        )}
-
-        <Pressable
-          style={({ pressed }) => [
-            styles.fab,
-            { backgroundColor: colors.primaryAccent },
-            pressed && styles.fabPressed,
-          ]}
-          onPress={() => setIsAddOpen(true)}>
-          <ThemedText style={styles.fabText}>+</ThemedText>
-        </Pressable>
+    <View style={styles.container}>
+      <View style={styles.summaryWrapper}>
+        <SummaryCard income={income} expense={expense} balance={balance} />
       </View>
 
-      <AddTransactionSheet
-        visible={isAddOpen}
-        onClose={() => setIsAddOpen(false)}
-      />
-    </HomeBackground>
+      {isLoading && (
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={colors.primaryAccent} />
+        </View>
+      )}
+
+      {isError && (
+        <View style={styles.center}>
+          <ThemedText>Unable to load dashboard data.</ThemedText>
+          <ThemedText
+            onPress={() => refetch()}
+            style={[styles.retryText, { color: colors.primaryAccent }]}>
+            Tap to retry
+          </ThemedText>
+        </View>
+      )}
+
+      {!isLoading && !isError && transactions.length === 0 ? (
+        <View style={styles.center}>
+          <ThemedText style={styles.emptyText}>No activity today.</ThemedText>
+          <ThemedText style={[styles.emptySubText, { color: colors.textMuted }]}>
+            Tap the + button to add one.
+          </ThemedText>
+        </View>
+      ) : (
+        <FlatList
+          data={transactions}
+          keyExtractor={getKey}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefetching}
+              onRefresh={refetch}
+              tintColor={colors.primaryAccent}
+            />
+          }
+          renderItem={({ item }) => <TransactionRow transaction={item} />}
+        />
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 24,
+    paddingHorizontal: HOME_CONTENT_PADDING_H,
+    paddingTop: HOME_CONTENT_PADDING_TOP,
   },
   summaryWrapper: {
     marginBottom: 20,
@@ -162,33 +146,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   listContent: {
-    paddingBottom: 140, // Extra space so FAB and tab bar don't cover content
+    paddingBottom: HOME_LIST_BOTTOM_PADDING,
     gap: 12,
-  },
-  fab: {
-    position: 'absolute',
-    right: 20,
-    bottom: 96,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    // Enhanced Shadow
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  fabPressed: {
-    opacity: 0.9,
-    transform: [{ scale: 0.95 }],
-  },
-  fabText: {
-    color: '#ffffff',
-    fontSize: 32,
-    fontWeight: '400',
-    marginTop: -2, // Visual center correction
   },
 });

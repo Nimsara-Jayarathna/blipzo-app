@@ -6,7 +6,11 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
-import { HomeBackground } from '@/components/home/HomeBackground';
+import {
+  HOME_CONTENT_PADDING_H,
+  HOME_CONTENT_PADDING_TOP,
+  HOME_CONTENT_PADDING_BOTTOM,
+} from '@/components/home/layout/spacing';
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
@@ -22,40 +26,38 @@ export default function ProfileScreen() {
   };
 
   return (
-    <HomeBackground>
-      <View style={styles.container}>
-        {/* TODO: Implement full profile management (edit name, avatar, etc.) */}
-        <View
-          style={[
-            styles.card,
-            { backgroundColor: colors.surfaceGlassThick, borderColor: colors.borderGlass },
-          ]}>
-          <ThemedText style={[styles.label, { color: colors.textMuted }]}>Name</ThemedText>
-          <ThemedText style={styles.value}>{user?.name ?? 'Not set'}</ThemedText>
+    <View style={styles.container}>
+      {/* TODO: Implement full profile management (edit name, avatar, etc.) */}
+      <View
+        style={[
+          styles.card,
+          { backgroundColor: colors.surfaceGlassThick, borderColor: colors.borderGlass },
+        ]}>
+        <ThemedText style={[styles.label, { color: colors.textMuted }]}>Name</ThemedText>
+        <ThemedText style={styles.value}>{user?.name ?? 'Not set'}</ThemedText>
 
-          <ThemedText style={[styles.label, { color: colors.textMuted }]}>Email</ThemedText>
-          <ThemedText style={styles.value}>{user?.email ?? 'Not set'}</ThemedText>
+        <ThemedText style={[styles.label, { color: colors.textMuted }]}>Email</ThemedText>
+        <ThemedText style={styles.value}>{user?.email ?? 'Not set'}</ThemedText>
 
-          <ThemedText style={[styles.label, { color: colors.textMuted }]}>Theme</ThemedText>
-          <ThemeSwitcher />
-        </View>
-
-        <View style={styles.footer}>
-          <Pressable
-            onPress={handleLogout}
-            accessibilityRole="button"
-            accessibilityLabel="Log out"
-            accessibilityHint="Signs you out of your MyEx account"
-            style={({ pressed }) => [
-              styles.logoutButton,
-              { backgroundColor: colors.primaryAccent },
-              pressed && styles.logoutButtonPressed,
-            ]}>
-            <ThemedText style={styles.logoutText}>Log out</ThemedText>
-          </Pressable>
-        </View>
+        <ThemedText style={[styles.label, { color: colors.textMuted }]}>Theme</ThemedText>
+        <ThemeSwitcher />
       </View>
-    </HomeBackground>
+
+      <View style={styles.footer}>
+        <Pressable
+          onPress={handleLogout}
+          accessibilityRole="button"
+          accessibilityLabel="Log out"
+          accessibilityHint="Signs you out of your MyEx account"
+          style={({ pressed }) => [
+            styles.logoutButton,
+            { backgroundColor: colors.primaryAccent },
+            pressed && styles.logoutButtonPressed,
+          ]}>
+          <ThemedText style={styles.logoutText}>Log out</ThemedText>
+        </Pressable>
+      </View>
+    </View>
   );
 }
 
@@ -65,9 +67,9 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 24,
-    paddingBottom: 120,
+    paddingHorizontal: HOME_CONTENT_PADDING_H,
+    paddingTop: HOME_CONTENT_PADDING_TOP,
+    paddingBottom: HOME_CONTENT_PADDING_BOTTOM,
   },
   card: {
     borderRadius: 24,

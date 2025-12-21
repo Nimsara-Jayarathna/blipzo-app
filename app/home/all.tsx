@@ -1,16 +1,16 @@
 import dayjs from 'dayjs';
 import { useQuery } from '@tanstack/react-query';
 import React, { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { getTransactionsFiltered, type TransactionFilters } from '@/api/transactions';
-import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
-import { ThemedText } from '@/components/themed-text';
-import { HomeBackground } from '@/components/home/HomeBackground';
-import { AddTransactionSheet } from '@/components/home/AddTransactionSheet';
 import { TransactionList } from '@/components/home/all/TransactionList';
 import SmartFilterHeader from '@/components/home/all/SmartFilterHeader';
+import {
+  HOME_CONTENT_PADDING_H,
+  HOME_CONTENT_PADDING_TOP,
+} from '@/components/home/layout/spacing';
 import {
   type AllFilters,
   type Grouping,
@@ -21,7 +21,6 @@ import { AllFiltersSheet } from '@/components/home/all/AllFiltersSheet';
 
 export default function AllTransactionsScreen() {
   const { isAuthenticated } = useAuth();
-  const { colors } = useAppTheme();
   const today = dayjs().format('YYYY-MM-DD');
 
   const [filters, setFilters] = useState<AllFilters>({
@@ -33,7 +32,6 @@ export default function AllTransactionsScreen() {
     sortDirection: 'desc',
   });
   const [grouping, setGrouping] = useState<Grouping>('none');
-  const [isAddOpen, setIsAddOpen] = useState(false);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
   const { data, isLoading } = useQuery({
@@ -81,36 +79,21 @@ export default function AllTransactionsScreen() {
     grouping === 'none' ? 'None' : grouping === 'month' ? 'Month' : 'Category';
 
   return (
-    <HomeBackground>
-      <View style={styles.container}>
-        <View style={styles.summaryWrapper}>
-          <SmartFilterHeader
-            filters={filters}
-            grouping={grouping}
-            isLoading={isLoading}
-            onOpenFilters={() => setIsFiltersOpen(true)}
-          />
-        </View>
-
-        <TransactionList
-          data={filteredTransactions}
-          groupedData={groupedData}
-          HeaderComponent={() => null}
+    <View style={styles.container}>
+      <View style={styles.summaryWrapper}>
+        <SmartFilterHeader
+          filters={filters}
+          grouping={grouping}
+          isLoading={isLoading}
+          onOpenFilters={() => setIsFiltersOpen(true)}
         />
-
-        <Pressable
-          style={({ pressed }) => [
-            styles.fab,
-            { backgroundColor: colors.primaryAccent },
-            pressed && styles.fabPressed,
-          ]}
-          onPress={() => setIsAddOpen(true)}
-        >
-          <ThemedText style={styles.fabText}>+</ThemedText>
-        </Pressable>
       </View>
 
-      <AddTransactionSheet visible={isAddOpen} onClose={() => setIsAddOpen(false)} />
+      <TransactionList
+        data={filteredTransactions}
+        groupedData={groupedData}
+        HeaderComponent={() => null}
+      />
 
       <AllFiltersSheet
         visible={isFiltersOpen}
@@ -123,42 +106,17 @@ export default function AllTransactionsScreen() {
           setGrouping(nextGrouping);
         }}
       />
-    </HomeBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 24,
+    paddingHorizontal: HOME_CONTENT_PADDING_H,
+    paddingTop: HOME_CONTENT_PADDING_TOP,
   },
   summaryWrapper: {
     marginBottom: 12,
-  },
-  fab: {
-    position: 'absolute',
-    right: 20,
-    bottom: 96,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  fabPressed: {
-    opacity: 0.9,
-    transform: [{ scale: 0.95 }],
-  },
-  fabText: {
-    color: '#ffffff',
-    fontSize: 32,
-    fontWeight: '400',
-    marginTop: -2,
   },
 });

@@ -1,0 +1,6 @@
+export const HOME_CONTENT_PADDING_H = 16;
+export const HOME_CONTENT_PADDING_TOP = 12;
+export const HOME_CONTENT_PADDING_BOTTOM = 16;
+export const HOME_LIST_BOTTOM_PADDING = 24;
+export const HOME_TAB_BAR_HEIGHT = 48;
+export const HOME_TAB_BAR_MARGIN = 6;

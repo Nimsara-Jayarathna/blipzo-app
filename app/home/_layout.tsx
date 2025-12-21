@@ -13,30 +13,38 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
 import { ProfileHeader } from '@/components/ProfileHeader';
+import { AddTransactionSheet } from '@/components/home/AddTransactionSheet';
+import { HomeBackground } from '@/components/home/HomeBackground';
+import {
+  HOME_TAB_BAR_HEIGHT,
+  HOME_TAB_BAR_MARGIN,
+} from '@/components/home/layout/spacing';
 
-const TAB_BAR_HEIGHT = 60;
-
-function CustomTabBar({ state, descriptors, navigation }: any) {
+function CustomTabBar({ state, descriptors, navigation, onAddPress }: any) {
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const { colors, resolvedTheme } = useAppTheme();
   const insets = useSafeAreaInsets();
-  const extraBottom = Math.max(insets.bottom, 8);
+  const extraBottom = Math.max(insets.bottom, 0);
   
   // Filter to only show specific tabs
   const visibleRoutes = state.routes.filter((route: any) => 
     ['today', 'all'].includes(route.name)
   );
 
-  const tabWidth = dimensions.width / visibleRoutes.length;
+  const slotCount = visibleRoutes.length + 1;
+  const tabWidth = dimensions.width / slotCount;
   const translateX = useSharedValue(0);
+  const todayRoute = visibleRoutes.find((route: any) => route.name === 'today');
+  const allRoute = visibleRoutes.find((route: any) => route.name === 'all');
 
   useEffect(() => {
     const activeRouteName = state.routes[state.index].name;
     const activeIndex = visibleRoutes.findIndex((r: any) => r.name === activeRouteName);
+    const activeSlot = activeIndex === 0 ? 0 : activeIndex === 1 ? 2 : -1;
 
-    if (activeIndex >= 0 && tabWidth > 0) {
+    if (activeSlot >= 0 && tabWidth > 0) {
       // CHANGED: used withTiming instead of withSpring to remove the wobble
-      translateX.value = withTiming(activeIndex * tabWidth, {
+      translateX.value = withTiming(activeSlot * tabWidth, {
         duration: 250,
         easing: Easing.out(Easing.cubic),
       });
@@ -58,7 +66,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
           backgroundColor: colors.surfaceGlassThick,
           borderColor: colors.borderGlass,
           shadowColor: colors.textMain,
-          height: TAB_BAR_HEIGHT + extraBottom,
+          height: HOME_TAB_BAR_HEIGHT + extraBottom,
           paddingBottom: extraBottom,
         },
       ]}
@@ -81,7 +89,8 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
       )}
 
       {/* Tabs */}
-      {visibleRoutes.map((route: any, index: number) => {
+      {todayRoute && (() => {
+        const route = todayRoute;
         const { options } = descriptors[route.key];
         const isFocused = state.routes[state.index].key === route.key;
 
@@ -100,7 +109,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
         let iconName: React.ComponentProps<typeof MaterialIcons>['name'] = 'circle';
         if (route.name === 'today') iconName = 'today';
         if (route.name === 'all') iconName = 'list-alt';
-        if (route.name === 'settings') iconName = 'settings';
+        if (route.name === 'all') iconName = 'list-alt';
 
         return (
           <Pressable
@@ -123,7 +132,62 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
             </View>
           </Pressable>
         );
-      })}
+      })()}
+      <Pressable
+        onPress={onAddPress}
+        style={styles.tabItem}
+        accessibilityRole="button"
+        accessibilityLabel="Add transaction"
+        accessibilityHint="Opens the add transaction form"
+      >
+        <View style={styles.iconContainer}>
+          <MaterialIcons name="add-circle-outline" size={24} color={colors.primaryAccent} />
+          <Text style={[styles.tabLabel, { color: colors.textMuted }]}>Add</Text>
+        </View>
+      </Pressable>
+      {allRoute && (() => {
+        const route = allRoute;
+        const { options } = descriptors[route.key];
+        const isFocused = state.routes[state.index].key === route.key;
+
+        const onPress = () => {
+          const event = navigation.emit({
+            type: 'tabPress',
+            target: route.key,
+            canPreventDefault: true,
+          });
+
+          if (!isFocused && !event.defaultPrevented) {
+            navigation.navigate(route.name);
+          }
+        };
+
+        let iconName: React.ComponentProps<typeof MaterialIcons>['name'] = 'circle';
+        if (route.name === 'today') iconName = 'today';
+        if (route.name === 'all') iconName = 'list-alt';
+
+        return (
+          <Pressable
+            key={route.key}
+            onPress={onPress}
+            style={styles.tabItem}
+          >
+            <View style={styles.iconContainer}>
+              <MaterialIcons
+                name={iconName}
+                size={22}
+                color={isFocused ? colors.primaryAccent : colors.textMuted}
+              />
+              <Text style={[
+                styles.tabLabel, 
+                { color: isFocused ? colors.primaryAccent : colors.textMuted }
+              ]}>
+                {options.title}
+              </Text>
+            </View>
+          </Pressable>
+        );
+      })()}
     </View>
   );
 }
@@ -131,6 +195,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
 export default function HomeTabLayout() {
   const router = useRouter();
   const { isAuthenticated, user } = useAuth();
+  const [isAddOpen, setIsAddOpen] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -141,30 +206,35 @@ export default function HomeTabLayout() {
   if (!isAuthenticated) return null;
 
   return (
-    <Tabs
-      tabBar={(props) => <CustomTabBar {...props} />}
-      screenOptions={{
-        header: () => (
-          <ProfileHeader
-            user={user ? { name: user.name ?? user.email, avatarUrl: undefined } : null}
-            showSettingsButton
-          />
-        ),
-        headerShadowVisible: false,
-      }}
-    >
-      <Tabs.Screen name="today" options={{ title: 'Today' }} />
-      <Tabs.Screen name="all" options={{ title: 'All' }} />
-      <Tabs.Screen name="settings" options={{ title: 'Settings', href: null }} />
-      <Tabs.Screen name="profile" options={{ href: null }} />
-    </Tabs>
+    <HomeBackground>
+      <Tabs
+        tabBar={(props) => (
+          <CustomTabBar {...props} onAddPress={() => setIsAddOpen(true)} />
+        )}
+        screenOptions={{
+          header: () => (
+            <ProfileHeader
+              user={user ? { name: user.name ?? user.email, avatarUrl: undefined } : null}
+              showSettingsButton
+            />
+          ),
+          headerShadowVisible: false,
+        }}
+      >
+        <Tabs.Screen name="today" options={{ title: 'Today' }} />
+        <Tabs.Screen name="all" options={{ title: 'All' }} />
+        <Tabs.Screen name="settings" options={{ title: 'Settings', href: null }} />
+        <Tabs.Screen name="profile" options={{ href: null }} />
+      </Tabs>
+      <AddTransactionSheet visible={isAddOpen} onClose={() => setIsAddOpen(false)} />
+    </HomeBackground>
   );
 }
 
 const styles = StyleSheet.create({
   tabBarContainer: {
     flexDirection: 'row',
-    height: TAB_BAR_HEIGHT,
+    height: HOME_TAB_BAR_HEIGHT,
     borderRadius: 24,
     backgroundColor: 'rgba(255,255,255,0.88)',
     borderWidth: 1,
@@ -175,9 +245,9 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 12,
     overflow: 'hidden',
-    marginHorizontal: 16,
-    marginBottom: 12,
-    marginTop: 6,
+    marginHorizontal: HOME_TAB_BAR_MARGIN,
+    marginBottom: HOME_TAB_BAR_MARGIN,
+    marginTop: HOME_TAB_BAR_MARGIN,
   },
   slidingBubble: {
     position: 'absolute',
