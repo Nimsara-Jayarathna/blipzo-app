@@ -38,6 +38,7 @@ export interface Transaction {
   id?: string;
   user?: string;
   title?: string;
+  description?: string;
   amount: number;
   type: 'income' | 'expense';
   category: Category | string;
@@ -55,6 +56,7 @@ export interface TransactionInput {
   type: 'income' | 'expense';
   category: string;
   date: string;
+  description?: string;
   note?: string;
 }
 
@@ -75,4 +77,3 @@ export interface TotalsSummary {
   totalExpense: number;
   balance: number;
 }
-

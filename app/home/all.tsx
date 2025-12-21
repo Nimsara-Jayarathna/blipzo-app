@@ -1,17 +1,18 @@
 import dayjs from 'dayjs';
-import { useQuery } from '@tanstack/react-query';
-import React, { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import React, { useMemo, useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { getTransactionsFiltered, type TransactionFilters } from '@/api/transactions';
-import { ProfileHeader } from '@/components/ProfileHeader';
-import { useAppTheme } from '@/context/ThemeContext';
+import { deleteTransaction, getTransactionsFiltered, type TransactionFilters } from '@/api/transactions';
 import { useAuth } from '@/hooks/useAuth';
-import { ThemedText } from '@/components/themed-text';
-import { HomeBackground } from '@/components/home/HomeBackground';
-import { AddTransactionSheet } from '@/components/home/AddTransactionSheet';
 import { TransactionList } from '@/components/home/all/TransactionList';
-import SmartFilterHeader from '@/components/home/all/SmartFilterHeader';
+import { HomeContent } from '@/components/home/layout/HomeContent';
+import { HomeStickyHeader } from '@/components/home/layout/HomeStickyHeader';
+import {
+  HOME_BOTTOM_BAR_CLEARANCE,
+  HOME_STICKY_HEADER_COLLAPSED_HEIGHT,
+  HOME_STICKY_HEADER_EXPANDED_HEIGHT,
+} from '@/components/home/layout/spacing';
 import {
   type AllFilters,
   type Grouping,
@@ -21,103 +22,91 @@ import {
 import { AllFiltersSheet } from '@/components/home/all/AllFiltersSheet';
 
 export default function AllTransactionsScreen() {
-  const { isAuthenticated, user } = useAuth();
-  const { colors } = useAppTheme();
+  const { isAuthenticated } = useAuth();
+  const queryClient = useQueryClient();
   const today = dayjs().format('YYYY-MM-DD');
 
   const [filters, setFilters] = useState<AllFilters>({
-    startDate: today,
-    endDate: today,
-    typeFilter: 'all',
-    categoryFilter: 'all',
-    sortField: 'date',
-    sortDirection: 'desc',
+    startDate: today, endDate: today,
+    typeFilter: 'all', categoryFilter: 'all',
+    sortField: 'date', sortDirection: 'desc',
   });
   const [grouping, setGrouping] = useState<Grouping>('none');
-  const [isAddOpen, setIsAddOpen] = useState(false);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [openNoteId, setOpenNoteId] = useState<string | null>(null);
+
+  const [listLayoutHeight, setListLayoutHeight] = useState(0); 
+  const [contentHeight, setContentHeight] = useState(0); 
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteTransaction(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['transactions'] }),
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: ['transactions', 'all', filters],
-    queryFn: () =>
-      getTransactionsFiltered({
-        startDate: filters.startDate,
-        endDate: filters.endDate,
-        type: filters.typeFilter === 'all' ? undefined : filters.typeFilter,
-        sortBy: filters.sortField,
-        sortDir: filters.sortDirection,
-      } as TransactionFilters),
+    queryFn: () => getTransactionsFiltered({
+      startDate: filters.startDate,
+      endDate: filters.endDate,
+      type: filters.typeFilter === 'all' ? undefined : filters.typeFilter,
+      sortBy: filters.sortField,
+      sortDir: filters.sortDirection,
+    } as TransactionFilters),
     enabled: isAuthenticated,
   });
 
-  const transactions = data?.transactions ?? [];
-
-  const filteredTransactions = transactions.filter(txn => {
-    if (filters.categoryFilter === 'all') return true;
-    const catId =
-      typeof txn.category === 'string'
-        ? txn.category
-        : txn.category?.id ?? txn.category?._id;
-    return catId === filters.categoryFilter;
-  });
-
+  const filteredTransactions = data?.transactions ?? [];
   const { categoriesForType } = useTransactionCategories(filters, setFilters);
   const groupedData = useGroupedTransactions(filteredTransactions, grouping);
 
-  const typeLabel =
-    filters.typeFilter === 'all'
-      ? 'All types'
-      : filters.typeFilter === 'income'
-      ? 'Income'
-      : 'Expense';
+  const typeLabel = filters.typeFilter === 'all' ? 'All types' : filters.typeFilter === 'income' ? 'Income' : 'Expense';
+  const formatRange = (startDate: string, endDate: string) => {
+    const start = dayjs(startDate);
+    const end = dayjs(endDate);
+    if (start.isSame(end, 'day')) return start.format('DD MMM YYYY');
+    return `${start.format('DD MMM')} – ${end.format('DD MMM YYYY')}`;
+  };
+  const collapsedSummary = `${formatRange(filters.startDate, filters.endDate)} • ${typeLabel}`;
 
-  const sortLabel =
-    filters.sortField === 'date'
-      ? `Date (${filters.sortDirection === 'asc' ? '↑' : '↓'})`
-      : filters.sortField === 'amount'
-      ? `Amount (${filters.sortDirection === 'asc' ? '↑' : '↓'})`
-      : `Category (${filters.sortDirection === 'asc' ? '↑' : '↓'})`;
+  const { canScroll, enableTransition } = useMemo(() => {
+    const distanceToCollapse = HOME_STICKY_HEADER_EXPANDED_HEIGHT - HOME_STICKY_HEADER_COLLAPSED_HEIGHT;
+    const scrollRunway = contentHeight - listLayoutHeight;
 
-  const groupLabel =
-    grouping === 'none' ? 'None' : grouping === 'month' ? 'Month' : 'Category';
+    if (scrollRunway <= 1) return { canScroll: false, enableTransition: false };
+    if (scrollRunway < (distanceToCollapse + 10)) return { canScroll: true, enableTransition: false };
+    return { canScroll: true, enableTransition: true };
+  }, [contentHeight, listLayoutHeight]);
 
   return (
-    <HomeBackground>
-      <ProfileHeader
-        user={
-          user ? { name: user.name ?? user.email, avatarUrl: undefined } : null
-        }
-      />
-
-      <View style={styles.container}>
-        <View style={styles.summaryWrapper}>
-          <SmartFilterHeader
-            filters={filters}
-            grouping={grouping}
-            isLoading={isLoading}
-            onOpenFilters={() => setIsFiltersOpen(true)}
-          />
-        </View>
-
-        <TransactionList
-          data={filteredTransactions}
-          groupedData={groupedData}
-          HeaderComponent={() => null}
-        />
-
-        <Pressable
-          style={({ pressed }) => [
-            styles.fab,
-            { backgroundColor: colors.primaryAccent },
-            pressed && styles.fabPressed,
-          ]}
-          onPress={() => setIsAddOpen(true)}
-        >
-          <ThemedText style={styles.fabText}>+</ThemedText>
-        </Pressable>
-      </View>
-
-      <AddTransactionSheet visible={isAddOpen} onClose={() => setIsAddOpen(false)} />
+    <HomeContent bleedBottom>
+      <HomeStickyHeader
+        variant="all"
+        filters={filters}
+        grouping={grouping}
+        isLoading={isLoading}
+        onOpenFilters={() => setIsFiltersOpen(true)}
+        collapsedSummary={collapsedSummary}
+        disableTransition={!enableTransition} // Apply switch
+      >
+        {({ onScroll, contentContainerStyle }) => (
+          <View style={styles.listWrapper}>
+            <TransactionList
+              data={filteredTransactions}
+              groupedData={groupedData}
+              HeaderComponent={() => null}
+              onDelete={(id) => deleteMutation.mutate(id)}
+              openNoteId={openNoteId}
+              onToggleNote={(id) => setOpenNoteId(current => (current === id ? null : id))}
+              onRowPress={() => setOpenNoteId(null)}
+              scrollEnabled={canScroll}
+              onScroll={enableTransition ? onScroll : undefined}
+              contentContainerStyle={[contentContainerStyle, { paddingBottom: HOME_BOTTOM_BAR_CLEARANCE }]}
+              onLayout={(event) => setListLayoutHeight(event.nativeEvent.layout.height)}
+              onContentSizeChange={(_, height) => setContentHeight(height)}
+            />
+          </View>
+        )}
+      </HomeStickyHeader>
 
       <AllFiltersSheet
         visible={isFiltersOpen}
@@ -130,42 +119,8 @@ export default function AllTransactionsScreen() {
           setGrouping(nextGrouping);
         }}
       />
-    </HomeBackground>
+    </HomeContent>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 24,
-  },
-  summaryWrapper: {
-    marginBottom: 12,
-  },
-  fab: {
-    position: 'absolute',
-    right: 20,
-    bottom: 96,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  fabPressed: {
-    opacity: 0.9,
-    transform: [{ scale: 0.95 }],
-  },
-  fabText: {
-    color: '#ffffff',
-    fontSize: 32,
-    fontWeight: '400',
-    marginTop: -2,
-  },
-});
+const styles = StyleSheet.create({ listWrapper: { flex: 1 } });

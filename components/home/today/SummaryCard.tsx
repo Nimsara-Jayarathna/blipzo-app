@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { useAppTheme } from '@/context/ThemeContext';
+import { HOME_STICKY_HEADER_CARD_MIN_HEIGHT } from '@/components/home/layout/spacing';
 
 type SummaryCardProps = {
   income: number;
@@ -72,6 +73,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     padding: 20,
     borderWidth: 1,
+    minHeight: HOME_STICKY_HEADER_CARD_MIN_HEIGHT,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.1,
     shadowRadius: 20,
@@ -90,6 +92,8 @@ const styles = StyleSheet.create({
   balanceValue: {
     fontSize: 32,
     fontWeight: '700',
+    lineHeight: 38,
+    paddingVertical: 2,
   },
   divider: {
     height: 1,
