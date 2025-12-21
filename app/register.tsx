@@ -13,6 +13,7 @@ import {
   TextInput,
   UIManager,
   View,
+  Image,
 } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
@@ -31,6 +32,7 @@ const accentColor = '#3498db';
 export default function RegisterScreen() {
   const router = useRouter();
   const { setAuth } = useAuth();
+  const appIcon = require('../assets/images/icon.png');
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -93,7 +95,7 @@ export default function RegisterScreen() {
             {/* --- Header --- */}
             <View style={styles.header}>
               <View style={styles.logoCircle}>
-                <MaterialIcons name="person-add-alt-1" size={30} color="#fff" />
+                <Image source={appIcon} style={styles.logoImage} resizeMode="contain" />
               </View>
               <ThemedText type="title" style={styles.title}>Create Account</ThemedText>
               <ThemedText style={styles.subtitle}>
@@ -249,6 +251,10 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
     transform: [{ rotate: '-5deg' }],
+  },
+  logoImage: {
+    width: 34,
+    height: 34,
   },
   title: {
     fontSize: 26,

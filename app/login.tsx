@@ -13,6 +13,7 @@ import {
   View,
   LayoutAnimation,
   UIManager,
+  Image,
 } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
@@ -31,6 +32,7 @@ const accentColor = '#3498db';
 export default function LoginScreen() {
   const router = useRouter();
   const { setAuth } = useAuth();
+  const appIcon = require('../assets/images/icon.png');
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -79,7 +81,7 @@ export default function LoginScreen() {
             {/* --- Header Section --- */}
             <View style={styles.header}>
               <View style={styles.logoCircle}>
-                <MaterialIcons name="donut-large" size={32} color="#fff" />
+                <Image source={appIcon} style={styles.logoImage} resizeMode="contain" />
               </View>
               <ThemedText type="title" style={styles.title}>Welcome Back!</ThemedText>
               <ThemedText style={styles.subtitle}>
@@ -210,6 +212,10 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
     transform: [{ rotate: '-10deg' }],
+  },
+  logoImage: {
+    width: 36,
+    height: 36,
   },
   title: {
     fontSize: 28,
