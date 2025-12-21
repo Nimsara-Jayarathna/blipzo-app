@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
+import { useAppTheme } from '@/context/ThemeContext';
 
 type Props = {
   activeTab: 'income' | 'expense';
@@ -17,27 +18,37 @@ export function CategoryTabs({
   expenseCount,
   maxCount,
 }: Props) {
+  const { colors, resolvedTheme } = useAppTheme();
+  const incomeBg = resolvedTheme === 'dark' ? 'rgba(34, 197, 94, 0.18)' : '#e8f5e9';
+  const expenseBg = resolvedTheme === 'dark' ? 'rgba(239, 68, 68, 0.18)' : '#ffebee';
+
   return (
-    <View style={styles.tabContainer}>
+    <View
+      style={[
+        styles.tabContainer,
+        { backgroundColor: colors.surfaceGlass, borderColor: colors.borderSoft },
+      ]}>
       <TouchableOpacity
-        style={[styles.tab, activeTab === 'income' && styles.tabActiveIncome]}
+        style={[styles.tab, activeTab === 'income' && { backgroundColor: incomeBg }]}
         onPress={() => onTabChange('income')}>
         <ThemedText
           style={[
             styles.tabText,
-            activeTab === 'income' && styles.tabTextActiveIncome,
+            { color: colors.textMuted },
+            activeTab === 'income' && { color: '#22c55e' },
           ]}>
           Income ({incomeCount}/{maxCount})
         </ThemedText>
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={[styles.tab, activeTab === 'expense' && styles.tabActiveExpense]}
+        style={[styles.tab, activeTab === 'expense' && { backgroundColor: expenseBg }]}
         onPress={() => onTabChange('expense')}>
         <ThemedText
           style={[
             styles.tabText,
-            activeTab === 'expense' && styles.tabTextActiveExpense,
+            { color: colors.textMuted },
+            activeTab === 'expense' && { color: '#ef4444' },
           ]}>
           Expense ({expenseCount}/{maxCount})
         </ThemedText>
@@ -49,10 +60,10 @@ export function CategoryTabs({
 const styles = StyleSheet.create({
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.5)',
     borderRadius: 12,
     padding: 4,
     marginBottom: 20,
+    borderWidth: 1,
   },
   tab: {
     flex: 1,
@@ -60,20 +71,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 10,
   },
-  tabActiveIncome: {
-    backgroundColor: '#e8f5e9',
-  },
-  tabActiveExpense: {
-    backgroundColor: '#ffebee',
-  },
   tabText: {
     fontWeight: '600',
-    color: '#7f8c8d',
-  },
-  tabTextActiveIncome: {
-    color: '#2ecc71',
-  },
-  tabTextActiveExpense: {
-    color: '#e74c3c',
   },
 });

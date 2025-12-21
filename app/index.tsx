@@ -14,7 +14,7 @@ import Animated, {
 import { getSession, refreshSession } from '@/api/auth';
 import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/hooks/useAuth';
-import { HomeBackground } from './home/_components/HomeBackground';
+import { HomeBackground } from '@/components/home/HomeBackground';
 
 const ACCENT_COLOR = '#3498db';
 

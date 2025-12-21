@@ -8,7 +8,11 @@ import {
   StyleSheet,
   TouchableOpacity,
   View,
+  Pressable,
 } from 'react-native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   createCategory,
@@ -16,24 +20,27 @@ import {
   getCategories,
   setDefaultCategory,
 } from '@/api/categories';
-import { ProfileHeader } from '@/components/ProfileHeader';
 import { ThemedText } from '@/components/themed-text';
+import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
 import type { Category } from '@/types';
 
-import { HomeBackground } from './_components/HomeBackground';
+import { homeContentStyles } from '@/components/home/layout/HomeContent';
 
 // Importing components directly from their files
-import { CategoryTabs } from './settings/_components/CategoryTabs';
-import { AddCategoryInput } from './settings/_components/AddCategoryInput';
-import { CategoryList } from './settings/_components/CategoryList';
+import { CategoryTabs } from '@/components/home/settings/CategoryTabs';
+import { AddCategoryInput } from '@/components/home/settings/AddCategoryInput';
+import { CategoryList } from '@/components/home/settings/CategoryList';
 
 const categoryKey = ['categories'];
 const getCategoryId = (cat: Category) => cat._id ?? cat.id ?? '';
 
 export default function SettingsScreen() {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
+  const { resolvedTheme, colors } = useAppTheme();
   const queryClient = useQueryClient();
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   // State
   const [activeTab, setActiveTab] = useState<'income' | 'expense'>('income');
@@ -121,65 +128,91 @@ export default function SettingsScreen() {
   const deletingId = deleteMutation.isPending ? deleteMutation.variables : undefined;
 
   return (
-    <HomeBackground>
-      <ProfileHeader
-        user={user ? { name: user.name ?? user.email, avatarUrl: undefined } : null}
-      />
-
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.screen}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.screen}
+    >
+      <ScrollView
+        contentContainerStyle={[
+          homeContentStyles.scrollContent,
+          { paddingTop: homeContentStyles.scrollContent.paddingTop + insets.top },
+        ]}
+        contentInsetAdjustmentBehavior="never"
+        keyboardShouldPersistTaps="handled"
       >
-        <ScrollView
-          contentContainerStyle={styles.container}
-          keyboardShouldPersistTaps="handled"
+        <Pressable
+          onPress={() => router.navigate('/home/profile')}
+          style={styles.backLink}
+          accessibilityRole="button"
+          accessibilityLabel="Back to category setting"
         >
-          {/* Header */}
-          <View style={styles.headerRow}>
-            {createMutation.isPending && <ActivityIndicator size="small" />}
+          <View
+            style={[
+              styles.backIconCircle,
+              { backgroundColor: colors.surfaceGlass, borderColor: colors.borderGlass },
+            ]}
+          >
+            <MaterialIcons name="chevron-left" size={18} color={colors.textMain} />
           </View>
+          <ThemedText style={[styles.backLabel, { color: colors.textMain }]}>
+            Category setting
+          </ThemedText>
+        </Pressable>
+        {/* Header */}
+        <View style={styles.headerRow}>
+          {createMutation.isPending && <ActivityIndicator size="small" />}
+        </View>
 
-          {/* Error Message */}
-          {isError && (
-            <TouchableOpacity onPress={() => refetch()} style={styles.errorBox}>
-              <ThemedText style={styles.errorText}>
-                Failed to load categories. Tap to retry.
-              </ThemedText>
-            </TouchableOpacity>
-          )}
+        {/* Error Message */}
+        {isError && (
+          <TouchableOpacity
+            onPress={() => refetch()}
+            style={[
+              styles.errorBox,
+              {
+                backgroundColor:
+                  resolvedTheme === 'dark' ? 'rgba(239, 68, 68, 0.16)' : 'rgba(231,76,60,0.1)',
+                borderColor:
+                  resolvedTheme === 'dark' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(231,76,60,0.2)',
+              },
+            ]}>
+            <ThemedText style={[styles.errorText, { color: '#ef4444' }]}>
+              Failed to load categories. Tap to retry.
+            </ThemedText>
+          </TouchableOpacity>
+        )}
 
-          {/* Tab Selection */}
-          <CategoryTabs
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            incomeCount={incomeCategories.length}
-            expenseCount={expenseCategories.length}
-            maxCount={MAX_PER_TYPE}
-          />
+        {/* Tab Selection */}
+        <CategoryTabs
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          incomeCount={incomeCategories.length}
+          expenseCount={expenseCategories.length}
+          maxCount={MAX_PER_TYPE}
+        />
 
-          {/* Input Field */}
-          <AddCategoryInput
-            value={newCategoryName}
-            onChangeText={setNewCategoryName}
-            onAdd={handleCreateCategory}
-            activeTab={activeTab}
-            isFull={isFull}
-            isLoading={createMutation.isPending}
-          />
+        {/* Input Field */}
+        <AddCategoryInput
+          value={newCategoryName}
+          onChangeText={setNewCategoryName}
+          onAdd={handleCreateCategory}
+          activeTab={activeTab}
+          isFull={isFull}
+          isLoading={createMutation.isPending}
+        />
 
-          {/* List Display */}
-          <CategoryList
-            data={currentList}
-            activeTab={activeTab}
-            isLoading={isLoading}
-            defaultId={currentDefaultId}
-            deletingId={deletingId}
-            onDelete={handleDelete}
-            onSetDefault={handleSetDefault}
-          />
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </HomeBackground>
+        {/* List Display */}
+        <CategoryList
+          data={currentList}
+          activeTab={activeTab}
+          isLoading={isLoading}
+          defaultId={currentDefaultId}
+          deletingId={deletingId}
+          onDelete={handleDelete}
+          onSetDefault={handleSetDefault}
+        />
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -187,27 +220,39 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
   },
-  container: {
-    paddingHorizontal: 16,
-    paddingVertical: 24,
-    paddingBottom: 50,
-  },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
-    minHeight: 20,
+    marginBottom: 8,
+    minHeight: 0,
+  },
+  backLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  backIconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  backLabel: {
+    fontSize: 17,
+    fontWeight: '500',
   },
   errorBox: {
     padding: 10,
-    backgroundColor: 'rgba(231,76,60,0.1)',
     borderRadius: 8,
     marginBottom: 16,
     alignItems: 'center',
+    borderWidth: 1,
   },
   errorText: {
-    color: '#e74c3c',
     textDecorationLine: 'underline',
   },
 });

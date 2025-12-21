@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'; // Added icon for visual cue
 import { ThemedText } from '@/components/themed-text';
+import { useAppTheme } from '@/context/ThemeContext';
 
 type Props = {
   value: string;
@@ -28,22 +29,29 @@ export function AddCategoryInput({
   isLoading,
 }: Props) {
   const [isFocused, setIsFocused] = useState(false);
+  const { colors } = useAppTheme();
   
   const isDisabled = !value.trim() || isFull || isLoading;
 
   return (
     <View style={styles.container}>
-      <View style={[
-        styles.inputWrapper, 
-        isFocused && styles.inputWrapperFocused,
-        isFull && styles.inputWrapperDisabled
-      ]}>
+      <View
+        style={[
+          styles.inputWrapper,
+          { backgroundColor: colors.surface1, borderColor: colors.borderSoft, shadowColor: colors.textMain },
+          isFocused && [styles.inputWrapperFocused, { borderColor: colors.primaryAccent }],
+          isFull && [styles.inputWrapperDisabled, { backgroundColor: colors.surface2 }],
+        ]}>
         
         {/* Input Field */}
         <TextInput
-          style={[styles.input, isFull && styles.inputTextDisabled]}
+          style={[
+            styles.input,
+            { color: colors.textMain },
+            isFull && { color: colors.textSubtle },
+          ]}
           placeholder={isFull ? "Limit reached" : `Add ${activeTab} category...`}
-          placeholderTextColor="#95a5a6"
+          placeholderTextColor={colors.textSubtle}
           value={value}
           onChangeText={onChangeText}
           
@@ -71,7 +79,15 @@ export function AddCategoryInput({
         <TouchableOpacity
           style={[
             styles.iconButton,
-            isDisabled ? styles.iconButtonDisabled : styles.iconButtonActive
+            isDisabled
+              ? [styles.iconButtonDisabled, { backgroundColor: colors.surface2 }]
+              : [
+                  styles.iconButtonActive,
+                  {
+                    backgroundColor: colors.primaryAccent,
+                    shadowColor: colors.primaryAccent,
+                  },
+                ],
           ]}
           onPress={onAdd}
           disabled={isDisabled}
@@ -83,21 +99,13 @@ export function AddCategoryInput({
             <MaterialIcons 
               name="add" 
               size={24} 
-              color={isDisabled ? "#bdc3c7" : "#fff"} 
+              color={isDisabled ? colors.textSubtle : "#fff"} 
             />
           )}
         </TouchableOpacity>
       </View>
 
-      {/* Warning Banner */}
-      {isFull && (
-        <View style={styles.warningBanner}>
-          <MaterialIcons name="error-outline" size={16} color="#d35400" />
-          <ThemedText style={styles.warningText}>
-            Maximum of 10 {activeTab} categories reached.
-          </ThemedText>
-        </View>
-      )}
+      {/* Warning Banner removed */}
     </View>
   );
 }
@@ -110,37 +118,29 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
     borderRadius: 16,
     paddingLeft: 16,
     paddingRight: 6,
     paddingVertical: 6,
     borderWidth: 1,
-    borderColor: 'transparent',
     // Shadow
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 12,
     elevation: 4,
   },
   inputWrapperFocused: {
-    borderColor: '#3498db',
-    backgroundColor: '#fdfdfd',
     shadowOpacity: 0.12,
   },
   inputWrapperDisabled: {
-    backgroundColor: '#f4f6f7',
   },
   input: {
     flex: 1,
     fontSize: 16,
-    color: '#2c3e50',
     paddingVertical: 8,
     height: 44, // Touch target height
   },
   inputTextDisabled: {
-    color: '#bdc3c7',
   },
   // Circle Button Style
   iconButton: {
@@ -152,15 +152,12 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   iconButtonActive: {
-    backgroundColor: '#3498db',
-    shadowColor: '#3498db',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 3,
   },
   iconButtonDisabled: {
-    backgroundColor: '#f0f2f5',
   },
   
   // Warning Banner

@@ -5,23 +5,26 @@ import {
   Easing,
   Platform,
   Pressable,
-  SafeAreaView,
   StyleSheet,
   View,
   Dimensions,
+  Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/hooks/useAuth';
-import { HomeBackground } from './home/_components/HomeBackground';
+import { HomeBackground } from '@/components/home/HomeBackground';
+import { useAppTheme } from '@/context/ThemeContext';
 
 const { width } = Dimensions.get('window');
-const accentColor = '#3498db';
-
 export default function WelcomeScreen() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
+  const { colors } = useAppTheme();
+  const accentColor = colors.primaryAccent;
+  const appIcon = require('../assets/images/icon.png');
 
   // Animations
   const fadeAnim = useRef(new Animated.Value(0)).current; // Opacity for everything
@@ -66,7 +69,7 @@ export default function WelcomeScreen() {
 
   return (
     <View style={styles.container}>
-      <HomeBackground>
+      <HomeBackground showSecondaryGlow={false}>
         <SafeAreaView style={styles.safeArea}>
           
           {/* --- TOP SECTION: BRANDING --- */}
@@ -80,18 +83,18 @@ export default function WelcomeScreen() {
               
               {/* Modern Glow Logo */}
               <View style={styles.logoWrapper}>
-                <View style={styles.logoGlow} />
-                <View style={styles.logoCircle}>
-                  <MaterialIcons name="donut-large" size={48} color="#fff" />
+                <View style={[styles.logoGlow, { backgroundColor: accentColor, shadowColor: accentColor }]} />
+                <View style={[styles.logoCircle, { backgroundColor: accentColor }]}>
+                  <Image source={appIcon} style={styles.logoImage} resizeMode="contain" />
                 </View>
                 {/* Decorative floating dot */}
-                <View style={styles.floatingDot} />
+                <View style={[styles.floatingDot, { borderColor: colors.surface1 }]} />
               </View>
 
-              <ThemedText type="title" style={styles.appTitle}>
+              <ThemedText type="title" style={[styles.appTitle, { color: colors.textMain }]}>
                 MyEx
               </ThemedText>
-              <ThemedText style={styles.tagline}>
+              <ThemedText style={[styles.tagline, { color: colors.textMuted }]}>
                 Master your finances.{'\n'}Effortlessly.
               </ThemedText>
             </Animated.View>
@@ -101,12 +104,15 @@ export default function WelcomeScreen() {
           <Animated.View
             style={[
               styles.bottomSheet,
+              { backgroundColor: colors.surfaceGlassThick, shadowColor: colors.pageFg },
               { transform: [{ translateY: sheetSlideAnim }] },
             ]}>
-            <View style={styles.sheetHandle} />
+            <View style={[styles.sheetHandle, { backgroundColor: colors.surface3 }]} />
             
-            <ThemedText style={styles.welcomeHeader}>Let's get started</ThemedText>
-            <ThemedText style={styles.welcomeSub}>
+            <ThemedText style={[styles.welcomeHeader, { color: colors.textMain }]}>
+              Let's get started
+            </ThemedText>
+            <ThemedText style={[styles.welcomeSub, { color: colors.textMuted }]}>
               Track expenses, set budgets, and achieve your financial goals today.
             </ThemedText>
 
@@ -116,10 +122,11 @@ export default function WelcomeScreen() {
                 onPress={handleLoginPress}
                 style={({ pressed }) => [
                   styles.primaryButton,
+                  { backgroundColor: accentColor, shadowColor: accentColor },
                   pressed && styles.buttonPressed,
                 ]}>
                 <ThemedText style={styles.primaryButtonText}>Log In</ThemedText>
-                <View style={styles.iconCircle}>
+                <View style={[styles.iconCircle, { backgroundColor: colors.surface1 }]}>
                   <MaterialIcons name="arrow-forward" size={18} color={accentColor} />
                 </View>
               </Pressable>
@@ -129,10 +136,15 @@ export default function WelcomeScreen() {
                 onPress={handleRegisterPress}
                 style={({ pressed }) => [
                   styles.secondaryButton,
+                  { backgroundColor: colors.surface2, borderColor: colors.borderGlass },
                   pressed && styles.buttonPressed,
                 ]}>
-                <MaterialIcons name="person-add-alt-1" size={20} color={accentColor} />
-                <ThemedText style={styles.secondaryButtonText}>Create Account</ThemedText>
+                <ThemedText style={[styles.secondaryButtonText, { color: colors.textMain }]}>
+                  Create Account
+                </ThemedText>
+                <View style={[styles.iconCircle, { backgroundColor: colors.surface1 }]}>
+                  <MaterialIcons name="person-add-alt-1" size={18} color={accentColor} />
+                </View>
               </Pressable>
             </View>
           </Animated.View>
@@ -171,10 +183,8 @@ const styles = StyleSheet.create({
     width: 90,
     height: 90,
     borderRadius: 50,
-    backgroundColor: accentColor,
     opacity: 0.3,
     transform: [{ scale: 1.2 }],
-    shadowColor: accentColor,
     shadowOpacity: 0.5,
     shadowRadius: 20,
     elevation: 10,
@@ -183,7 +193,6 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 26, // Squircle
-    backgroundColor: accentColor,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -192,6 +201,10 @@ const styles = StyleSheet.create({
     shadowRadius: 15,
     elevation: 8,
     transform: [{ rotate: '-10deg' }], // Stylish tilt
+  },
+  logoImage: {
+    width: 46,
+    height: 46,
   },
   floatingDot: {
     position: 'absolute',
@@ -208,8 +221,8 @@ const styles = StyleSheet.create({
   appTitle: {
     fontSize: 42,
     fontWeight: '800',
+    lineHeight: 48,
     letterSpacing: -1,
-    color: '#2c3e50',
     marginBottom: 8,
   },
   tagline: {
@@ -227,7 +240,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 32,
     paddingHorizontal: 24,
     paddingTop: 16,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+    paddingBottom: Platform.OS === 'ios' ? 24 : 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -10 },
     shadowOpacity: 0.1,
@@ -261,13 +274,11 @@ const styles = StyleSheet.create({
   // --- BUTTONS ---
   primaryButton: {
     height: 56,
-    backgroundColor: accentColor,
     borderRadius: 18,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between', // Text left, icon right
     paddingHorizontal: 24,
-    shadowColor: accentColor,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
@@ -289,14 +300,12 @@ const styles = StyleSheet.create({
   
   secondaryButton: {
     height: 56,
-    backgroundColor: '#f8fafc',
     borderRadius: 18,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
-    gap: 8,
+    paddingHorizontal: 24,
   },
   secondaryButtonText: {
     color: '#334155',

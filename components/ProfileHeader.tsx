@@ -7,11 +7,12 @@ import {
   type TextStyle,
   type ViewStyle,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { useAppTheme } from '@/context/ThemeContext';
 
 type UserSummary = {
   name: string;
@@ -23,20 +24,25 @@ type ProfileHeaderProps = {
   containerStyle?: ViewStyle;
   contentStyle?: ViewStyle;
   nameStyle?: TextStyle;
+  showSettingsButton?: boolean;
 };
-
-const accentColor = '#3498db';
 
 export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   user,
   containerStyle,
   contentStyle,
   nameStyle,
+  showSettingsButton = false,
 }) => {
   const router = useRouter();
+  const { colors } = useAppTheme();
 
   const handlePressProfile = () => {
     router.navigate('/home/profile');
+  };
+
+  const handlePressSettings = () => {
+    router.navigate('/home/settings');
   };
 
   const displayName = user?.name?.trim() || 'Guest';
@@ -48,9 +54,18 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
     .join('');
 
   return (
-    <SafeAreaView style={[styles.safeArea, containerStyle]}>
-      <ThemedView style={styles.headerShadowWrapper}>
-        <ThemedView style={[styles.header, contentStyle]}>
+    <View style={[styles.safeArea, { backgroundColor: colors.surface1 }, containerStyle]}>
+      <ThemedView
+        style={[
+          styles.headerShadowWrapper,
+          { backgroundColor: colors.surface1, shadowColor: colors.textMain },
+        ]}>
+        <ThemedView
+          style={[
+            styles.header,
+            { backgroundColor: colors.surface1 },
+            contentStyle,
+          ]}>
           <Pressable
             onPress={handlePressProfile}
             style={styles.leftContent}
@@ -60,7 +75,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             {user?.avatarUrl ? (
               <Image source={{ uri: user.avatarUrl }} style={styles.avatar} />
             ) : (
-              <View style={styles.avatarPlaceholder}>
+              <View style={[styles.avatarPlaceholder, { backgroundColor: colors.primaryAccent }]}>
                 <ThemedText style={styles.avatarInitials}>{initials || '?'}</ThemedText>
               </View>
             )}
@@ -70,29 +85,48 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
               <ThemedText style={[styles.name, nameStyle]}>{displayName}</ThemedText>
             </View>
           </Pressable>
+          {showSettingsButton ? (
+            <Pressable
+              onPress={handlePressSettings}
+              style={[
+                styles.settingsButton,
+                { backgroundColor: colors.surfaceGlassThick, borderColor: colors.borderSoft },
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Open settings"
+              accessibilityHint="Opens your settings">
+              <MaterialIcons name="settings" size={18} color={colors.textMain} />
+            </Pressable>
+          ) : null}
         </ThemedView>
       </ThemedView>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: '#ffffff',
   },
   headerShadowWrapper: {
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.06,
     shadowRadius: 10,
     elevation: 4,
-    backgroundColor: '#ffffff',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 10,
+    justifyContent: 'space-between',
+  },
+  settingsButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
   },
   leftContent: {
     flexDirection: 'row',
@@ -108,7 +142,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: accentColor,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -117,13 +150,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   greeting: {
-    fontSize: 11,
+    fontSize: 12,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
     opacity: 0.7,
   },
   name: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
   },
 });

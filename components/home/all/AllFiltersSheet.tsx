@@ -8,7 +8,8 @@ import {
 } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import type { AllFilters, Grouping } from '../_hooks/useTransactionLogic';
+import { useAppTheme } from '@/context/ThemeContext';
+import type { AllFilters, Grouping } from '@/hooks/home/useTransactionLogic';
 import { FilterControls } from './FilterControls';
 import { SortGroupControls } from './SortGroupControls';
 
@@ -33,6 +34,7 @@ export function AllFiltersSheet({
 }: AllFiltersSheetProps) {
   const [draftFilters, setDraftFilters] = useState<AllFilters>(filters);
   const [draftGrouping, setDraftGrouping] = useState<Grouping>(grouping);
+  const { colors } = useAppTheme();
 
   useEffect(() => {
     if (visible) {
@@ -60,12 +62,20 @@ export function AllFiltersSheet({
       <View style={styles.backdrop}>
         <Pressable style={styles.backdropTouchable} onPress={onClose} />
 
-        <View style={styles.sheet}>
-          <View style={styles.handle} />
+        <View
+          style={[
+            styles.sheet,
+            {
+              backgroundColor: colors.surfaceGlassThick,
+              borderColor: colors.borderGlass,
+              shadowColor: colors.textMain,
+            },
+          ]}>
+          <View style={[styles.handle, { backgroundColor: colors.borderSoft }]} />
           <ThemedText type="title" style={styles.title}>
             Filters &amp; sorting
           </ThemedText>
-          <ThemedText style={styles.subtitle}>
+          <ThemedText style={[styles.subtitle, { color: colors.textMuted }]}>
             Tune the date range, type, category, sort and grouping for this view.
           </ThemedText>
 
@@ -91,6 +101,10 @@ export function AllFiltersSheet({
             <Pressable
               style={({ pressed }) => [
                 styles.secondaryButton,
+                {
+                  backgroundColor: colors.surface1,
+                  borderColor: colors.borderGlass,
+                },
                 pressed && styles.buttonPressed,
               ]}
               onPress={onClose}
@@ -101,6 +115,7 @@ export function AllFiltersSheet({
             <Pressable
               style={({ pressed }) => [
                 styles.primaryButton,
+                { backgroundColor: colors.primaryAccent, shadowColor: colors.primaryAccent },
                 pressed && styles.buttonPressed,
               ]}
               onPress={handleApply}
@@ -130,9 +145,6 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 20,
     borderWidth: 1,
-    borderColor: '#ffffff',
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.1,
     shadowRadius: 20,
@@ -144,7 +156,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 999,
-    backgroundColor: 'rgba(0,0,0,0.12)',
     marginBottom: 8,
   },
   title: {
@@ -171,10 +182,8 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 44,
     borderRadius: 999,
-    backgroundColor: '#3498db',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.16,
     shadowRadius: 18,
@@ -190,8 +199,6 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: 'rgba(211,216,224,0.9)',
-    backgroundColor: 'rgba(255,255,255,0.96)',
     alignItems: 'center',
     justifyContent: 'center',
   },

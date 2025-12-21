@@ -96,8 +96,23 @@ export const createTransaction = async (payload: TransactionInput) => {
   return normalizeTransaction(data as TransactionApiShape);
 };
 
+const resolveTimezoneHeader = () => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  } catch {
+    return 'UTC';
+  }
+};
+
+export const deleteTransaction = async (id: string) => {
+  await apiClient.delete(`/api/transactions/${id}`, {
+    headers: {
+      'X-Timezone': resolveTimezoneHeader(),
+    },
+  });
+};
+
 export const getTransactionSummary = async () => {
   const { data } = await apiClient.get<SummaryResponse>('/api/transactions/summary');
   return data;
 };
-

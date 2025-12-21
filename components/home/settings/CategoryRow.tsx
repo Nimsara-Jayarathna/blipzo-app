@@ -1,6 +1,7 @@
 import React from 'react';
 import { ActivityIndicator, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
+import { useAppTheme } from '@/context/ThemeContext';
 import type { Category } from '@/types';
 
 type Props = {
@@ -20,8 +21,9 @@ export function CategoryRow({
   onDelete,
   onSetDefault,
 }: Props) {
+  const { colors } = useAppTheme();
   return (
-    <View style={styles.categoryRow}>
+    <View style={[styles.categoryRow, { borderBottomColor: colors.borderSoft }]}>
       <View style={styles.categoryInfo}>
         <ThemedText style={styles.categoryName}>{category.name}</ThemedText>
       </View>
@@ -42,12 +44,12 @@ export function CategoryRow({
           disabled={!canDelete || isDeleting}
           style={styles.iconButton}>
           {isDeleting ? (
-            <ActivityIndicator size="small" color="#e74c3c" />
+            <ActivityIndicator size="small" color="#ef4444" />
           ) : (
             <ThemedText
               style={[
                 styles.iconDelete,
-                (!canDelete || isDeleting) && styles.iconDeleteDisabled,
+                (!canDelete || isDeleting) && { color: colors.textSubtle },
               ]}>
               ×
             </ThemedText>
@@ -65,7 +67,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.05)',
   },
   categoryInfo: {
     flex: 1,
@@ -96,8 +97,5 @@ const styles = StyleSheet.create({
     fontSize: 26,
     lineHeight: 28,
     color: '#e74c3c',
-  },
-  iconDeleteDisabled: {
-    color: '#bdc3c7',
   },
 });
