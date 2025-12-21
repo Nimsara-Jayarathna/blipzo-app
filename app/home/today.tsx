@@ -1,15 +1,16 @@
 import dayjs from 'dayjs';
-import { useQuery } from '@tanstack/react-query';
-import React, { useMemo } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import React, { useMemo, useState } from 'react';
 import { 
   ActivityIndicator, 
   FlatList, 
+  Pressable,
   StyleSheet, 
   View, 
   RefreshControl 
 } from 'react-native';
 
-import { getTransactionsFiltered, type TransactionFilters } from '@/api/transactions';
+import { deleteTransaction, getTransactionsFiltered, type TransactionFilters } from '@/api/transactions';
 import { ThemedText } from '@/components/themed-text';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -24,7 +25,9 @@ const transactionKey = ['transactions'];
 export default function TodayScreen() {
   const { isAuthenticated } = useAuth();
   const { colors } = useAppTheme();
+  const queryClient = useQueryClient();
   const todayDate = dayjs().format('YYYY-MM-DD');
+  const [openNoteId, setOpenNoteId] = useState<string | null>(null);
 
   const {
     data: todayData,
@@ -64,6 +67,12 @@ export default function TodayScreen() {
 
   // Helper for IDs
   const getKey = (item: Transaction) => item._id ?? item.id ?? Math.random().toString();
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteTransaction(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+    },
+  });
 
   return (
     <HomeContent>
@@ -88,34 +97,53 @@ export default function TodayScreen() {
         </View>
       )}
 
-      {!isLoading && !isError && transactions.length === 0 ? (
-        <View style={styles.center}>
-          <ThemedText style={styles.emptyText}>No activity today.</ThemedText>
-          <ThemedText style={[styles.emptySubText, { color: colors.textMuted }]}>
-            Tap the + button to add one.
-          </ThemedText>
-        </View>
-      ) : (
-        <FlatList
-          data={transactions}
-          keyExtractor={getKey}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={isRefetching}
-              onRefresh={refetch}
-              tintColor={colors.primaryAccent}
+        {!isLoading && !isError && transactions.length === 0 ? (
+          <View style={styles.center}>
+            <ThemedText style={styles.emptyText}>No activity today.</ThemedText>
+            <ThemedText style={[styles.emptySubText, { color: colors.textMuted }]}>
+              Tap the + button to add one.
+            </ThemedText>
+          </View>
+        ) : (
+          <Pressable style={styles.listWrapper} onPress={() => setOpenNoteId(null)}>
+            <FlatList
+              data={transactions}
+              keyExtractor={getKey}
+              contentContainerStyle={styles.listContent}
+              showsVerticalScrollIndicator={false}
+              refreshControl={
+                <RefreshControl
+                  refreshing={isRefetching}
+                  onRefresh={refetch}
+                  tintColor={colors.primaryAccent}
+                />
+              }
+              renderItem={({ item }) => {
+                const id = item._id ?? item.id ?? '';
+                return (
+                  <TransactionRow
+                    transaction={item}
+                    mode="today"
+                    onDelete={(deleteId) => deleteMutation.mutate(deleteId)}
+                    isNoteOpen={Boolean(id && openNoteId === id)}
+                    onToggleNote={() =>
+                      setOpenNoteId(current => (current === id ? null : id))
+                    }
+                    onRowPress={() => setOpenNoteId(null)}
+                  />
+                );
+              }}
             />
-          }
-          renderItem={({ item }) => <TransactionRow transaction={item} />}
-        />
-      )}
+          </Pressable>
+        )}
     </HomeContent>
   );
 }
 
 const styles = StyleSheet.create({
+  listWrapper: {
+    flex: 1,
+  },
   summaryWrapper: {
     marginBottom: 20,
   },

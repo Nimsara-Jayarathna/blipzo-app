@@ -13,9 +13,21 @@ interface Props {
   data: Transaction[];
   groupedData: GroupedSection[] | null;
   HeaderComponent: React.ComponentType<any>;
+  onDelete?: (id: string) => void;
+  openNoteId?: string | null;
+  onToggleNote?: (id: string) => void;
+  onRowPress?: () => void;
 }
 
-export function TransactionList({ data, groupedData, HeaderComponent }: Props) {
+export function TransactionList({
+  data,
+  groupedData,
+  HeaderComponent,
+  onDelete,
+  openNoteId,
+  onToggleNote,
+  onRowPress,
+}: Props) {
   const { colors } = useAppTheme();
   // If grouped, use SectionList
   if (groupedData) {
@@ -51,7 +63,19 @@ export function TransactionList({ data, groupedData, HeaderComponent }: Props) {
             </View>
           </View>
         )}
-        renderItem={({ item }) => <TransactionRow transaction={item} />}
+        renderItem={({ item }) => {
+          const id = item._id ?? item.id ?? '';
+          return (
+            <TransactionRow
+              transaction={item}
+              mode="all"
+              onDelete={onDelete}
+              isNoteOpen={Boolean(id && openNoteId === id)}
+              onToggleNote={() => onToggleNote?.(id)}
+              onRowPress={onRowPress}
+            />
+          );
+        }}
         contentContainerStyle={styles.listContent}
         stickySectionHeadersEnabled={false}
       />
@@ -64,7 +88,19 @@ export function TransactionList({ data, groupedData, HeaderComponent }: Props) {
       data={data}
       keyExtractor={(item) => item.id ?? Math.random().toString()}
       ListHeaderComponent={HeaderComponent}
-      renderItem={({ item }) => <TransactionRow transaction={item} />}
+      renderItem={({ item }) => {
+        const id = item._id ?? item.id ?? '';
+        return (
+          <TransactionRow
+            transaction={item}
+            mode="all"
+            onDelete={onDelete}
+            isNoteOpen={Boolean(id && openNoteId === id)}
+            onToggleNote={() => onToggleNote?.(id)}
+            onRowPress={onRowPress}
+          />
+        );
+      }}
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.listContent}
       ListEmptyComponent={

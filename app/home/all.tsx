@@ -1,9 +1,9 @@
 import dayjs from 'dayjs';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import React, { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { getTransactionsFiltered, type TransactionFilters } from '@/api/transactions';
+import { deleteTransaction, getTransactionsFiltered, type TransactionFilters } from '@/api/transactions';
 import { useAuth } from '@/hooks/useAuth';
 import { TransactionList } from '@/components/home/all/TransactionList';
 import SmartFilterHeader from '@/components/home/all/SmartFilterHeader';
@@ -18,6 +18,7 @@ import { AllFiltersSheet } from '@/components/home/all/AllFiltersSheet';
 
 export default function AllTransactionsScreen() {
   const { isAuthenticated } = useAuth();
+  const queryClient = useQueryClient();
   const today = dayjs().format('YYYY-MM-DD');
 
   const [filters, setFilters] = useState<AllFilters>({
@@ -30,6 +31,13 @@ export default function AllTransactionsScreen() {
   });
   const [grouping, setGrouping] = useState<Grouping>('none');
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [openNoteId, setOpenNoteId] = useState<string | null>(null);
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteTransaction(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+    },
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: ['transactions', 'all', filters],
@@ -86,11 +94,19 @@ export default function AllTransactionsScreen() {
         />
       </View>
 
-      <TransactionList
-        data={filteredTransactions}
-        groupedData={groupedData}
-        HeaderComponent={() => null}
-      />
+      <Pressable style={styles.listWrapper} onPress={() => setOpenNoteId(null)}>
+        <TransactionList
+          data={filteredTransactions}
+          groupedData={groupedData}
+          HeaderComponent={() => null}
+          onDelete={(id) => deleteMutation.mutate(id)}
+          openNoteId={openNoteId}
+          onToggleNote={(id) =>
+            setOpenNoteId(current => (current === id ? null : id))
+          }
+          onRowPress={() => setOpenNoteId(null)}
+        />
+      </Pressable>
 
       <AllFiltersSheet
         visible={isFiltersOpen}
@@ -110,5 +126,8 @@ export default function AllTransactionsScreen() {
 const styles = StyleSheet.create({
   summaryWrapper: {
     marginBottom: 12,
+  },
+  listWrapper: {
+    flex: 1,
   },
 });
