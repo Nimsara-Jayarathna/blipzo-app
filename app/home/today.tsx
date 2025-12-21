@@ -15,7 +15,7 @@ import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
 import type { Transaction } from '@/types';
 import { SummaryCard } from '@/components/home/today/SummaryCard';
-import { TransactionRow } from '@/components/home/today/TransactionRow';
+import { TransactionRow } from '@/components/home/TransactionRow';
 import { HOME_LIST_BOTTOM_PADDING } from '@/components/home/layout/spacing';
 import { HomeContent } from '@/components/home/layout/HomeContent';
 

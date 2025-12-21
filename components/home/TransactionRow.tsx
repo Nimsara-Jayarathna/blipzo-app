@@ -6,7 +6,11 @@ import { ThemedText } from '@/components/themed-text';
 import { useAppTheme } from '@/context/ThemeContext';
 import type { Transaction } from '@/types';
 
-export function TransactionRow({ transaction }: { transaction: Transaction }) {
+type TransactionRowProps = {
+  transaction: Transaction;
+};
+
+export function TransactionRow({ transaction }: TransactionRowProps) {
   const { colors, resolvedTheme } = useAppTheme();
   const isIncome = transaction.type === 'income';
   const color = resolvedTheme === 'dark'
@@ -58,6 +62,8 @@ export function TransactionRow({ transaction }: { transaction: Transaction }) {
   );
 }
 
+export default TransactionRow;
+
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
@@ -97,5 +103,3 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
-
-export default TransactionRow;

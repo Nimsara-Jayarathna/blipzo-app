@@ -7,7 +7,7 @@ import { useAppTheme } from '@/context/ThemeContext';
 import { HOME_LIST_BOTTOM_PADDING } from '@/components/home/layout/spacing';
 import type { Transaction } from '@/types';
 import type { GroupedSection } from '@/hooks/home/useTransactionLogic';
-import { TransactionRow } from './TransactionRow';
+import { TransactionRow } from '@/components/home/TransactionRow';
 
 interface Props {
   data: Transaction[];
