@@ -43,8 +43,8 @@ app-example
 /android
 
 # Local design notes (not for commit)
-myex-design-language.md
-myex-icon-spec.md
+blipzo-design-language.md
+blipzo-icon-spec.md
 
 # For JetBrains:
 /.idea

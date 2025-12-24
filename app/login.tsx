@@ -191,9 +191,7 @@ export default function LoginScreen() {
 
             {/* --- Footer Section --- */}
             <View style={styles.footer}>
-              <ThemedText style={[styles.footerText, { color: colors.textMuted }]}>
-                New to MyEx?
-              </ThemedText>
+              <ThemedText style={styles.footerText}>New to Blipzo?</ThemedText>
               <Pressable onPress={() => router.navigate('/register')} style={{ padding: 4 }}>
                 <ThemedText style={[styles.footerLink, { color: accentColor }]}>
                   Create Account

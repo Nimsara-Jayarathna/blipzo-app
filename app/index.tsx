@@ -96,7 +96,7 @@ export default function IndexScreen() {
 
         {/* Text */}
         <View style={styles.textWrapper}>
-          <ThemedText type="title" style={styles.title}>MyEx</ThemedText>
+          <ThemedText type="title" style={styles.title}>Blipzo</ThemedText>
           <ThemedText style={styles.tagline}>Everything you earn and spend.</ThemedText>
         </View>
 

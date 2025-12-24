@@ -136,7 +136,7 @@ export default function ProfileScreen() {
           onPress={handleLogout}
           accessibilityRole="button"
           accessibilityLabel="Log out"
-          accessibilityHint="Signs you out of your MyEx account"
+          accessibilityHint="Signs you out of your Blipzo account"
           style={({ pressed }) => [
             styles.logoutButton,
             { backgroundColor: '#ef4444' },
