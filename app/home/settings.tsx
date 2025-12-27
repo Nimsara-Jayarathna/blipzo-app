@@ -14,6 +14,7 @@ import {
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BlurView } from 'expo-blur';
 
 import {
   createCategory,
@@ -26,7 +27,11 @@ import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
 import type { Category } from '@/types';
 
-import { homeContentStyles } from '@/components/home/layout/HomeContent';
+import {
+  HOME_BOTTOM_BAR_CLEARANCE,
+  HOME_CONTENT_PADDING_H,
+  HOME_CONTENT_PADDING_TOP,
+} from '@/components/home/layout/spacing';
 
 // Importing components directly from their files
 import { CategoryTabs } from '@/components/home/settings/CategoryTabs';
@@ -43,6 +48,7 @@ export default function SettingsScreen() {
   const queryClient = useQueryClient();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const [headerHeight, setHeaderHeight] = useState(0);
 
   // State
   const [activeTab, setActiveTab] = useState<'income' | 'expense'>('income');
@@ -140,19 +146,32 @@ export default function SettingsScreen() {
 
   const deletingId = deleteMutation.isPending ? deleteMutation.variables : undefined;
 
+  const isDark = resolvedTheme === 'dark';
+  const headerBlurIntensity = isDark ? 30 : 22;
+  const headerOverlayColor = isDark ? 'rgba(15, 23, 42, 0.35)' : 'rgba(241, 245, 249, 0.55)';
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.screen}
     >
-      <ScrollView
-        contentContainerStyle={[
-          homeContentStyles.scrollContent,
-          { paddingTop: homeContentStyles.scrollContent.paddingTop + insets.top },
-        ]}
-        contentInsetAdjustmentBehavior="never"
-        keyboardShouldPersistTaps="handled"
-      >
+      <View style={styles.screen}>
+        <View
+          style={[
+            styles.fixedHeader,
+            {
+              paddingTop: HOME_CONTENT_PADDING_TOP + insets.top,
+              paddingHorizontal: HOME_CONTENT_PADDING_H,
+            },
+          ]}
+          onLayout={event => setHeaderHeight(event.nativeEvent.layout.height)}
+        >
+          <BlurView
+            intensity={headerBlurIntensity}
+            tint={isDark ? 'dark' : 'light'}
+            style={StyleSheet.absoluteFill}
+            pointerEvents="none"
+          />
         <Pressable
           onPress={() => router.navigate('/home/profile')}
           style={styles.backLink}
@@ -218,16 +237,31 @@ export default function SettingsScreen() {
         />
 
         {/* List Display */}
-        <CategoryList
-          data={currentList}
-          activeTab={activeTab}
-          isLoading={isLoading}
-          defaultId={currentDefaultId}
-          deletingId={deletingId}
-          onDelete={handleDelete}
-          onSetDefault={handleSetDefault}
-        />
-      </ScrollView>
+        </View>
+
+        <ScrollView
+          contentContainerStyle={[
+            styles.listContent,
+            {
+              paddingTop: headerHeight + 12,
+              paddingBottom: HOME_BOTTOM_BAR_CLEARANCE,
+            },
+          ]}
+          contentInsetAdjustmentBehavior="never"
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <CategoryList
+            data={currentList}
+            activeTab={activeTab}
+            isLoading={isLoading}
+            defaultId={currentDefaultId}
+            deletingId={deletingId}
+            onDelete={handleDelete}
+            onSetDefault={handleSetDefault}
+          />
+        </ScrollView>
+      </View>
     </KeyboardAvoidingView>
   );
 }
@@ -235,6 +269,14 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
+  },
+  fixedHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+    paddingBottom: 12,
   },
   headerRow: {
     flexDirection: 'row',
@@ -270,5 +312,8 @@ const styles = StyleSheet.create({
   },
   errorText: {
     textDecorationLine: 'underline',
+  },
+  listContent: {
+    paddingHorizontal: HOME_CONTENT_PADDING_H,
   },
 });
