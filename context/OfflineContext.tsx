@@ -1,5 +1,8 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { Alert } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
+
+import { registerOfflinePrompt } from '@/utils/offline-prompt';
 
 export type Capabilities = {
   canAdd: boolean;
@@ -13,26 +16,43 @@ export type Capabilities = {
 
 type OfflineContextValue = {
   offlineMode: boolean;
+  setOfflineMode: (next: boolean) => void;
+  promptToGoOffline: (reason: string) => void;
   capabilities: Capabilities;
 };
 
 const OfflineContext = createContext<OfflineContextValue | null>(null);
 
 export const OfflineProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
-  // Offline state driven by device connectivity (server reachability can be layered in later).
-  const [offlineMode, setOfflineMode] = useState(false);
+  // Offline state combines manual override + device connectivity.
+  const [networkConnected, setNetworkConnected] = useState(true);
+  const [manualOffline, setManualOffline] = useState(false);
+  const offlineMode = manualOffline || !networkConnected;
+
+  const promptToGoOffline = useCallback((reason: string) => {
+    Alert.alert(
+      'Offline mode',
+      `${reason}\n\nContinue in offline mode?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Go offline', onPress: () => setManualOffline(true) },
+      ]
+    );
+  }, []);
 
   useEffect(() => {
     // NetInfo: fast local signal for online/offline mode.
     const unsubscribe = NetInfo.addEventListener(state => {
-      setOfflineMode(!state.isConnected);
+      setNetworkConnected(Boolean(state.isConnected));
     });
 
-    // TODO: Add a lightweight session ping to /api/auth/session with a timeout
-    // to treat server downtime as offline/degraded mode.
+    const unregister = registerOfflinePrompt(promptToGoOffline);
 
-    return () => unsubscribe();
-  }, []);
+    return () => {
+      unregister();
+      unsubscribe();
+    };
+  }, [promptToGoOffline]);
 
   const capabilities = useMemo<Capabilities>(() => {
     if (offlineMode) {
@@ -61,7 +81,14 @@ export const OfflineProvider: React.FC<React.PropsWithChildren> = ({ children })
   }, [offlineMode]);
 
   return (
-    <OfflineContext.Provider value={{ offlineMode, capabilities }}>
+    <OfflineContext.Provider
+      value={{
+        offlineMode,
+        setOfflineMode: setManualOffline,
+        promptToGoOffline,
+        capabilities,
+      }}
+    >
       {children}
     </OfflineContext.Provider>
   );

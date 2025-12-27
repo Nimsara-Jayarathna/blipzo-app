@@ -8,6 +8,8 @@ import 'react-native-reanimated';
 import { AuthProvider } from '@/context/AuthContext'; // Ensure this path is correct
 import { OfflineProvider } from '@/context/OfflineContext';
 import { AppThemeProvider, useAppTheme } from '@/context/ThemeContext';
+import { useHeartbeat } from '@/hooks/useHeartbeat';
+import { useStartupSessionCheck } from '@/hooks/useStartupSessionCheck';
 
 // Prevent native splash from hiding immediately
 SplashScreen.preventAutoHideAsync();
@@ -25,12 +27,20 @@ export default function RootLayout() {
       <AuthProvider>
         <OfflineProvider>
           <AppThemeProvider>
+            <OfflineLifecycle />
             <ThemedNavigation />
           </AppThemeProvider>
         </OfflineProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
+}
+
+function OfflineLifecycle() {
+  // Startup check + background health monitoring.
+  useStartupSessionCheck();
+  useHeartbeat();
+  return null;
 }
 
 function ThemedNavigation() {

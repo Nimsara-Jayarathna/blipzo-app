@@ -1,4 +1,4 @@
-import { apiClient } from '@/api/client';
+import { apiClient, apiRequest } from '@/api/client';
 import type { Category } from '@/types';
 
 type CategoryApiShape = Category & {
@@ -65,9 +65,13 @@ export const getAllCategories = async (type?: 'income' | 'expense') => {
 };
 
 export const createCategory = async (payload: Pick<Category, 'name' | 'type'>) => {
-  const { data } = await apiClient.post<CategoryApiShape | { category: CategoryApiShape }>(
-    '/api/categories',
-    payload
+  const data = await apiRequest<CategoryApiShape | { category: CategoryApiShape }>(
+    {
+      method: 'post',
+      url: '/api/categories',
+      data: payload,
+    },
+    { userInitiated: true }
   );
 
   if (!data) {
@@ -82,13 +86,23 @@ export const createCategory = async (payload: Pick<Category, 'name' | 'type'>) =
 };
 
 export const deleteCategory = async (categoryId: string) => {
-  await apiClient.delete(`/api/categories/${categoryId}`);
+  await apiRequest(
+    {
+      method: 'delete',
+      url: `/api/categories/${categoryId}`,
+    },
+    { userInitiated: true }
+  );
 };
 
 export const setDefaultCategory = async (categoryId: string) => {
-  const { data } = await apiClient.patch<CategoryApiShape | { category: CategoryApiShape }>(
-    `/api/categories/${categoryId}`,
-    { isDefault: true }
+  const data = await apiRequest<CategoryApiShape | { category: CategoryApiShape }>(
+    {
+      method: 'patch',
+      url: `/api/categories/${categoryId}`,
+      data: { isDefault: true },
+    },
+    { userInitiated: true }
   );
 
   if (

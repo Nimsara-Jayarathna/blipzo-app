@@ -1,7 +1,9 @@
-import axios, { type InternalAxiosRequestConfig } from 'axios';
+import axios, { type AxiosRequestConfig, type InternalAxiosRequestConfig } from 'axios';
 
 import { useAuthStore } from '@/context/auth-store';
 import { logDebug, logError } from '@/utils/logger';
+import { triggerOfflinePrompt } from '@/utils/offline-prompt';
+import { isNetworkOrTimeoutError, withRetry } from '@/utils/api-retry';
 
 const normalizeBaseUrl = (value: string) => value.replace(/\/+$/, '');
 
@@ -25,6 +27,7 @@ export const apiClient = axios.create({
     'Content-Type': 'application/json',
   },
   withCredentials: true,
+  timeout: 8000,
 });
 
 type RetriableRequest = InternalAxiosRequestConfig & { _retry?: boolean };
@@ -120,4 +123,31 @@ apiClient.interceptors.request.use(
     return Promise.reject(error);
   }
 );
+
+export type ApiRequestOptions = {
+  userInitiated?: boolean;
+  retryCount?: number;
+  timeoutMs?: number;
+};
+
+export const apiRequest = async <T>(
+  config: AxiosRequestConfig,
+  options: ApiRequestOptions = {}
+) => {
+  const retries = options.retryCount ?? 1;
+  const timeout = options.timeoutMs ?? 8000;
+
+  try {
+    const response = await withRetry(
+      () => apiClient.request<T>({ ...config, timeout }),
+      retries
+    );
+    return response.data;
+  } catch (error) {
+    if (options.userInitiated && isNetworkOrTimeoutError(error)) {
+      triggerOfflinePrompt('We could not reach the server.');
+    }
+    throw error;
+  }
+};
 

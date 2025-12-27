@@ -24,6 +24,7 @@ import { getCategories } from '@/api/categories';
 import { ThemedText } from '@/components/themed-text';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useOffline } from '@/context/OfflineContext';
+import { enqueueOfflineTransaction } from '@/utils/offline-queue';
 import type { Category, Transaction, TransactionInput } from '@/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -142,8 +143,23 @@ export function AddTransactionSheet({ visible, onClose, onTransactionCreated }: 
   const handleSave = () => {
     if (offlineMode) {
       // Offline: enqueue for local sync later.
-      Alert.alert('Saved locally', 'This record will sync when you are back online.');
-      onClose();
+      void enqueueOfflineTransaction({
+        id: `offline-${Date.now()}`,
+        amount: Number(amount),
+        type: transactionType,
+        categoryId: selectedCategory,
+        date: dayjs(date).format('YYYY-MM-DD'),
+        note: note.trim() || undefined,
+        isServerRecord: false,
+        createdAt: new Date().toISOString(),
+      })
+        .then(() => {
+          Alert.alert('Saved locally', 'This record will sync when you are back online.');
+          onClose();
+        })
+        .catch(() => {
+          Alert.alert('Error', 'Unable to save offline record.');
+        });
       return;
     }
 
