@@ -82,7 +82,7 @@ export function AddTransactionSheet({ visible, onClose, onTransactionCreated }: 
       try {
         setIsLoadingCategories(true);
         const result = await getCategories();
-        const mapped = (result ?? []).map((item: Category) => ({
+        const mapped = (result.categories ?? []).map((item: Category) => ({
           id: item.id ?? item._id ?? item.name,
           name: item.name,
           type: item.type,

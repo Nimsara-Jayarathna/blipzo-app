@@ -18,6 +18,8 @@ type Props = {
   activeTab: 'income' | 'expense';
   isFull: boolean;
   isLoading: boolean;
+  currentCount: number;
+  maxCount: number;
 };
 
 export function AddCategoryInput({
@@ -27,6 +29,8 @@ export function AddCategoryInput({
   activeTab,
   isFull,
   isLoading,
+  currentCount,
+  maxCount,
 }: Props) {
   const [isFocused, setIsFocused] = useState(false);
   const { colors } = useAppTheme();
@@ -35,6 +39,9 @@ export function AddCategoryInput({
 
   return (
     <View style={styles.container}>
+      <ThemedText style={[styles.counterText, { color: colors.textMuted }]}>
+        {activeTab === 'income' ? 'Income' : 'Expense'} categories ({currentCount}/{maxCount})
+      </ThemedText>
       <View
         style={[
           styles.inputWrapper,
@@ -50,7 +57,11 @@ export function AddCategoryInput({
             { color: colors.textMain },
             isFull && { color: colors.textSubtle },
           ]}
-          placeholder={isFull ? "Limit reached" : `Add ${activeTab} category...`}
+          placeholder={
+            isFull
+              ? `Limit reached (${currentCount}/${maxCount})`
+              : `Add ${activeTab} category (${currentCount}/${maxCount})...`
+          }
           placeholderTextColor={colors.textSubtle}
           value={value}
           onChangeText={onChangeText}
@@ -113,6 +124,10 @@ export function AddCategoryInput({
 const styles = StyleSheet.create({
   container: {
     marginBottom: 16,
+  },
+  counterText: {
+    fontSize: 12,
+    marginBottom: 8,
   },
   // Unified Wrapper matches modern "Chat Input" style
   inputWrapper: {

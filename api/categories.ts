@@ -6,7 +6,7 @@ type CategoryApiShape = Category & {
   id?: string;
 };
 
-type CategoriesResponse = CategoryApiShape[] | { categories: CategoryApiShape[] };
+type CategoriesResponse = CategoryApiShape[] | { categories: CategoryApiShape[]; limit?: number };
 
 const normalizeCategory = (category: CategoryApiShape): Category => {
   const identifier = category._id ?? category.id;
@@ -34,9 +34,27 @@ const extractCategories = (data: CategoriesResponse): CategoryApiShape[] => {
   return [];
 };
 
+const extractCategoriesWithLimit = (
+  data: CategoriesResponse
+): { categories: CategoryApiShape[]; limit?: number } => {
+  if (Array.isArray(data)) {
+    return { categories: data };
+  }
+
+  if (data?.categories) {
+    return {
+      categories: data.categories,
+      limit: typeof data.limit === 'number' ? data.limit : undefined,
+    };
+  }
+
+  return { categories: [] };
+};
+
 export const getCategories = async () => {
   const { data } = await apiClient.get<CategoriesResponse>('/api/categories/active');
-  return extractCategories(data).map(normalizeCategory);
+  const { categories, limit } = extractCategoriesWithLimit(data);
+  return { categories: categories.map(normalizeCategory), limit };
 };
 
 export const getAllCategories = async (type?: 'income' | 'expense') => {

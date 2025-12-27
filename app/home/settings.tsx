@@ -34,6 +34,7 @@ import { CategoryList } from '@/components/home/settings/CategoryList';
 
 const categoryKey = ['categories'];
 const getCategoryId = (cat: Category) => cat._id ?? cat.id ?? '';
+const DEFAULT_CATEGORY_LIMIT = 10;
 
 export default function SettingsScreen() {
   const { isAuthenticated } = useAuth();
@@ -48,7 +49,7 @@ export default function SettingsScreen() {
 
   // Data Fetching
   const {
-    data: categories,
+    data,
     isLoading,
     isError,
     refetch,
@@ -59,12 +60,15 @@ export default function SettingsScreen() {
   });
 
   // Derived State
+  const categories = data?.categories ?? [];
+  const limit = data?.limit ?? DEFAULT_CATEGORY_LIMIT;
+
   const incomeCategories = useMemo(
-    () => (categories ?? []).filter(item => item.type === 'income'),
+    () => categories.filter(item => item.type === 'income'),
     [categories]
   );
   const expenseCategories = useMemo(
-    () => (categories ?? []).filter(item => item.type === 'expense'),
+    () => categories.filter(item => item.type === 'expense'),
     [categories]
   );
 
@@ -76,10 +80,10 @@ export default function SettingsScreen() {
     expenseCategories.find(c => c.isDefault)?._id ??
     expenseCategories.find(c => c.isDefault)?.id;
 
-  const MAX_PER_TYPE = 10;
   const currentList = activeTab === 'income' ? incomeCategories : expenseCategories;
   const currentDefaultId = activeTab === 'income' ? defaultIncomeId : defaultExpenseId;
-  const isFull = currentList.length >= MAX_PER_TYPE;
+  const isFull = currentList.length >= limit;
+  const currentCount = currentList.length;
 
   // Mutations
   const deleteMutation = useMutation({
@@ -188,7 +192,7 @@ export default function SettingsScreen() {
           onTabChange={setActiveTab}
           incomeCount={incomeCategories.length}
           expenseCount={expenseCategories.length}
-          maxCount={MAX_PER_TYPE}
+          maxCount={limit}
         />
 
         {/* Input Field */}
@@ -199,6 +203,8 @@ export default function SettingsScreen() {
           activeTab={activeTab}
           isFull={isFull}
           isLoading={createMutation.isPending}
+          currentCount={currentCount}
+          maxCount={limit}
         />
 
         {/* List Display */}
