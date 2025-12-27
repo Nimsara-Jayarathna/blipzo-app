@@ -1,6 +1,7 @@
 import axios, { type InternalAxiosRequestConfig } from 'axios';
 
 import { useAuthStore } from '@/context/auth-store';
+import { logDebug, logError } from '@/utils/logger';
 
 const normalizeBaseUrl = (value: string) => value.replace(/\/+$/, '');
 
@@ -27,6 +28,18 @@ export const apiClient = axios.create({
 });
 
 type RetriableRequest = InternalAxiosRequestConfig & { _retry?: boolean };
+
+const sanitizeRequestData = (data: unknown) => {
+  if (!data || typeof data !== 'object') {
+    return data;
+  }
+
+  if ('password' in data) {
+    return { ...(data as Record<string, unknown>), password: '[redacted]' };
+  }
+
+  return data;
+};
 
 const isAuthErrorStatus = (status?: number) => status === 401 || status === 419;
 
@@ -56,8 +69,16 @@ const refreshSession = async () => {
 };
 
 apiClient.interceptors.response.use(
-  response => response,
+  response => {
+    logDebug('API Response', {
+      url: response.config.url,
+      status: response.status,
+      data: response.data,
+    });
+    return response;
+  },
   async error => {
+    logError('API Response Error', error);
     const status = error.response?.status as number | undefined;
     const originalRequest = error.config as RetriableRequest | undefined;
 
@@ -81,6 +102,21 @@ apiClient.interceptors.response.use(
       useAuthStore.getState().logout();
     }
 
+    return Promise.reject(error);
+  }
+);
+
+apiClient.interceptors.request.use(
+  request => {
+    logDebug('API Request', {
+      url: request.url,
+      method: request.method,
+      data: sanitizeRequestData(request.data),
+    });
+    return request;
+  },
+  error => {
+    logError('API Request Error', error);
     return Promise.reject(error);
   }
 );
