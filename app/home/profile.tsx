@@ -80,7 +80,6 @@ export default function ProfileScreen() {
             </Pressable>
           </View>
 
-          {/* TODO: Implement full profile management (edit name, avatar, etc.) */}
           <View
             style={[
               styles.card,
@@ -90,6 +89,8 @@ export default function ProfileScreen() {
             <ThemedText style={[styles.label, { color: colors.textMuted }]}>Theme</ThemedText>
             <ThemeSwitcher />
           </View>
+
+          {/* TODO: Implement full profile management (edit name, avatar, etc.) */}
         </>
       ) : (
         <>
@@ -125,8 +126,6 @@ export default function ProfileScreen() {
             <ThemedText style={[styles.label, { color: colors.textMuted }]}>Email</ThemedText>
             <ThemedText style={styles.value}>{user?.email ?? 'Not set'}</ThemedText>
 
-            <ThemedText style={[styles.label, { color: colors.textMuted }]}>Theme</ThemedText>
-            <ThemeSwitcher />
           </View>
         </>
       )}
