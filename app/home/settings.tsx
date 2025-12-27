@@ -9,11 +9,9 @@ import {
   StyleSheet,
   TouchableOpacity,
   View,
-  Pressable,
 } from 'react-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BlurView } from 'expo-blur';
 
 import {
   createCategory,
@@ -26,7 +24,11 @@ import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
 import type { Category } from '@/types';
 
-import { homeContentStyles } from '@/components/home/layout/HomeContent';
+import {
+  HOME_BOTTOM_BAR_CLEARANCE,
+  HOME_CONTENT_PADDING_H,
+} from '@/components/home/layout/spacing';
+import { SectionHeader } from '@/components/home/layout/SectionHeader';
 
 // Importing components directly from their files
 import { CategoryTabs } from '@/components/home/settings/CategoryTabs';
@@ -42,7 +44,7 @@ export default function SettingsScreen() {
   const { resolvedTheme, colors } = useAppTheme();
   const queryClient = useQueryClient();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const [fixedHeaderHeight, setFixedHeaderHeight] = useState(0);
 
   // State
   const [activeTab, setActiveTab] = useState<'income' | 'expense'>('income');
@@ -140,94 +142,109 @@ export default function SettingsScreen() {
 
   const deletingId = deleteMutation.isPending ? deleteMutation.variables : undefined;
 
+  const isDark = resolvedTheme === 'dark';
+  const headerBlurIntensity = isDark ? 30 : 22;
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.screen}
     >
-      <ScrollView
-        contentContainerStyle={[
-          homeContentStyles.scrollContent,
-          { paddingTop: homeContentStyles.scrollContent.paddingTop + insets.top },
-        ]}
-        contentInsetAdjustmentBehavior="never"
-        keyboardShouldPersistTaps="handled"
-      >
-        <Pressable
-          onPress={() => router.navigate('/home/profile')}
-          style={styles.backLink}
-          accessibilityRole="button"
-          accessibilityLabel="Back to category setting"
+      <View style={styles.screen}>
+        <View
+          style={styles.fixedHeader}
+          onLayout={event => setFixedHeaderHeight(event.nativeEvent.layout.height)}
         >
-          <View
-            style={[
-              styles.backIconCircle,
-              { backgroundColor: colors.surfaceGlass, borderColor: colors.borderGlass },
-            ]}
-          >
-            <MaterialIcons name="chevron-left" size={18} color={colors.textMain} />
+          <SectionHeader
+            title="Category setting"
+            onBack={() => router.navigate('/home/profile')}
+            accessibilityLabel="Back to category setting"
+          />
+
+          <View style={[styles.blurredControls, { paddingHorizontal: HOME_CONTENT_PADDING_H }]}>
+            <BlurView
+              intensity={headerBlurIntensity}
+              tint={isDark ? 'dark' : 'light'}
+              style={StyleSheet.absoluteFill}
+              pointerEvents="none"
+            />
+            <View>
+              {/* Header */}
+              <View style={styles.headerRow}>
+                {createMutation.isPending && <ActivityIndicator size="small" />}
+              </View>
+
+              {/* Error Message */}
+              {isError && (
+                <TouchableOpacity
+                  onPress={() => refetch()}
+                  style={[
+                    styles.errorBox,
+                    {
+                      backgroundColor:
+                        resolvedTheme === 'dark'
+                          ? 'rgba(239, 68, 68, 0.16)'
+                          : 'rgba(231,76,60,0.1)',
+                      borderColor:
+                        resolvedTheme === 'dark'
+                          ? 'rgba(239, 68, 68, 0.3)'
+                          : 'rgba(231,76,60,0.2)',
+                    },
+                  ]}>
+                  <ThemedText style={[styles.errorText, { color: '#ef4444' }]}>
+                    Failed to load categories. Tap to retry.
+                  </ThemedText>
+                </TouchableOpacity>
+              )}
+
+              {/* Tab Selection */}
+              <CategoryTabs
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                incomeCount={incomeCategories.length}
+                expenseCount={expenseCategories.length}
+                maxCount={limit}
+              />
+
+              {/* Input Field */}
+              <AddCategoryInput
+                value={newCategoryName}
+                onChangeText={setNewCategoryName}
+                onAdd={handleCreateCategory}
+                activeTab={activeTab}
+                isFull={isFull}
+                isLoading={createMutation.isPending}
+                currentCount={currentCount}
+                maxCount={limit}
+                isDuplicate={isDuplicateName}
+              />
+            </View>
           </View>
-          <ThemedText style={[styles.backLabel, { color: colors.textMain }]}>
-            Category setting
-          </ThemedText>
-        </Pressable>
-        {/* Header */}
-        <View style={styles.headerRow}>
-          {createMutation.isPending && <ActivityIndicator size="small" />}
         </View>
 
-        {/* Error Message */}
-        {isError && (
-          <TouchableOpacity
-            onPress={() => refetch()}
-            style={[
-              styles.errorBox,
-              {
-                backgroundColor:
-                  resolvedTheme === 'dark' ? 'rgba(239, 68, 68, 0.16)' : 'rgba(231,76,60,0.1)',
-                borderColor:
-                  resolvedTheme === 'dark' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(231,76,60,0.2)',
-              },
-            ]}>
-            <ThemedText style={[styles.errorText, { color: '#ef4444' }]}>
-              Failed to load categories. Tap to retry.
-            </ThemedText>
-          </TouchableOpacity>
-        )}
-
-        {/* Tab Selection */}
-        <CategoryTabs
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          incomeCount={incomeCategories.length}
-          expenseCount={expenseCategories.length}
-          maxCount={limit}
-        />
-
-        {/* Input Field */}
-        <AddCategoryInput
-          value={newCategoryName}
-          onChangeText={setNewCategoryName}
-          onAdd={handleCreateCategory}
-          activeTab={activeTab}
-          isFull={isFull}
-          isLoading={createMutation.isPending}
-          currentCount={currentCount}
-          maxCount={limit}
-          isDuplicate={isDuplicateName}
-        />
-
-        {/* List Display */}
-        <CategoryList
-          data={currentList}
-          activeTab={activeTab}
-          isLoading={isLoading}
-          defaultId={currentDefaultId}
-          deletingId={deletingId}
-          onDelete={handleDelete}
-          onSetDefault={handleSetDefault}
-        />
-      </ScrollView>
+        <ScrollView
+          contentContainerStyle={[
+            styles.listContent,
+            {
+              paddingTop: fixedHeaderHeight + 12,
+              paddingBottom: HOME_BOTTOM_BAR_CLEARANCE,
+            },
+          ]}
+          contentInsetAdjustmentBehavior="never"
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <CategoryList
+            data={currentList}
+            activeTab={activeTab}
+            isLoading={isLoading}
+            defaultId={currentDefaultId}
+            deletingId={deletingId}
+            onDelete={handleDelete}
+            onSetDefault={handleSetDefault}
+          />
+        </ScrollView>
+      </View>
     </KeyboardAvoidingView>
   );
 }
@@ -236,30 +253,23 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
   },
+  fixedHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+  },
+  blurredControls: {
+    paddingTop: 8,
+    paddingBottom: 12,
+  },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
     minHeight: 0,
-  },
-  backLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
-  },
-  backIconCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-  },
-  backLabel: {
-    fontSize: 17,
-    fontWeight: '500',
   },
   errorBox: {
     padding: 10,
@@ -270,5 +280,8 @@ const styles = StyleSheet.create({
   },
   errorText: {
     textDecorationLine: 'underline',
+  },
+  listContent: {
+    paddingHorizontal: HOME_CONTENT_PADDING_H,
   },
 });

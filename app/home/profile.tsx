@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { logoutSession } from '@/api/auth';
@@ -11,13 +10,14 @@ import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
 import { HomeContent } from '@/components/home/layout/HomeContent';
+import { HOME_CONTENT_PADDING_H } from '@/components/home/layout/spacing';
+import { SectionHeader } from '@/components/home/layout/SectionHeader';
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
   const { colors } = useAppTheme();
   const router = useRouter();
   const navigation = useNavigation();
-  const insets = useSafeAreaInsets();
   const [activeSection, setActiveSection] = useState<'menu' | 'profile'>('menu');
 
   useEffect(() => {
@@ -37,7 +37,7 @@ export default function ProfileScreen() {
     <HomeContent
       style={
         activeSection === 'profile'
-          ? { paddingTop: insets.top + 12 }
+          ? { paddingTop: 0 }
           : undefined
       }
     >
@@ -94,25 +94,12 @@ export default function ProfileScreen() {
         </>
       ) : (
         <>
-          <View style={styles.sectionHeader}>
-            <Pressable
-              onPress={() => setActiveSection('menu')}
-              style={styles.backLink}
-              accessibilityRole="button"
+          <View style={[styles.sectionHeaderWrapper, { marginHorizontal: -HOME_CONTENT_PADDING_H }]}>
+            <SectionHeader
+              title="Profile setting"
+              onBack={() => setActiveSection('menu')}
               accessibilityLabel="Back to profile menu"
-            >
-              <View
-                style={[
-                  styles.backIconCircle,
-                  { backgroundColor: colors.surfaceGlass, borderColor: colors.borderGlass },
-                ]}
-              >
-                <MaterialIcons name="chevron-left" size={18} color={colors.textMain} />
-              </View>
-              <ThemedText style={[styles.backLabel, { color: colors.textMain }]}>
-                Profile setting
-              </ThemedText>
-            </Pressable>
+            />
           </View>
           <View
             style={[
@@ -182,28 +169,8 @@ const styles = StyleSheet.create({
     height: 1,
     marginHorizontal: 16,
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  sectionHeaderWrapper: {
     marginBottom: 12,
-  },
-  backLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 4,
-  },
-  backIconCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-  },
-  backLabel: {
-    fontSize: 19,
-    fontWeight: '500',
   },
   card: {
     borderRadius: 24,
