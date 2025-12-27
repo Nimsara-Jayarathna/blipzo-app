@@ -39,7 +39,9 @@ export const OfflinePromptHost: React.FC = () => {
             {reason}
           </ThemedText>
           <ThemedText style={[styles.body, { color: colors.textMuted }]}>
-            Continue in offline mode or retry to reconnect.
+            {prompt.allowOffline
+              ? 'Continue in offline mode or retry to reconnect.'
+              : 'Please go online to continue.'}
           </ThemedText>
 
           <View style={styles.actions}>
@@ -47,23 +49,27 @@ export const OfflinePromptHost: React.FC = () => {
               onPress={retryConnection}
               style={[styles.button, styles.retryButton, { borderColor: colors.borderSoft }]}
               accessibilityRole="button"
-              accessibilityLabel="Retry connection"
+              accessibilityLabel={prompt.primaryLabel}
               disabled={isPromptRetrying}
             >
               {isPromptRetrying ? (
                 <ActivityIndicator size="small" color={colors.primaryAccent} />
               ) : (
-                <ThemedText style={[styles.buttonText, { color: colors.textMain }]}>Retry</ThemedText>
+                <ThemedText style={[styles.buttonText, { color: colors.textMain }]}>
+                  {prompt.primaryLabel}
+                </ThemedText>
               )}
             </Pressable>
-            <Pressable
-              onPress={confirmOfflineMode}
-              style={[styles.button, styles.offlineButton, { backgroundColor: colors.primaryAccent }]}
-              accessibilityRole="button"
-              accessibilityLabel="Continue offline"
-            >
-              <ThemedText style={styles.offlineButtonText}>Go offline</ThemedText>
-            </Pressable>
+            {prompt.allowOffline ? (
+              <Pressable
+                onPress={confirmOfflineMode}
+                style={[styles.button, styles.offlineButton, { backgroundColor: colors.primaryAccent }]}
+                accessibilityRole="button"
+                accessibilityLabel="Continue offline"
+              >
+                <ThemedText style={styles.offlineButtonText}>Go offline</ThemedText>
+              </Pressable>
+            ) : null}
           </View>
         </View>
       </View>

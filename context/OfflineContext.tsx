@@ -17,12 +17,18 @@ export type Capabilities = {
 type OfflineContextValue = {
   offlineMode: boolean;
   setOfflineMode: (next: boolean) => void;
-  promptToGoOffline: (reason: string, onRetry?: () => Promise<void>) => void;
-  prompt: { visible: boolean; reason: string };
+  promptToGoOffline: (
+    reason: string,
+    onRetry?: () => Promise<void>,
+    options?: { allowOffline?: boolean; primaryLabel?: string; onConfirm?: () => void; force?: boolean }
+  ) => void;
+  prompt: { visible: boolean; reason: string; allowOffline: boolean; primaryLabel: string };
   isPromptRetrying: boolean;
   confirmOfflineMode: () => void;
   retryConnection: () => void;
   tryGoOnline: () => Promise<boolean>;
+  startupOfflineLock: boolean;
+  setStartupOfflineLock: (next: boolean) => void;
   capabilities: Capabilities;
 };
 
@@ -36,29 +42,60 @@ export const OfflineProvider: React.FC<React.PropsWithChildren> = ({ children })
     visible: boolean;
     reason: string;
     onRetry?: () => Promise<void>;
-  }>({ visible: false, reason: '' });
+    allowOffline: boolean;
+    primaryLabel: string;
+    onConfirm?: () => void;
+  }>({ visible: false, reason: '', allowOffline: true, primaryLabel: 'Retry' });
   const [isPromptRetrying, setIsPromptRetrying] = useState(false);
+  const [startupOfflineLock, setStartupOfflineLock] = useState(false);
 
   const offlineMode = manualOffline;
 
-  const openPrompt = useCallback((reason: string, onRetry?: () => Promise<void>) => {
+  const openPrompt = useCallback((
+    reason: string,
+    onRetry?: () => Promise<void>,
+    allowOffline = true,
+    primaryLabel = 'Retry',
+    onConfirm?: () => void,
+    force = false
+  ) => {
     if (manualOffline) {
       return;
     }
-    setPromptState(prev => (prev.visible ? prev : { visible: true, reason, onRetry }));
+    setPromptState(prev => {
+      if (prev.visible && !force) {
+        return prev;
+      }
+      return { visible: true, reason, onRetry, allowOffline, primaryLabel, onConfirm };
+    });
   }, [manualOffline]);
 
   const promptToGoOffline = useCallback(
-    (reason: string, onRetry?: () => Promise<void>) => {
-      openPrompt(reason, onRetry);
+    (
+      reason: string,
+      onRetry?: () => Promise<void>,
+      options?: { allowOffline?: boolean; primaryLabel?: string; onConfirm?: () => void; force?: boolean }
+    ) => {
+      openPrompt(
+        reason,
+        onRetry,
+        options?.allowOffline ?? true,
+        options?.primaryLabel ?? 'Retry',
+        options?.onConfirm,
+        options?.force ?? false
+      );
     },
     [openPrompt]
   );
 
   const confirmOfflineMode = useCallback(() => {
+    if (!promptState.allowOffline) {
+      return;
+    }
     setManualOffline(true);
     setPromptState(prev => ({ ...prev, visible: false }));
-  }, []);
+    promptState.onConfirm?.();
+  }, [promptState.allowOffline, promptState.onConfirm]);
 
   const retryConnection = useCallback(async () => {
     if (!promptState.onRetry) {
@@ -71,10 +108,14 @@ export const OfflineProvider: React.FC<React.PropsWithChildren> = ({ children })
       await promptState.onRetry();
       setManualOffline(false);
       setPromptState(prev => ({ ...prev, visible: false }));
-    } catch {
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message === 'AUTH_INVALID'
+          ? 'You need to be online to sign in.'
+          : 'Retry failed. Please check your connection.';
       setPromptState(prev => ({
         ...prev,
-        reason: 'Retry failed. Please check your connection.',
+        reason: message,
         visible: true,
       }));
     } finally {
@@ -102,7 +143,13 @@ export const OfflineProvider: React.FC<React.PropsWithChildren> = ({ children })
     });
 
     const unregister = registerOfflinePrompt((payload: OfflinePromptPayload) => {
-      openPrompt(payload.reason, payload.onRetry);
+      openPrompt(
+        payload.reason,
+        payload.onRetry,
+        payload.allowOffline ?? true,
+        payload.primaryLabel ?? 'Retry',
+        payload.onConfirm
+      );
     });
 
     return () => {
@@ -116,9 +163,15 @@ export const OfflineProvider: React.FC<React.PropsWithChildren> = ({ children })
     if (!networkConnected && !manualOffline) {
       openPrompt('Connection lost.', async () => {
         await apiClient.get('/health', { timeout: 5000 });
-      });
+      }, true, 'Retry');
     }
   }, [networkConnected, manualOffline, openPrompt]);
+
+  useEffect(() => {
+    if (!manualOffline && startupOfflineLock) {
+      setStartupOfflineLock(false);
+    }
+  }, [manualOffline, startupOfflineLock]);
 
   const capabilities = useMemo<Capabilities>(() => {
     if (offlineMode) {
@@ -152,11 +205,18 @@ export const OfflineProvider: React.FC<React.PropsWithChildren> = ({ children })
         offlineMode,
         setOfflineMode: setManualOffline,
         promptToGoOffline,
-        prompt: { visible: promptState.visible, reason: promptState.reason },
+        prompt: {
+          visible: promptState.visible,
+          reason: promptState.reason,
+          allowOffline: promptState.allowOffline,
+          primaryLabel: promptState.primaryLabel,
+        },
         isPromptRetrying,
         confirmOfflineMode,
         retryConnection,
         tryGoOnline,
+        startupOfflineLock,
+        setStartupOfflineLock,
         capabilities,
       }}
     >

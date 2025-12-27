@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -15,12 +15,16 @@ import { getSession, refreshSession } from '@/api/auth';
 import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/hooks/useAuth';
 import { HomeBackground } from '@/components/home/HomeBackground';
+import { useOffline } from '@/context/OfflineContext';
+import { isAuthError, isNetworkOrTimeoutError } from '@/utils/api-retry';
 
 const ACCENT_COLOR = '#3498db';
 
 export default function IndexScreen() {
   const router = useRouter();
   const { setAuth, logout } = useAuth();
+  const { offlineMode, promptToGoOffline, setStartupOfflineLock } = useOffline();
+  const hasNavigatedRef = useRef(false);
 
   // Animation Values
   const logoScale = useSharedValue(0);
@@ -41,38 +45,118 @@ export default function IndexScreen() {
     );
 
     // 3. Run Auth Logic
-    const checkAuth = async () => {
+    const runSessionCheck = async () => {
+      try {
+        const session = await getSession();
+        if (!session?.user) {
+          return { status: 'unauth' as const };
+        }
+
+        let authData = session;
+        try {
+          const refreshed = await refreshSession();
+          if (refreshed?.user) authData = refreshed;
+        } catch {
+          // Ignore refresh error; session is still valid.
+        }
+
+        return { status: 'ok' as const, authData };
+      } catch (e) {
+        if (isNetworkOrTimeoutError(e)) {
+          return { status: 'network' as const };
+        }
+        if (isAuthError(e)) {
+          return { status: 'unauth' as const };
+        }
+        return { status: 'error' as const };
+      }
+    };
+
+    const checkAuth = async (skipMinWait = false) => {
       try {
         // Minimum wait time for aesthetic purposes (1.5s)
-        const minWait = new Promise(resolve => setTimeout(resolve, 1500));
-        
-        // Fetch session in parallel
-        const sessionPromise = getSession();
-        
-        // Wait for both
-        const [_, session] = await Promise.all([minWait, sessionPromise]);
+        const minWait = skipMinWait ? Promise.resolve() : new Promise(resolve => setTimeout(resolve, 1500));
+        await minWait;
 
-        if (session?.user) {
-          let authData = session;
-          try {
-            const refreshed = await refreshSession();
-            if (refreshed?.user) authData = refreshed;
-          } catch { /* ignore refresh error */ }
+        const result = await runSessionCheck();
 
-          setAuth(authData);
+        if (result.status === 'ok') {
+          setAuth(result.authData);
+          hasNavigatedRef.current = true;
           router.replace('/home' as any);
-        } else {
-          logout();
-          router.replace('/welcome');
+          return;
         }
-      } catch (e) {
+
+        if (result.status === 'unauth') {
+          logout();
+          promptToGoOffline(
+            'You need to be online to sign in.',
+            async () => {
+              hasNavigatedRef.current = true;
+              router.replace('/welcome');
+            },
+            { allowOffline: false, primaryLabel: 'Go to sign in' }
+          );
+          return;
+        }
+
+        if (result.status === 'network') {
+          promptToGoOffline(
+            'Unable to reach the server.',
+            async () => {
+              const retryResult = await runSessionCheck();
+              if (retryResult.status === 'ok') {
+                setAuth(retryResult.authData);
+                hasNavigatedRef.current = true;
+                router.replace('/home' as any);
+                return;
+              }
+              if (retryResult.status === 'unauth') {
+                promptToGoOffline(
+                  'You need to be online to sign in.',
+                  async () => {
+                    hasNavigatedRef.current = true;
+                    router.replace('/welcome');
+                  },
+                  { allowOffline: false, primaryLabel: 'Go to sign in' }
+                );
+                throw new Error('AUTH_INVALID');
+              }
+              throw new Error('NETWORK');
+            },
+            {
+              allowOffline: true,
+              primaryLabel: 'Retry',
+              onConfirm: () => {
+                setStartupOfflineLock(true);
+                hasNavigatedRef.current = true;
+                router.replace('/home/all' as any);
+              },
+              force: true,
+            }
+          );
+          return;
+        }
+
         logout();
+        hasNavigatedRef.current = true;
+        router.replace('/welcome');
+      } catch {
+        logout();
+        hasNavigatedRef.current = true;
         router.replace('/welcome');
       }
     };
 
     checkAuth();
   }, []);
+
+  useEffect(() => {
+    if (offlineMode && !hasNavigatedRef.current) {
+      hasNavigatedRef.current = true;
+      router.replace('/home' as any);
+    }
+  }, [offlineMode, router]);
 
   const logoStyle = useAnimatedStyle(() => ({
     transform: [{ scale: logoScale.value }],

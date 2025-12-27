@@ -1,6 +1,9 @@
 export type OfflinePromptPayload = {
   reason: string;
   onRetry?: () => Promise<void>;
+  allowOffline?: boolean;
+  primaryLabel?: string;
+  onConfirm?: () => void;
 };
 
 type OfflinePromptHandler = (payload: OfflinePromptPayload) => void;

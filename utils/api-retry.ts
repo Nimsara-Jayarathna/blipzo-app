@@ -22,3 +22,9 @@ export const withRetry = async <T>(
     return withRetry(fn, retries - 1);
   }
 };
+
+export const isAuthError = (error: unknown) => {
+  const err = error as { response?: { status?: number } };
+  const status = err?.response?.status;
+  return status === 401 || status === 419;
+};

@@ -9,7 +9,6 @@ import { AuthProvider } from '@/context/AuthContext'; // Ensure this path is cor
 import { OfflineProvider } from '@/context/OfflineContext';
 import { AppThemeProvider, useAppTheme } from '@/context/ThemeContext';
 import { useHeartbeat } from '@/hooks/useHeartbeat';
-import { useStartupSessionCheck } from '@/hooks/useStartupSessionCheck';
 import { OfflinePromptHost } from '@/components/offline/OfflinePromptHost';
 
 // Prevent native splash from hiding immediately
@@ -40,7 +39,6 @@ export default function RootLayout() {
 
 function OfflineLifecycle() {
   // Startup check + background health monitoring.
-  useStartupSessionCheck();
   useHeartbeat();
   return null;
 }

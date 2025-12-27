@@ -24,7 +24,7 @@ import { AllFiltersSheet } from '@/components/home/all/AllFiltersSheet';
 
 export default function AllTransactionsScreen() {
   const { isAuthenticated } = useAuth();
-  const { offlineMode, capabilities } = useOffline();
+  const { offlineMode, capabilities, startupOfflineLock } = useOffline();
   const queryClient = useQueryClient();
   const today = dayjs().format('YYYY-MM-DD');
 
@@ -80,6 +80,10 @@ export default function AllTransactionsScreen() {
     return { canScroll: true, enableTransition: true };
   }, [contentHeight, listLayoutHeight]);
 
+  if (offlineMode && startupOfflineLock) {
+    return <View style={styles.offlineBlock} />;
+  }
+
   return (
     <HomeContent bleedBottom>
       <HomeStickyHeader
@@ -127,4 +131,10 @@ export default function AllTransactionsScreen() {
   );
 }
 
-const styles = StyleSheet.create({ listWrapper: { flex: 1 } });
+const styles = StyleSheet.create({
+  listWrapper: { flex: 1 },
+  offlineBlock: {
+    flex: 1,
+    backgroundColor: '#000000',
+  },
+});

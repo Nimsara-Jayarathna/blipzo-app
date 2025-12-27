@@ -12,10 +12,10 @@ export default function HomeTabLayout() {
   const { offlineMode, capabilities } = useOffline();
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated && !offlineMode) {
       router.replace('/welcome');
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, offlineMode, router]);
 
   useEffect(() => {
     // Offline route guard: keep users out of blocked sections.
