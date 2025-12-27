@@ -23,8 +23,12 @@ export const useStartupSessionCheck = () => {
         );
       } catch {
         if (!cancelled) {
-          // Extension point: add "Retry" or "Continue online" handling here.
-          promptToGoOffline('Session check failed.');
+          promptToGoOffline('Session check failed.', async () => {
+            await withRetry(
+              () => apiClient.get('/api/auth/session', { timeout: SESSION_TIMEOUT_MS }),
+              1
+            );
+          });
         }
       }
     };

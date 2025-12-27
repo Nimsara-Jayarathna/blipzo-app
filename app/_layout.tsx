@@ -10,6 +10,7 @@ import { OfflineProvider } from '@/context/OfflineContext';
 import { AppThemeProvider, useAppTheme } from '@/context/ThemeContext';
 import { useHeartbeat } from '@/hooks/useHeartbeat';
 import { useStartupSessionCheck } from '@/hooks/useStartupSessionCheck';
+import { OfflinePromptHost } from '@/components/offline/OfflinePromptHost';
 
 // Prevent native splash from hiding immediately
 SplashScreen.preventAutoHideAsync();
@@ -28,6 +29,7 @@ export default function RootLayout() {
         <OfflineProvider>
           <AppThemeProvider>
             <OfflineLifecycle />
+            <OfflinePromptHost />
             <ThemedNavigation />
           </AppThemeProvider>
         </OfflineProvider>

@@ -145,7 +145,12 @@ export const apiRequest = async <T>(
     return response.data;
   } catch (error) {
     if (options.userInitiated && isNetworkOrTimeoutError(error)) {
-      triggerOfflinePrompt('We could not reach the server.');
+      triggerOfflinePrompt({
+        reason: 'We could not reach the server.',
+        onRetry: async () => {
+          await withRetry(() => apiClient.request<T>({ ...config, timeout }), retries);
+        },
+      });
     }
     throw error;
   }

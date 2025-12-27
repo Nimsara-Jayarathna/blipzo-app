@@ -1,4 +1,9 @@
-type OfflinePromptHandler = (reason: string) => void;
+export type OfflinePromptPayload = {
+  reason: string;
+  onRetry?: () => Promise<void>;
+};
+
+type OfflinePromptHandler = (payload: OfflinePromptPayload) => void;
 
 let promptHandler: OfflinePromptHandler | null = null;
 
@@ -11,8 +16,8 @@ export const registerOfflinePrompt = (handler: OfflinePromptHandler) => {
   };
 };
 
-export const triggerOfflinePrompt = (reason: string) => {
+export const triggerOfflinePrompt = (payload: OfflinePromptPayload) => {
   if (promptHandler) {
-    promptHandler(reason);
+    promptHandler(payload);
   }
 };

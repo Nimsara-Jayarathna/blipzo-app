@@ -26,8 +26,10 @@ export const useHeartbeat = () => {
         }
         failureCount.current += 1;
         if (failureCount.current >= HEARTBEAT_FAILURE_LIMIT) {
-          // Extension point: track analytics or show custom offline UX here.
-          promptToGoOffline('Server is unreachable.');
+          promptToGoOffline('Server is unreachable.', async () => {
+            await apiClient.get('/health', { timeout: HEARTBEAT_TIMEOUT_MS });
+            failureCount.current = 0;
+          });
         }
       }
     }, HEARTBEAT_INTERVAL_MS);
