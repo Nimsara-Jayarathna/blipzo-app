@@ -124,7 +124,7 @@ export function AddCategoryInput({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
+    marginBottom: 8,
   },
   // Unified Wrapper matches modern "Chat Input" style
   inputWrapper: {

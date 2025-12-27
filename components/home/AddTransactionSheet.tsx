@@ -3,6 +3,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  InteractionManager,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -72,9 +73,14 @@ export function AddTransactionSheet({ visible, onClose, onTransactionCreated }: 
       setAmount('');
       setSelectedCategory('');
       setNote('');
-      setTimeout(() => inputRef.current?.focus(), 200);
     }
   }, [visible]);
+
+  const handleModalShow = () => {
+    InteractionManager.runAfterInteractions(() => {
+      setTimeout(() => inputRef.current?.focus(), 100);
+    });
+  };
 
   useEffect(() => {
     if (!visible || step !== 2) return;
@@ -130,8 +136,22 @@ export function AddTransactionSheet({ visible, onClose, onTransactionCreated }: 
 
   if (!visible) return null;
 
+  const handleAmountChange = (value: string) => {
+    const sanitized = value.replace(/[^0-9.]/g, '');
+    const parts = sanitized.split('.');
+    const next =
+      parts.length <= 2 ? sanitized : `${parts[0]}.${parts.slice(1).join('')}`;
+    setAmount(next);
+  };
+
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+      onShow={handleModalShow}
+    >
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
         style={styles.backdrop}
@@ -165,8 +185,9 @@ export function AddTransactionSheet({ visible, onClose, onTransactionCreated }: 
                   <TextInput
                     ref={inputRef}
                     value={amount}
-                    onChangeText={setAmount}
-                    keyboardType="decimal-pad"
+                    onChangeText={handleAmountChange}
+                    keyboardType={Platform.OS === 'android' ? 'numeric' : 'decimal-pad'}
+                    inputMode="decimal"
                     placeholder="0.00"
                     placeholderTextColor={colors.textSubtle}
                     style={[styles.mainInput, { color: colors.textMain }]}

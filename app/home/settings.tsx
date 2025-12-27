@@ -226,7 +226,7 @@ export default function SettingsScreen() {
           contentContainerStyle={[
             styles.listContent,
             {
-              paddingTop: fixedHeaderHeight + 12,
+              paddingTop: fixedHeaderHeight + 4,
               paddingBottom: HOME_BOTTOM_BAR_CLEARANCE,
             },
           ]}
@@ -261,8 +261,8 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   blurredControls: {
-    paddingTop: 8,
-    paddingBottom: 12,
+    paddingTop: 6,
+    paddingBottom: 6,
   },
   headerRow: {
     flexDirection: 'row',
