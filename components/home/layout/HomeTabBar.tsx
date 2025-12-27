@@ -67,6 +67,10 @@ export function HomeTabBar({ state, descriptors, navigation, onAddPress }: HomeT
     width: Math.max(slotWidth - 12, 0),
   }));
 
+  const addButtonShadow = Platform.OS === 'android'
+    ? { shadowOpacity: 0, elevation: 0 }
+    : { shadowOpacity: 0.25, elevation: 8 };
+
   return (
     <View
       style={[
@@ -195,7 +199,7 @@ export function HomeTabBar({ state, descriptors, navigation, onAddPress }: HomeT
           accessibilityLabel="Add transaction"
           accessibilityHint="Opens the add transaction form"
         >
-          <View style={[styles.addButton, { backgroundColor: colors.primaryAccent }]}>
+          <View style={[styles.addButton, { backgroundColor: colors.primaryAccent }, addButtonShadow]}>
             <MaterialIcons name="add" size={24} color="#ffffff" />
           </View>
           <Text style={[styles.tabLabel, { color: colors.textMuted }]}>Add</Text>
