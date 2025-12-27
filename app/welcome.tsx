@@ -92,7 +92,7 @@ export default function WelcomeScreen() {
               </View>
 
               <ThemedText type="title" style={[styles.appTitle, { color: colors.textMain }]}>
-                MyEx
+                Blipzo
               </ThemedText>
               <ThemedText style={[styles.tagline, { color: colors.textMuted }]}>
                 Master your finances.{'\n'}Effortlessly.

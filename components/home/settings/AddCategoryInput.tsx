@@ -18,6 +18,9 @@ type Props = {
   activeTab: 'income' | 'expense';
   isFull: boolean;
   isLoading: boolean;
+  currentCount: number;
+  maxCount: number;
+  isDuplicate: boolean;
 };
 
 export function AddCategoryInput({
@@ -27,11 +30,14 @@ export function AddCategoryInput({
   activeTab,
   isFull,
   isLoading,
+  currentCount,
+  maxCount,
+  isDuplicate,
 }: Props) {
   const [isFocused, setIsFocused] = useState(false);
   const { colors } = useAppTheme();
   
-  const isDisabled = !value.trim() || isFull || isLoading;
+  const isDisabled = !value.trim() || isFull || isLoading || isDuplicate;
 
   return (
     <View style={styles.container}>
@@ -50,7 +56,13 @@ export function AddCategoryInput({
             { color: colors.textMain },
             isFull && { color: colors.textSubtle },
           ]}
-          placeholder={isFull ? "Limit reached" : `Add ${activeTab} category...`}
+          placeholder={
+            isFull
+              ? `Limit reached (${currentCount}/${maxCount})`
+              : isDuplicate
+              ? 'Category already exists'
+              : `Add ${activeTab} category (${currentCount}/${maxCount})...`
+          }
           placeholderTextColor={colors.textSubtle}
           value={value}
           onChangeText={onChangeText}
