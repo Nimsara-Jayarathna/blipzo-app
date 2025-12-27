@@ -41,9 +41,6 @@ export function AddCategoryInput({
 
   return (
     <View style={styles.container}>
-      <ThemedText style={[styles.counterText, { color: colors.textMuted }]}>
-        {activeTab === 'income' ? 'Income' : 'Expense'} categories ({currentCount}/{maxCount})
-      </ThemedText>
       <View
         style={[
           styles.inputWrapper,
@@ -128,10 +125,6 @@ export function AddCategoryInput({
 const styles = StyleSheet.create({
   container: {
     marginBottom: 16,
-  },
-  counterText: {
-    fontSize: 12,
-    marginBottom: 8,
   },
   // Unified Wrapper matches modern "Chat Input" style
   inputWrapper: {
