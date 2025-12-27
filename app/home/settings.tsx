@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -84,6 +85,10 @@ export default function SettingsScreen() {
   const currentDefaultId = activeTab === 'income' ? defaultIncomeId : defaultExpenseId;
   const isFull = currentList.length >= limit;
   const currentCount = currentList.length;
+  const normalizedNewName = newCategoryName.trim().toLowerCase();
+  const isDuplicateName =
+    normalizedNewName.length > 0 &&
+    currentList.some(item => item.name.trim().toLowerCase() === normalizedNewName);
 
   // Mutations
   const deleteMutation = useMutation({
@@ -126,6 +131,10 @@ export default function SettingsScreen() {
 
   const handleCreateCategory = () => {
     if (!newCategoryName.trim() || isFull) return;
+    if (isDuplicateName) {
+      Alert.alert('Duplicate category', 'That category already exists for this type.');
+      return;
+    }
     createMutation.mutate();
   };
 
@@ -205,6 +214,7 @@ export default function SettingsScreen() {
           isLoading={createMutation.isPending}
           currentCount={currentCount}
           maxCount={limit}
+          isDuplicate={isDuplicateName}
         />
 
         {/* List Display */}
