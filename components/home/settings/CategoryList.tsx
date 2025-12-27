@@ -72,7 +72,7 @@ export function CategoryList({
 
 const styles = StyleSheet.create({
   listContainer: {
-    marginTop: 10,
+    marginTop: 6,
     borderRadius: 20,
     padding: 16,
     minHeight: 200,

@@ -1,5 +1,6 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { ThemedText } from '@/components/themed-text';
 import { useAppTheme } from '@/context/ThemeContext';
 import { HOME_STICKY_HEADER_CARD_MIN_HEIGHT } from '@/components/home/layout/spacing';
@@ -14,9 +15,20 @@ export function SummaryCard({ income, expense, balance }: SummaryCardProps) {
   const { colors, resolvedTheme } = useAppTheme();
   const incomeColor = resolvedTheme === 'dark' ? '#22c55e' : '#16a34a';
   const expenseColor = resolvedTheme === 'dark' ? '#ef4444' : '#dc2626';
+  const isDark = resolvedTheme === 'dark';
+  const blurIntensity = isDark ? 40 : 65;
+  const androidFallbackOverlay = isDark ? 'rgba(2, 6, 23, 0.7)' : 'rgba(226, 232, 240, 0.6)';
+  const dividerColor = isDark ? 'rgba(255, 255, 255, 0.08)' : colors.borderSoft;
   // Safe formatting helper
   const formatMoney = (val: number) => 
     `$${(Number.isFinite(val) ? Math.abs(val) : 0).toFixed(2)}`;
+
+  const cardBorderColor =
+    Platform.OS === 'android'
+      ? isDark
+        ? 'rgba(255, 255, 255, 0.08)'
+        : 'rgba(15, 23, 42, 0.08)'
+      : colors.borderGlass;
 
   return (
     <View
@@ -24,10 +36,23 @@ export function SummaryCard({ income, expense, balance }: SummaryCardProps) {
         styles.card,
         {
           backgroundColor: colors.surfaceGlassThick,
-          borderColor: colors.borderGlass,
+          borderColor: cardBorderColor,
           shadowColor: colors.textMain,
         },
       ]}>
+      <BlurView
+        intensity={blurIntensity}
+        tint={isDark ? 'dark' : 'light'}
+        experimentalBlurMethod={Platform.OS === 'android' ? 'dimezisBlurView' : undefined}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
+      {Platform.OS === 'android' && (
+        <View
+          pointerEvents="none"
+          style={[StyleSheet.absoluteFill, { backgroundColor: androidFallbackOverlay }]}
+        />
+      )}
       <View style={styles.header}>
         <ThemedText style={[styles.label, { color: colors.textSubtle }]}>
           Today's Balance
@@ -41,7 +66,7 @@ export function SummaryCard({ income, expense, balance }: SummaryCardProps) {
         </ThemedText>
       </View>
 
-      <View style={[styles.divider, { backgroundColor: colors.borderSoft }]} />
+      <View style={[styles.divider, { backgroundColor: dividerColor }]} />
 
       <View style={styles.row}>
         <View style={styles.column}>
@@ -53,7 +78,7 @@ export function SummaryCard({ income, expense, balance }: SummaryCardProps) {
           </ThemedText>
         </View>
         
-        <View style={[styles.verticalDivider, { backgroundColor: colors.borderSoft }]} />
+        <View style={[styles.verticalDivider, { backgroundColor: dividerColor }]} />
 
         <View style={styles.column}>
           <ThemedText style={[styles.subLabel, { color: colors.textSubtle }]}>
@@ -73,6 +98,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     padding: 20,
     borderWidth: 1,
+    overflow: 'hidden',
     minHeight: HOME_STICKY_HEADER_CARD_MIN_HEIGHT,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.1,

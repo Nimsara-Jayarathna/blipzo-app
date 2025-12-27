@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
@@ -31,14 +31,15 @@ export function HomeTabBar({ state, descriptors, navigation, onAddPress }: HomeT
   const extraBottom = Math.max(insets.bottom, 0);
   const translateX = useSharedValue(0);
   const isDark = resolvedTheme === 'dark';
-  const wrapperBlurIntensity = isDark ? 25 : 20;
-  const innerBlurIntensity = isDark ? 45 : 75;
-  const glassContainerColor = isDark ? 'rgba(15, 23, 42, 0.2)' : 'rgba(255, 255, 255, 0.45)';
-  const glassOverlayColor = isDark ? 'rgba(15, 23, 42, 0.2)' : 'rgba(241, 245, 249, 0.35)';
-  const barGradient = isDark ? 'rgba(2, 6, 23, 0.45)' : 'rgba(203, 213, 225, 0.15)';
+  const wrapperBlurIntensity = isDark ? 32 : 26;
+  const innerBlurIntensity = isDark ? 60 : 90;
+  const glassContainerColor = isDark ? 'rgba(15, 23, 42, 0.1)' : 'rgba(255, 255, 255, 0.22)';
+  const glassOverlayColor = isDark ? 'rgba(15, 23, 42, 0.1)' : 'rgba(241, 245, 249, 0.18)';
+  const barGradient = isDark ? 'rgba(2, 6, 23, 0.28)' : 'rgba(203, 213, 225, 0.08)';
+  const androidFallbackOverlay = isDark ? 'rgba(2, 6, 23, 0.45)' : 'rgba(226, 232, 240, 0.3)';
   const highlightGradient: readonly [string, string] = isDark
-    ? ['rgba(255, 255, 255, 0.08)', 'transparent']
-    : ['rgba(255, 255, 255, 0.85)', 'rgba(255, 255, 255, 0.1)'];
+    ? ['rgba(255, 255, 255, 0.12)', 'transparent']
+    : ['rgba(255, 255, 255, 0.9)', 'rgba(255, 255, 255, 0.08)'];
 
   const visibleRoutes = state.routes.filter((route: any) =>
     ['today', 'all'].includes(route.name)
@@ -66,6 +67,10 @@ export function HomeTabBar({ state, descriptors, navigation, onAddPress }: HomeT
     width: Math.max(slotWidth - 12, 0),
   }));
 
+  const addButtonShadow = Platform.OS === 'android'
+    ? { shadowOpacity: 0, elevation: 0 }
+    : { shadowOpacity: 0.25, elevation: 8 };
+
   return (
     <View
       style={[
@@ -78,6 +83,7 @@ export function HomeTabBar({ state, descriptors, navigation, onAddPress }: HomeT
       <BlurView
         intensity={wrapperBlurIntensity}
         tint={isDark ? 'dark' : 'light'}
+        experimentalBlurMethod={Platform.OS === 'android' ? 'dimezisBlurView' : undefined}
         style={StyleSheet.absoluteFill}
         pointerEvents="none"
       />
@@ -106,8 +112,19 @@ export function HomeTabBar({ state, descriptors, navigation, onAddPress }: HomeT
           <BlurView
             intensity={innerBlurIntensity}
             tint={isDark ? 'dark' : 'light'}
+            experimentalBlurMethod={Platform.OS === 'android' ? 'dimezisBlurView' : undefined}
             style={StyleSheet.absoluteFill}
           />
+          {Platform.OS === 'android' && (
+            <View
+              pointerEvents="none"
+              style={[
+                StyleSheet.absoluteFill,
+                styles.glassOverlay,
+                { backgroundColor: androidFallbackOverlay },
+              ]}
+            />
+          )}
           <View style={[styles.glassOverlay, { backgroundColor: glassOverlayColor }]} />
           <LinearGradient
             colors={highlightGradient}
@@ -182,7 +199,7 @@ export function HomeTabBar({ state, descriptors, navigation, onAddPress }: HomeT
           accessibilityLabel="Add transaction"
           accessibilityHint="Opens the add transaction form"
         >
-          <View style={[styles.addButton, { backgroundColor: colors.primaryAccent }]}>
+          <View style={[styles.addButton, { backgroundColor: colors.primaryAccent }, addButtonShadow]}>
             <MaterialIcons name="add" size={24} color="#ffffff" />
           </View>
           <Text style={[styles.tabLabel, { color: colors.textMuted }]}>Add</Text>
