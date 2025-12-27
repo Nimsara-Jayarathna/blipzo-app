@@ -30,7 +30,6 @@ import type { Category } from '@/types';
 import {
   HOME_BOTTOM_BAR_CLEARANCE,
   HOME_CONTENT_PADDING_H,
-  HOME_CONTENT_PADDING_TOP,
 } from '@/components/home/layout/spacing';
 
 // Importing components directly from their files
@@ -48,7 +47,7 @@ export default function SettingsScreen() {
   const queryClient = useQueryClient();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [headerHeight, setHeaderHeight] = useState(0);
+  const [fixedHeaderHeight, setFixedHeaderHeight] = useState(0);
 
   // State
   const [activeTab, setActiveTab] = useState<'income' | 'expense'>('income');
@@ -148,7 +147,6 @@ export default function SettingsScreen() {
 
   const isDark = resolvedTheme === 'dark';
   const headerBlurIntensity = isDark ? 30 : 22;
-  const headerOverlayColor = isDark ? 'rgba(15, 23, 42, 0.35)' : 'rgba(241, 245, 249, 0.55)';
 
   return (
     <KeyboardAvoidingView
@@ -157,93 +155,110 @@ export default function SettingsScreen() {
     >
       <View style={styles.screen}>
         <View
-          style={[
-            styles.fixedHeader,
-            {
-              paddingTop: HOME_CONTENT_PADDING_TOP + insets.top,
-              paddingHorizontal: HOME_CONTENT_PADDING_H,
-            },
-          ]}
-          onLayout={event => setHeaderHeight(event.nativeEvent.layout.height)}
-        >
-          <BlurView
-            intensity={headerBlurIntensity}
-            tint={isDark ? 'dark' : 'light'}
-            style={StyleSheet.absoluteFill}
-            pointerEvents="none"
-          />
-        <Pressable
-          onPress={() => router.navigate('/home/profile')}
-          style={styles.backLink}
-          accessibilityRole="button"
-          accessibilityLabel="Back to category setting"
+          style={styles.fixedHeader}
+          onLayout={event => setFixedHeaderHeight(event.nativeEvent.layout.height)}
         >
           <View
             style={[
-              styles.backIconCircle,
-              { backgroundColor: colors.surfaceGlass, borderColor: colors.borderGlass },
+              styles.backHeaderSafe,
+              { backgroundColor: colors.surface1, paddingTop: insets.top },
             ]}
           >
-            <MaterialIcons name="chevron-left" size={18} color={colors.textMain} />
+            <View
+              style={[
+                styles.backHeaderShadow,
+                { backgroundColor: colors.surface1, shadowColor: colors.textMain },
+              ]}
+            >
+              <View style={styles.backHeaderContent}>
+                <Pressable
+                  onPress={() => router.navigate('/home/profile')}
+                  style={styles.backLink}
+                  accessibilityRole="button"
+                  accessibilityLabel="Back to category setting"
+                >
+                  <View
+                    style={[
+                      styles.backIconCircle,
+                      { backgroundColor: colors.surfaceGlass, borderColor: colors.borderGlass },
+                    ]}
+                  >
+                    <MaterialIcons name="chevron-left" size={18} color={colors.textMain} />
+                  </View>
+                  <ThemedText style={[styles.backLabel, { color: colors.textMain }]}>
+                    Category setting
+                  </ThemedText>
+                </Pressable>
+              </View>
+            </View>
           </View>
-          <ThemedText style={[styles.backLabel, { color: colors.textMain }]}>
-            Category setting
-          </ThemedText>
-        </Pressable>
-        {/* Header */}
-        <View style={styles.headerRow}>
-          {createMutation.isPending && <ActivityIndicator size="small" />}
-        </View>
 
-        {/* Error Message */}
-        {isError && (
-          <TouchableOpacity
-            onPress={() => refetch()}
-            style={[
-              styles.errorBox,
-              {
-                backgroundColor:
-                  resolvedTheme === 'dark' ? 'rgba(239, 68, 68, 0.16)' : 'rgba(231,76,60,0.1)',
-                borderColor:
-                  resolvedTheme === 'dark' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(231,76,60,0.2)',
-              },
-            ]}>
-            <ThemedText style={[styles.errorText, { color: '#ef4444' }]}>
-              Failed to load categories. Tap to retry.
-            </ThemedText>
-          </TouchableOpacity>
-        )}
+          <View style={[styles.blurredControls, { paddingHorizontal: HOME_CONTENT_PADDING_H }]}>
+            <BlurView
+              intensity={headerBlurIntensity}
+              tint={isDark ? 'dark' : 'light'}
+              style={StyleSheet.absoluteFill}
+              pointerEvents="none"
+            />
+            <View>
+              {/* Header */}
+              <View style={styles.headerRow}>
+                {createMutation.isPending && <ActivityIndicator size="small" />}
+              </View>
 
-        {/* Tab Selection */}
-        <CategoryTabs
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          incomeCount={incomeCategories.length}
-          expenseCount={expenseCategories.length}
-          maxCount={limit}
-        />
+              {/* Error Message */}
+              {isError && (
+                <TouchableOpacity
+                  onPress={() => refetch()}
+                  style={[
+                    styles.errorBox,
+                    {
+                      backgroundColor:
+                        resolvedTheme === 'dark'
+                          ? 'rgba(239, 68, 68, 0.16)'
+                          : 'rgba(231,76,60,0.1)',
+                      borderColor:
+                        resolvedTheme === 'dark'
+                          ? 'rgba(239, 68, 68, 0.3)'
+                          : 'rgba(231,76,60,0.2)',
+                    },
+                  ]}>
+                  <ThemedText style={[styles.errorText, { color: '#ef4444' }]}>
+                    Failed to load categories. Tap to retry.
+                  </ThemedText>
+                </TouchableOpacity>
+              )}
 
-        {/* Input Field */}
-        <AddCategoryInput
-          value={newCategoryName}
-          onChangeText={setNewCategoryName}
-          onAdd={handleCreateCategory}
-          activeTab={activeTab}
-          isFull={isFull}
-          isLoading={createMutation.isPending}
-          currentCount={currentCount}
-          maxCount={limit}
-          isDuplicate={isDuplicateName}
-        />
+              {/* Tab Selection */}
+              <CategoryTabs
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                incomeCount={incomeCategories.length}
+                expenseCount={expenseCategories.length}
+                maxCount={limit}
+              />
 
-        {/* List Display */}
+              {/* Input Field */}
+              <AddCategoryInput
+                value={newCategoryName}
+                onChangeText={setNewCategoryName}
+                onAdd={handleCreateCategory}
+                activeTab={activeTab}
+                isFull={isFull}
+                isLoading={createMutation.isPending}
+                currentCount={currentCount}
+                maxCount={limit}
+                isDuplicate={isDuplicateName}
+              />
+            </View>
+          </View>
         </View>
 
         <ScrollView
           contentContainerStyle={[
             styles.listContent,
             {
-              paddingTop: headerHeight + 12,
+              paddingTop: fixedHeaderHeight + 12,
               paddingBottom: HOME_BOTTOM_BAR_CLEARANCE,
             },
           ]}
@@ -276,6 +291,22 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 10,
+  },
+  backHeaderSafe: {
+    width: '100%',
+  },
+  backHeaderShadow: {
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  backHeaderContent: {
+    paddingHorizontal: HOME_CONTENT_PADDING_H,
+    paddingVertical: 10,
+  },
+  blurredControls: {
+    paddingTop: 8,
     paddingBottom: 12,
   },
   headerRow: {
@@ -289,7 +320,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 8,
   },
   backIconCircle: {
     width: 32,
