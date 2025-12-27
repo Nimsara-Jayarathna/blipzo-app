@@ -6,6 +6,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import React, { useEffect, useMemo } from 'react';
 import 'react-native-reanimated';
 import { AuthProvider } from '@/context/AuthContext'; // Ensure this path is correct
+import { OfflineProvider } from '@/context/OfflineContext';
 import { AppThemeProvider, useAppTheme } from '@/context/ThemeContext';
 
 // Prevent native splash from hiding immediately
@@ -22,9 +23,11 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <AppThemeProvider>
-          <ThemedNavigation />
-        </AppThemeProvider>
+        <OfflineProvider>
+          <AppThemeProvider>
+            <ThemedNavigation />
+          </AppThemeProvider>
+        </OfflineProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

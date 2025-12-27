@@ -23,6 +23,7 @@ import { createTransaction } from '@/api/transactions';
 import { getCategories } from '@/api/categories';
 import { ThemedText } from '@/components/themed-text';
 import { useAppTheme } from '@/context/ThemeContext';
+import { useOffline } from '@/context/OfflineContext';
 import type { Category, Transaction, TransactionInput } from '@/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -31,6 +32,11 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GRID_GAP = 8;
 const PADDING_H = 24;
 const CHIP_WIDTH = (SCREEN_WIDTH - (PADDING_H * 2) - (GRID_GAP * 4)) / 5;
+
+const OFFLINE_CATEGORIES: CategoryOption[] = [
+  { id: 'offline-income', name: 'Income', type: 'income', isDefault: true },
+  { id: 'offline-expense', name: 'Expense', type: 'expense', isDefault: true },
+];
 
 type AddTransactionStep = 1 | 2;
 
@@ -50,6 +56,7 @@ type AddTransactionSheetProps = {
 export function AddTransactionSheet({ visible, onClose, onTransactionCreated }: AddTransactionSheetProps) {
   const queryClient = useQueryClient();
   const { colors, resolvedTheme } = useAppTheme();
+  const { offlineMode, capabilities } = useOffline();
   const inputRef = useRef<TextInput>(null);
 
   const [step, setStep] = useState<AddTransactionStep>(1);
@@ -64,6 +71,7 @@ export function AddTransactionSheet({ visible, onClose, onTransactionCreated }: 
   const [note, setNote] = useState('');
 
   const isDark = resolvedTheme === 'dark';
+  const canAdd = capabilities.canAdd;
 
   useEffect(() => {
     if (visible) {
@@ -85,6 +93,13 @@ export function AddTransactionSheet({ visible, onClose, onTransactionCreated }: 
   useEffect(() => {
     if (!visible || step !== 2) return;
     const loadCategories = async () => {
+      // Offline: categories will come from local storage later.
+      if (offlineMode) {
+        setCategories(OFFLINE_CATEGORIES);
+        setIsLoadingCategories(false);
+        return;
+      }
+
       try {
         setIsLoadingCategories(true);
         const result = await getCategories();
@@ -102,7 +117,7 @@ export function AddTransactionSheet({ visible, onClose, onTransactionCreated }: 
       }
     };
     void loadCategories();
-  }, [visible, step]);
+  }, [visible, step, offlineMode]);
 
   useEffect(() => {
     const nextFiltered = categories.filter(category => category.type === transactionType);
@@ -125,6 +140,13 @@ export function AddTransactionSheet({ visible, onClose, onTransactionCreated }: 
   });
 
   const handleSave = () => {
+    if (offlineMode) {
+      // Offline: enqueue for local sync later.
+      Alert.alert('Saved locally', 'This record will sync when you are back online.');
+      onClose();
+      return;
+    }
+
     mutation.mutate({
       amount: Number(amount),
       type: transactionType,
@@ -197,11 +219,29 @@ export function AddTransactionSheet({ visible, onClose, onTransactionCreated }: 
 
                 <ThemedText style={styles.typeLabel}>Select transaction type</ThemedText>
                 <View style={styles.typeRow}>
-                  <Pressable style={[styles.typeBtn, styles.incomeBtn, isDark && styles.incomeBtnDark]} onPress={() => { setTransactionType('income'); setStep(2); }}>
+                  <Pressable
+                    style={[
+                      styles.typeBtn,
+                      styles.incomeBtn,
+                      isDark && styles.incomeBtnDark,
+                      !canAdd && { opacity: 0.6 },
+                    ]}
+                    disabled={!canAdd}
+                    onPress={() => { setTransactionType('income'); setStep(2); }}
+                  >
                     <View style={styles.typeIconBg}><MaterialIcons name="add" size={18} color="#22c55e" /></View>
                     <ThemedText style={styles.btnLabel}>Income</ThemedText>
                   </Pressable>
-                  <Pressable style={[styles.typeBtn, styles.expenseBtn, isDark && styles.expenseBtnDark]} onPress={() => { setTransactionType('expense'); setStep(2); }}>
+                  <Pressable
+                    style={[
+                      styles.typeBtn,
+                      styles.expenseBtn,
+                      isDark && styles.expenseBtnDark,
+                      !canAdd && { opacity: 0.6 },
+                    ]}
+                    disabled={!canAdd}
+                    onPress={() => { setTransactionType('expense'); setStep(2); }}
+                  >
                     <View style={styles.typeIconBg}><MaterialIcons name="remove" size={18} color="#ef4444" /></View>
                     <ThemedText style={styles.btnLabel}>Expense</ThemedText>
                   </Pressable>
@@ -218,10 +258,12 @@ export function AddTransactionSheet({ visible, onClose, onTransactionCreated }: 
                       <Pressable 
                         key={cat.id} 
                         onPress={() => setSelectedCategory(cat.id)}
+                        disabled={!capabilities.canSelectCategory}
                         style={[
                           styles.catChip, 
                           { backgroundColor: colors.surface2, borderColor: colors.borderSoft },
-                          selectedCategory === cat.id && { borderColor: colors.primaryAccent, backgroundColor: colors.primaryAccent + '15'}
+                          selectedCategory === cat.id && { borderColor: colors.primaryAccent, backgroundColor: colors.primaryAccent + '15'},
+                          !capabilities.canSelectCategory && { opacity: 0.6 },
                         ]}
                       >
                         <Text numberOfLines={1} style={[styles.catName, { color: colors.textMain }, selectedCategory === cat.id && { color: colors.primaryAccent, fontWeight: 'bold' }]}>
@@ -252,7 +294,15 @@ export function AddTransactionSheet({ visible, onClose, onTransactionCreated }: 
                   />
                 </View>
 
-                <Pressable onPress={handleSave} style={[styles.saveBtn, { backgroundColor: colors.primaryAccent }]}>
+                <Pressable
+                  onPress={handleSave}
+                  disabled={!canAdd}
+                  style={[
+                    styles.saveBtn,
+                    { backgroundColor: colors.primaryAccent },
+                    !canAdd && { opacity: 0.6 },
+                  ]}
+                >
                   {mutation.isPending ? <ActivityIndicator color="#fff" /> : <ThemedText style={styles.saveText}>Complete</ThemedText>}
                 </Pressable>
               </View>

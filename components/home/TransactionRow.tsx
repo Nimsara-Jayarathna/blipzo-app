@@ -10,6 +10,7 @@ import type { Transaction } from '@/types';
 type TransactionRowProps = {
   transaction: Transaction;
   onDelete?: (id: string) => void;
+  canDelete?: boolean;
   mode?: 'today' | 'all'; // Functional switch for different views
   isNoteOpen?: boolean;
   onToggleNote?: () => void;
@@ -19,6 +20,7 @@ type TransactionRowProps = {
 export function TransactionRow({
   transaction,
   onDelete,
+  canDelete = true,
   mode = 'today',
   isNoteOpen = false,
   onToggleNote,
@@ -115,7 +117,7 @@ export function TransactionRow({
         </View>
 
         {/* DELETE ACTION: Only if record is from Today */}
-        {isDeletable && (
+        {isDeletable && canDelete && (
           <Pressable 
             onPress={(event) => {
               event.stopPropagation();

@@ -21,6 +21,7 @@ import {
 } from '@/api/categories';
 import { ThemedText } from '@/components/themed-text';
 import { useAppTheme } from '@/context/ThemeContext';
+import { useOffline } from '@/context/OfflineContext';
 import { useAuth } from '@/hooks/useAuth';
 import type { Category } from '@/types';
 
@@ -42,6 +43,7 @@ const DEFAULT_CATEGORY_LIMIT = 10;
 export default function SettingsScreen() {
   const { isAuthenticated } = useAuth();
   const { resolvedTheme, colors } = useAppTheme();
+  const { offlineMode, capabilities } = useOffline();
   const queryClient = useQueryClient();
   const router = useRouter();
   const [fixedHeaderHeight, setFixedHeaderHeight] = useState(0);
@@ -59,7 +61,8 @@ export default function SettingsScreen() {
   } = useQuery({
     queryKey: categoryKey,
     queryFn: getCategories,
-    enabled: isAuthenticated,
+    // Offline: local categories will be used later.
+    enabled: isAuthenticated && !offlineMode,
   });
 
   // Derived State
@@ -144,6 +147,54 @@ export default function SettingsScreen() {
 
   const isDark = resolvedTheme === 'dark';
   const headerBlurIntensity = isDark ? 30 : 22;
+
+  if (offlineMode || !capabilities.canManageCategories) {
+    // Offline: Category management is blocked entirely.
+    return (
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.screen}
+      >
+        <View style={styles.screen}>
+          <View
+            style={styles.fixedHeader}
+            onLayout={event => setFixedHeaderHeight(event.nativeEvent.layout.height)}
+          >
+            <SectionHeader
+              title="Category setting"
+              onBack={() => router.navigate('/home/profile')}
+              accessibilityLabel="Back to profile"
+            />
+          </View>
+          <ScrollView
+            contentContainerStyle={[
+              styles.listContent,
+              {
+                paddingTop: fixedHeaderHeight + 24,
+                paddingBottom: HOME_BOTTOM_BAR_CLEARANCE,
+              },
+            ]}
+            contentInsetAdjustmentBehavior="never"
+            showsVerticalScrollIndicator={false}
+          >
+            <View
+              style={[
+                styles.blockedCard,
+                { backgroundColor: colors.surfaceGlassThick, borderColor: colors.borderGlass },
+              ]}
+            >
+              <ThemedText style={[styles.blockedTitle, { color: colors.textMain }]}>
+                Unavailable offline
+              </ThemedText>
+              <ThemedText style={[styles.blockedBody, { color: colors.textMuted }]}>
+                Category management will be available when you are back online.
+              </ThemedText>
+            </View>
+          </ScrollView>
+        </View>
+      </KeyboardAvoidingView>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -283,5 +334,19 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: HOME_CONTENT_PADDING_H,
+  },
+  blockedCard: {
+    borderRadius: 24,
+    padding: 20,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  blockedTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  blockedBody: {
+    textAlign: 'center',
   },
 });

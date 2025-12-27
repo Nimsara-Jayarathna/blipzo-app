@@ -9,6 +9,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
+import { useOffline } from '@/context/OfflineContext';
 import { HomeContent } from '@/components/home/layout/HomeContent';
 import { HOME_CONTENT_PADDING_H } from '@/components/home/layout/spacing';
 import { SectionHeader } from '@/components/home/layout/SectionHeader';
@@ -16,6 +17,7 @@ import { SectionHeader } from '@/components/home/layout/SectionHeader';
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
   const { colors } = useAppTheme();
+  const { offlineMode, capabilities } = useOffline();
   const router = useRouter();
   const navigation = useNavigation();
   const [activeSection, setActiveSection] = useState<'menu' | 'profile'>('menu');
@@ -66,15 +68,24 @@ export default function ProfileScreen() {
             <View style={[styles.rowDivider, { backgroundColor: colors.borderSoft }]} />
             <Pressable
               onPress={() => router.navigate('/home/settings')}
+              disabled={offlineMode || !capabilities.canManageCategories}
               style={styles.listRow}
               accessibilityRole="button"
               accessibilityLabel="Category setting"
+              accessibilityState={{ disabled: offlineMode || !capabilities.canManageCategories }}
             >
               <View style={styles.listRowLeft}>
                 <View style={[styles.iconBadge, { backgroundColor: colors.surface2 }]}>
                   <MaterialIcons name="category" size={18} color={colors.textMuted} />
                 </View>
-                <ThemedText style={styles.listLabel}>Category setting</ThemedText>
+                <ThemedText
+                  style={[
+                    styles.listLabel,
+                    (offlineMode || !capabilities.canManageCategories) && { color: colors.textSubtle },
+                  ]}
+                >
+                  Category setting
+                </ThemedText>
               </View>
               <MaterialIcons name="chevron-right" size={20} color={colors.textMuted} />
             </Pressable>

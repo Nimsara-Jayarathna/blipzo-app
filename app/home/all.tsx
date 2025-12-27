@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { deleteTransaction, getTransactionsFiltered, type TransactionFilters } from '@/api/transactions';
 import { useAuth } from '@/hooks/useAuth';
+import { useOffline } from '@/context/OfflineContext';
 import { TransactionList } from '@/components/home/all/TransactionList';
 import { HomeContent } from '@/components/home/layout/HomeContent';
 import { HomeStickyHeader } from '@/components/home/layout/HomeStickyHeader';
@@ -23,6 +24,7 @@ import { AllFiltersSheet } from '@/components/home/all/AllFiltersSheet';
 
 export default function AllTransactionsScreen() {
   const { isAuthenticated } = useAuth();
+  const { offlineMode, capabilities } = useOffline();
   const queryClient = useQueryClient();
   const today = dayjs().format('YYYY-MM-DD');
 
@@ -52,7 +54,8 @@ export default function AllTransactionsScreen() {
       sortBy: filters.sortField,
       sortDir: filters.sortDirection,
     } as TransactionFilters),
-    enabled: isAuthenticated,
+    // Offline: blocked by navigation guard; local data can be wired in later.
+    enabled: isAuthenticated && !offlineMode,
   });
 
   const filteredTransactions = data?.transactions ?? [];
@@ -95,6 +98,7 @@ export default function AllTransactionsScreen() {
               groupedData={groupedData}
               HeaderComponent={() => null}
               onDelete={(id) => deleteMutation.mutate(id)}
+              canDelete={capabilities.canDelete}
               openNoteId={openNoteId}
               onToggleNote={(id) => setOpenNoteId(current => (current === id ? null : id))}
               onRowPress={() => setOpenNoteId(null)}

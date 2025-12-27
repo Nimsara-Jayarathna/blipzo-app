@@ -12,6 +12,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { useAppTheme } from '@/context/ThemeContext';
+import { useOffline } from '@/context/OfflineContext';
 import {
   HOME_TAB_BAR_HEIGHT,
   HOME_TAB_BAR_MARGIN,
@@ -27,6 +28,7 @@ type HomeTabBarProps = {
 export function HomeTabBar({ state, descriptors, navigation, onAddPress }: HomeTabBarProps) {
   const [width, setWidth] = useState(0);
   const { colors, resolvedTheme } = useAppTheme();
+  const { offlineMode } = useOffline();
   const insets = useSafeAreaInsets();
   const extraBottom = Math.max(insets.bottom, 0);
   const translateX = useSharedValue(0);
@@ -48,6 +50,7 @@ export function HomeTabBar({ state, descriptors, navigation, onAddPress }: HomeT
   const allRoute = visibleRoutes.find((route: any) => route.name === 'all');
   const activeRouteName = state.routes[state.index].name;
   const showPill = activeRouteName === 'today' || activeRouteName === 'all';
+  const isAllDisabled = offlineMode;
 
   const slotWidth = width / 3;
 
@@ -172,7 +175,12 @@ export function HomeTabBar({ state, descriptors, navigation, onAddPress }: HomeT
           if (route.name === 'all') iconName = 'list-alt';
 
           return (
-            <Pressable key={route.key} onPress={onPress} style={styles.tabItem}>
+            <Pressable
+              key={route.key}
+              onPress={onPress}
+              style={styles.tabItem}
+              accessibilityState={{ selected: isFocused }}
+            >
               <View style={styles.iconContainer}>
                 <MaterialIcons
                   name={iconName}
@@ -211,6 +219,7 @@ export function HomeTabBar({ state, descriptors, navigation, onAddPress }: HomeT
           const isFocused = state.routes[state.index].key === route.key;
 
           const onPress = () => {
+            if (isAllDisabled) return;
             const event = navigation.emit({
               type: 'tabPress',
               target: route.key,
@@ -226,18 +235,28 @@ export function HomeTabBar({ state, descriptors, navigation, onAddPress }: HomeT
           if (route.name === 'today') iconName = 'today';
           if (route.name === 'all') iconName = 'list-alt';
 
+          const iconColor = isFocused ? colors.primaryAccent : colors.textMuted;
+          const labelColor = isFocused ? colors.primaryAccent : colors.textMuted;
+          const disabledTint = colors.textSubtle ?? colors.textMuted;
+
           return (
-            <Pressable key={route.key} onPress={onPress} style={styles.tabItem}>
+            <Pressable
+              key={route.key}
+              onPress={onPress}
+              style={styles.tabItem}
+              disabled={isAllDisabled}
+              accessibilityState={{ selected: isFocused, disabled: isAllDisabled }}
+            >
               <View style={styles.iconContainer}>
                 <MaterialIcons
                   name={iconName}
                   size={22}
-                  color={isFocused ? colors.primaryAccent : colors.textMuted}
+                  color={isAllDisabled ? disabledTint : iconColor}
                 />
                 <Text
                   style={[
                     styles.tabLabel,
-                    { color: isFocused ? colors.primaryAccent : colors.textMuted },
+                    { color: isAllDisabled ? disabledTint : labelColor },
                   ]}
                 >
                   {options.title}

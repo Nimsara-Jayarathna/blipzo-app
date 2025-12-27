@@ -14,6 +14,7 @@ import { deleteTransaction, getTransactionsFiltered, type TransactionFilters } f
 import { ThemedText } from '@/components/themed-text';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
+import { useOffline } from '@/context/OfflineContext';
 import type { Transaction } from '@/types';
 import { TransactionRow } from '@/components/home/TransactionRow';
 import {
@@ -30,6 +31,7 @@ const transactionKey = ['transactions'];
 export default function TodayScreen() {
   const { isAuthenticated } = useAuth();
   const { colors } = useAppTheme();
+  const { offlineMode, capabilities } = useOffline();
   const queryClient = useQueryClient();
   const todayDate = dayjs().format('YYYY-MM-DD');
   
@@ -51,7 +53,8 @@ export default function TodayScreen() {
         startDate: todayDate,
         endDate: todayDate,
       } as TransactionFilters),
-    enabled: isAuthenticated,
+    // Offline: will switch to local data source later.
+    enabled: isAuthenticated && !offlineMode,
   });
 
   const { transactions, income, expense, balance } = useMemo(() => {
@@ -166,6 +169,7 @@ export default function TodayScreen() {
                   <TransactionRow
                     transaction={item}
                     mode="today"
+                    canDelete={capabilities.canDelete}
                     onDelete={(delId) => deleteMutation.mutate(delId)}
                     isNoteOpen={Boolean(id && openNoteId === id)}
                     onToggleNote={() => setOpenNoteId(curr => (curr === id ? null : id))}

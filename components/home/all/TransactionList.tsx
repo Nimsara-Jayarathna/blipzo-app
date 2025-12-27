@@ -25,6 +25,7 @@ interface Props {
   groupedData: GroupedSection[] | null;
   HeaderComponent: React.ComponentType<any>;
   onDelete?: (id: string) => void;
+  canDelete?: boolean;
   openNoteId?: string | null;
   onToggleNote?: (id: string) => void;
   onRowPress?: () => void;
@@ -40,6 +41,7 @@ export function TransactionList({
   groupedData,
   HeaderComponent,
   onDelete,
+  canDelete = true,
   openNoteId,
   onToggleNote,
   onRowPress,
@@ -99,6 +101,7 @@ export function TransactionList({
               transaction={txn}
               mode="all"
               onDelete={onDelete}
+              canDelete={canDelete}
               isNoteOpen={Boolean(id && openNoteId === id)}
               onToggleNote={() => onToggleNote?.(id)}
               onRowPress={onRowPress}
@@ -129,6 +132,7 @@ export function TransactionList({
             transaction={txn}
             mode="all"
             onDelete={onDelete}
+            canDelete={canDelete}
             isNoteOpen={Boolean(id && openNoteId === id)}
             onToggleNote={() => onToggleNote?.(id)}
             onRowPress={onRowPress}
