@@ -9,11 +9,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   View,
-  Pressable,
 } from 'react-native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 
 import {
@@ -31,6 +28,7 @@ import {
   HOME_BOTTOM_BAR_CLEARANCE,
   HOME_CONTENT_PADDING_H,
 } from '@/components/home/layout/spacing';
+import { SectionHeader } from '@/components/home/layout/SectionHeader';
 
 // Importing components directly from their files
 import { CategoryTabs } from '@/components/home/settings/CategoryTabs';
@@ -46,7 +44,6 @@ export default function SettingsScreen() {
   const { resolvedTheme, colors } = useAppTheme();
   const queryClient = useQueryClient();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const [fixedHeaderHeight, setFixedHeaderHeight] = useState(0);
 
   // State
@@ -158,40 +155,11 @@ export default function SettingsScreen() {
           style={styles.fixedHeader}
           onLayout={event => setFixedHeaderHeight(event.nativeEvent.layout.height)}
         >
-          <View
-            style={[
-              styles.backHeaderSafe,
-              { backgroundColor: colors.surface1, paddingTop: insets.top },
-            ]}
-          >
-            <View
-              style={[
-                styles.backHeaderShadow,
-                { backgroundColor: colors.surface1, shadowColor: colors.textMain },
-              ]}
-            >
-              <View style={styles.backHeaderContent}>
-                <Pressable
-                  onPress={() => router.navigate('/home/profile')}
-                  style={styles.backLink}
-                  accessibilityRole="button"
-                  accessibilityLabel="Back to category setting"
-                >
-                  <View
-                    style={[
-                      styles.backIconCircle,
-                      { backgroundColor: colors.surfaceGlass, borderColor: colors.borderGlass },
-                    ]}
-                  >
-                    <MaterialIcons name="chevron-left" size={18} color={colors.textMain} />
-                  </View>
-                  <ThemedText style={[styles.backLabel, { color: colors.textMain }]}>
-                    Category setting
-                  </ThemedText>
-                </Pressable>
-              </View>
-            </View>
-          </View>
+          <SectionHeader
+            title="Category setting"
+            onBack={() => router.navigate('/home/profile')}
+            accessibilityLabel="Back to category setting"
+          />
 
           <View style={[styles.blurredControls, { paddingHorizontal: HOME_CONTENT_PADDING_H }]}>
             <BlurView
@@ -292,19 +260,6 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 10,
   },
-  backHeaderSafe: {
-    width: '100%',
-  },
-  backHeaderShadow: {
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 4,
-  },
-  backHeaderContent: {
-    paddingHorizontal: HOME_CONTENT_PADDING_H,
-    paddingVertical: 10,
-  },
   blurredControls: {
     paddingTop: 8,
     paddingBottom: 12,
@@ -315,23 +270,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
     minHeight: 0,
-  },
-  backLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  backIconCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-  },
-  backLabel: {
-    fontSize: 17,
-    fontWeight: '500',
   },
   errorBox: {
     padding: 10,
