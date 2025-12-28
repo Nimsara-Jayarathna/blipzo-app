@@ -96,7 +96,9 @@ apiClient.interceptors.response.use(
         await refreshSession();
         return apiClient(originalRequest);
       } catch (refreshError) {
-        useAuthStore.getState().logout();
+        if (!isNetworkOrTimeoutError(refreshError)) {
+          useAuthStore.getState().logout();
+        }
         return Promise.reject(refreshError);
       }
     }

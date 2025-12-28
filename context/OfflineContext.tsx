@@ -19,6 +19,7 @@ const SESSION_CACHE_KEY = 'has_valid_session';
 
 type OfflineContextValue = {
   offlineMode: boolean;
+  networkConnected: boolean;
   setOfflineMode: (next: boolean) => void;
   promptToGoOffline: (
     reason: string,
@@ -32,6 +33,8 @@ type OfflineContextValue = {
   tryGoOnline: () => Promise<boolean>;
   isBooting: boolean;
   setIsBooting: (next: boolean) => void;
+  startupOfflineTaken: boolean;
+  setStartupOfflineTaken: (next: boolean) => void;
   capabilities: Capabilities;
 };
 
@@ -51,6 +54,7 @@ export const OfflineProvider: React.FC<React.PropsWithChildren> = ({ children })
   }>({ visible: false, reason: '', allowOffline: true, primaryLabel: 'Retry' });
   const [isPromptRetrying, setIsPromptRetrying] = useState(false);
   const [isBooting, setIsBooting] = useState(true);
+  const [startupOfflineTaken, setStartupOfflineTaken] = useState(false);
 
   const offlineMode = manualOffline;
 
@@ -183,7 +187,7 @@ export const OfflineProvider: React.FC<React.PropsWithChildren> = ({ children })
           hasValidSession,
           'Retry',
           undefined,
-          true
+          false
         );
       };
       void checkAndPrompt();
@@ -220,6 +224,7 @@ export const OfflineProvider: React.FC<React.PropsWithChildren> = ({ children })
     <OfflineContext.Provider
       value={{
         offlineMode,
+        networkConnected,
         setOfflineMode: setManualOffline,
         promptToGoOffline,
         prompt: {
@@ -234,6 +239,8 @@ export const OfflineProvider: React.FC<React.PropsWithChildren> = ({ children })
         tryGoOnline,
         isBooting,
         setIsBooting,
+        startupOfflineTaken,
+        setStartupOfflineTaken,
         capabilities,
       }}
     >

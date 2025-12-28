@@ -26,7 +26,7 @@ const SESSION_CACHE_KEY = 'has_valid_session';
 export default function IndexScreen() {
   const router = useRouter();
   const { setAuth, logout } = useAuth();
-  const { offlineMode, promptToGoOffline, setIsBooting } = useOffline();
+  const { offlineMode, promptToGoOffline, setIsBooting, setStartupOfflineTaken } = useOffline();
   const hasNavigatedRef = useRef(false);
   const sessionCacheLoadedRef = useRef(false);
   const hasValidSessionRef = useRef(false);
@@ -170,6 +170,7 @@ export default function IndexScreen() {
               primaryLabel: 'Retry',
               onConfirm: allowOffline
                 ? () => {
+                    setStartupOfflineTaken(true);
                     hasNavigatedRef.current = true;
                     router.replace('/home/today' as any);
                   }
