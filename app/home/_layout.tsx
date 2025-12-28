@@ -31,7 +31,7 @@ export default function HomeTabLayout() {
     }
   }, [offlineMode, capabilities, router, segments]);
 
-  if (!isAuthenticated) return null;
+  if (!isAuthenticated && !offlineMode) return null;
 
   return (
     <HomeShell user={user ? { name: user.name ?? user.email, avatarUrl: undefined } : null}>

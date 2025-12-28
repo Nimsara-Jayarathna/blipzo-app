@@ -10,8 +10,10 @@ import Animated, {
   withRepeat, 
   withSequence 
 } from 'react-native-reanimated';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { getSession, refreshSession } from '@/api/auth';
+import { apiClient } from '@/api/client';
 import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/hooks/useAuth';
 import { HomeBackground } from '@/components/home/HomeBackground';
@@ -19,12 +21,15 @@ import { useOffline } from '@/context/OfflineContext';
 import { isAuthError, isNetworkOrTimeoutError } from '@/utils/api-retry';
 
 const ACCENT_COLOR = '#3498db';
+const SESSION_CACHE_KEY = 'has_valid_session';
 
 export default function IndexScreen() {
   const router = useRouter();
   const { setAuth, logout } = useAuth();
-  const { offlineMode, promptToGoOffline, setStartupOfflineLock } = useOffline();
+  const { offlineMode, promptToGoOffline, setIsBooting } = useOffline();
   const hasNavigatedRef = useRef(false);
+  const sessionCacheLoadedRef = useRef(false);
+  const hasValidSessionRef = useRef(false);
 
   // Animation Values
   const logoScale = useSharedValue(0);
@@ -43,6 +48,13 @@ export default function IndexScreen() {
       -1,
       true
     );
+
+    const loadSessionCache = async () => {
+      if (sessionCacheLoadedRef.current) return;
+      const cached = await AsyncStorage.getItem(SESSION_CACHE_KEY);
+      hasValidSessionRef.current = cached === 'true';
+      sessionCacheLoadedRef.current = true;
+    };
 
     // 3. Run Auth Logic
     const runSessionCheck = async () => {
@@ -78,10 +90,31 @@ export default function IndexScreen() {
         const minWait = skipMinWait ? Promise.resolve() : new Promise(resolve => setTimeout(resolve, 1500));
         await minWait;
 
+        await loadSessionCache();
+        if (!hasValidSessionRef.current) {
+          try {
+            await apiClient.get('/health', { timeout: 5000 });
+            hasNavigatedRef.current = true;
+            router.replace('/welcome');
+          } catch {
+            promptToGoOffline(
+              'You need to be online to sign in.',
+              async () => {
+                await apiClient.get('/health', { timeout: 5000 });
+                hasNavigatedRef.current = true;
+                router.replace('/welcome');
+              },
+              { allowOffline: false, primaryLabel: 'Go to sign in', force: true }
+            );
+          }
+          return;
+        }
+
         const result = await runSessionCheck();
 
         if (result.status === 'ok') {
           setAuth(result.authData);
+          await AsyncStorage.setItem(SESSION_CACHE_KEY, 'true');
           hasNavigatedRef.current = true;
           router.replace('/home' as any);
           return;
@@ -89,9 +122,11 @@ export default function IndexScreen() {
 
         if (result.status === 'unauth') {
           logout();
+          await AsyncStorage.setItem(SESSION_CACHE_KEY, 'false');
           promptToGoOffline(
             'You need to be online to sign in.',
             async () => {
+              await apiClient.get('/health', { timeout: 5000 });
               hasNavigatedRef.current = true;
               router.replace('/welcome');
             },
@@ -101,20 +136,26 @@ export default function IndexScreen() {
         }
 
         if (result.status === 'network') {
+          const allowOffline = hasValidSessionRef.current;
           promptToGoOffline(
-            'Unable to reach the server.',
+            allowOffline
+              ? 'Unable to reach the server.'
+              : 'You need to be online to continue.',
             async () => {
               const retryResult = await runSessionCheck();
               if (retryResult.status === 'ok') {
                 setAuth(retryResult.authData);
+                await AsyncStorage.setItem(SESSION_CACHE_KEY, 'true');
                 hasNavigatedRef.current = true;
                 router.replace('/home' as any);
                 return;
               }
               if (retryResult.status === 'unauth') {
+                await AsyncStorage.setItem(SESSION_CACHE_KEY, 'false');
                 promptToGoOffline(
                   'You need to be online to sign in.',
                   async () => {
+                    await apiClient.get('/health', { timeout: 5000 });
                     hasNavigatedRef.current = true;
                     router.replace('/welcome');
                   },
@@ -125,13 +166,14 @@ export default function IndexScreen() {
               throw new Error('NETWORK');
             },
             {
-              allowOffline: true,
+              allowOffline,
               primaryLabel: 'Retry',
-              onConfirm: () => {
-                setStartupOfflineLock(true);
-                hasNavigatedRef.current = true;
-                router.replace('/home/all' as any);
-              },
+              onConfirm: allowOffline
+                ? () => {
+                    hasNavigatedRef.current = true;
+                    router.replace('/home/today' as any);
+                  }
+                : undefined,
               force: true,
             }
           );
@@ -139,16 +181,19 @@ export default function IndexScreen() {
         }
 
         logout();
+        await AsyncStorage.setItem(SESSION_CACHE_KEY, 'false');
         hasNavigatedRef.current = true;
         router.replace('/welcome');
       } catch {
         logout();
+        await AsyncStorage.setItem(SESSION_CACHE_KEY, 'false');
         hasNavigatedRef.current = true;
         router.replace('/welcome');
       }
     };
 
-    checkAuth();
+    setIsBooting(true);
+    void checkAuth().finally(() => setIsBooting(false));
   }, []);
 
   useEffect(() => {

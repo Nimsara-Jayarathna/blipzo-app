@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 
 import { apiClient } from '@/api/client';
@@ -14,6 +15,8 @@ export type Capabilities = {
   canAccessProfileSettings: boolean;
 };
 
+const SESSION_CACHE_KEY = 'has_valid_session';
+
 type OfflineContextValue = {
   offlineMode: boolean;
   setOfflineMode: (next: boolean) => void;
@@ -27,8 +30,8 @@ type OfflineContextValue = {
   confirmOfflineMode: () => void;
   retryConnection: () => void;
   tryGoOnline: () => Promise<boolean>;
-  startupOfflineLock: boolean;
-  setStartupOfflineLock: (next: boolean) => void;
+  isBooting: boolean;
+  setIsBooting: (next: boolean) => void;
   capabilities: Capabilities;
 };
 
@@ -47,7 +50,7 @@ export const OfflineProvider: React.FC<React.PropsWithChildren> = ({ children })
     onConfirm?: () => void;
   }>({ visible: false, reason: '', allowOffline: true, primaryLabel: 'Retry' });
   const [isPromptRetrying, setIsPromptRetrying] = useState(false);
-  const [startupOfflineLock, setStartupOfflineLock] = useState(false);
+  const [isBooting, setIsBooting] = useState(true);
 
   const offlineMode = manualOffline;
 
@@ -62,13 +65,16 @@ export const OfflineProvider: React.FC<React.PropsWithChildren> = ({ children })
     if (manualOffline) {
       return;
     }
+    if (isBooting && !force) {
+      return;
+    }
     setPromptState(prev => {
       if (prev.visible && !force) {
         return prev;
       }
       return { visible: true, reason, onRetry, allowOffline, primaryLabel, onConfirm };
     });
-  }, [manualOffline]);
+  }, [manualOffline, isBooting]);
 
   const promptToGoOffline = useCallback(
     (
@@ -104,15 +110,17 @@ export const OfflineProvider: React.FC<React.PropsWithChildren> = ({ children })
     }
 
     setIsPromptRetrying(true);
+    const minWait = new Promise(resolve => setTimeout(resolve, 700));
     try {
-      await promptState.onRetry();
+      await Promise.all([promptState.onRetry(), minWait]);
       setManualOffline(false);
       setPromptState(prev => ({ ...prev, visible: false }));
     } catch (error) {
+      await minWait;
       const message =
         error instanceof Error && error.message === 'AUTH_INVALID'
           ? 'You need to be online to sign in.'
-          : 'Retry failed. Please check your connection.';
+          : 'Still offline. Please check your connection.';
       setPromptState(prev => ({
         ...prev,
         reason: message,
@@ -161,17 +169,26 @@ export const OfflineProvider: React.FC<React.PropsWithChildren> = ({ children })
   useEffect(() => {
     // Surface connection loss without auto-enabling offline mode.
     if (!networkConnected && !manualOffline) {
-      openPrompt('Connection lost.', async () => {
-        await apiClient.get('/health', { timeout: 5000 });
-      }, true, 'Retry');
+      const checkAndPrompt = async () => {
+        const cached = await AsyncStorage.getItem(SESSION_CACHE_KEY);
+        const hasValidSession = cached === 'true';
+        const reason = hasValidSession
+          ? 'Connection lost.'
+          : 'You need to be online to sign in.';
+        openPrompt(
+          reason,
+          async () => {
+            await apiClient.get('/health', { timeout: 5000 });
+          },
+          hasValidSession,
+          'Retry',
+          undefined,
+          true
+        );
+      };
+      void checkAndPrompt();
     }
   }, [networkConnected, manualOffline, openPrompt]);
-
-  useEffect(() => {
-    if (!manualOffline && startupOfflineLock) {
-      setStartupOfflineLock(false);
-    }
-  }, [manualOffline, startupOfflineLock]);
 
   const capabilities = useMemo<Capabilities>(() => {
     if (offlineMode) {
@@ -215,8 +232,8 @@ export const OfflineProvider: React.FC<React.PropsWithChildren> = ({ children })
         confirmOfflineMode,
         retryConnection,
         tryGoOnline,
-        startupOfflineLock,
-        setStartupOfflineLock,
+        isBooting,
+        setIsBooting,
         capabilities,
       }}
     >
