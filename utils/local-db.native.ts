@@ -40,14 +40,34 @@ const getDb = () => {
   return db;
 };
 
-const run = async (sql: string, params: (string | number | null)[] = []) =>
-  getDb().runAsync(sql, params);
+type BindValue = string | number | null;
 
-const getAll = async <T,>(sql: string, params: (string | number | null)[] = []) =>
-  getDb().getAllAsync<T>(sql, params);
+const normalizeParams = (params: unknown[]): BindValue[] =>
+  params.map((value) => {
+    if (value === undefined) return null;
+    if (value === null) return null;
+    if (value instanceof Date) return value.toISOString();
+    if (typeof value === 'object') return JSON.stringify(value);
+    return value as BindValue;
+  });
 
-const getFirst = async <T,>(sql: string, params: (string | number | null)[] = []) =>
-  getDb().getFirstAsync<T>(sql, params);
+const run = async (sql: string, params: unknown[] = []) => {
+  const normalized = normalizeParams(params);
+  if (!normalized.length) return getDb().runAsync(sql);
+  return getDb().runAsync(sql, normalized);
+};
+
+const getAll = async <T,>(sql: string, params: unknown[] = []) => {
+  const normalized = normalizeParams(params);
+  if (!normalized.length) return getDb().getAllAsync<T>(sql);
+  return getDb().getAllAsync<T>(sql, normalized);
+};
+
+const getFirst = async <T,>(sql: string, params: unknown[] = []) => {
+  const normalized = normalizeParams(params);
+  if (!normalized.length) return getDb().getFirstAsync<T>(sql);
+  return getDb().getFirstAsync<T>(sql, normalized);
+};
 
 export const initDb = async () => {
   await run(
