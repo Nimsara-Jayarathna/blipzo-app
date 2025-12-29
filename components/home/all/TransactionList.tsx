@@ -34,6 +34,7 @@ interface Props {
   onLayout?: (event: LayoutChangeEvent) => void;
   onContentSizeChange?: (width: number, height: number) => void;
   scrollEnabled?: boolean;
+  refreshControl?: React.ReactElement;
 }
 
 export function TransactionList({
@@ -50,6 +51,7 @@ export function TransactionList({
   onLayout,
   onContentSizeChange,
   scrollEnabled,
+  refreshControl,
 }: Props) {
   const { colors } = useAppTheme();
 
@@ -114,6 +116,7 @@ export function TransactionList({
         onLayout={onLayout}
         onContentSizeChange={onContentSizeChange}
         scrollEnabled={scrollEnabled}
+        refreshControl={refreshControl}
         stickySectionHeadersEnabled={false}
       />
     );
@@ -146,6 +149,7 @@ export function TransactionList({
       onLayout={onLayout}
       onContentSizeChange={onContentSizeChange}
       scrollEnabled={scrollEnabled}
+      refreshControl={refreshControl}
       ListEmptyComponent={
         <View style={styles.center}>
           <ThemedText>No transactions found.</ThemedText>

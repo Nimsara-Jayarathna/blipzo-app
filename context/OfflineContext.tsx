@@ -61,6 +61,7 @@ export const OfflineProvider: React.FC<React.PropsWithChildren> = ({ children })
   const [isBooting, setIsBooting] = useState(true);
   const [startupOfflineTaken, setStartupOfflineTaken] = useState(false);
   const lastOfflineRef = useRef(manualOffline);
+  const suppressPromptUntilRef = useRef(0);
 
   const offlineMode = manualOffline;
 
@@ -148,6 +149,8 @@ export const OfflineProvider: React.FC<React.PropsWithChildren> = ({ children })
       if (refreshed?.user) {
         setAuth(refreshed);
       }
+      suppressPromptUntilRef.current = Date.now() + 5000;
+      setNetworkConnected(true);
       setManualOffline(false);
       return true;
     } catch {
@@ -191,6 +194,9 @@ export const OfflineProvider: React.FC<React.PropsWithChildren> = ({ children })
   useEffect(() => {
     // Surface connection loss without auto-enabling offline mode.
     if (!networkConnected && !manualOffline) {
+      if (Date.now() < suppressPromptUntilRef.current) {
+        return;
+      }
       const checkAndPrompt = async () => {
         const cached = await AsyncStorage.getItem(SESSION_CACHE_KEY);
         const hasValidSession = cached === 'true';

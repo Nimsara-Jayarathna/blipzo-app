@@ -1,7 +1,8 @@
 import dayjs from 'dayjs';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import React, { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View, RefreshControl } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 
 import { deleteTransaction, getTransactionsFiltered, type TransactionFilters } from '@/api/transactions';
 import { useAuth } from '@/hooks/useAuth';
@@ -9,6 +10,7 @@ import { useOffline } from '@/context/OfflineContext';
 import { TransactionList } from '@/components/home/all/TransactionList';
 import { HomeContent } from '@/components/home/layout/HomeContent';
 import { HomeStickyHeader } from '@/components/home/layout/HomeStickyHeader';
+import { useAppTheme } from '@/context/ThemeContext';
 import {
   HOME_BOTTOM_BAR_CLEARANCE,
   HOME_STICKY_HEADER_COLLAPSED_HEIGHT,
@@ -24,8 +26,10 @@ import { AllFiltersSheet } from '@/components/home/all/AllFiltersSheet';
 
 export default function AllTransactionsScreen() {
   const { isAuthenticated } = useAuth();
+  const { colors } = useAppTheme();
   const { offlineMode, capabilities } = useOffline();
   const queryClient = useQueryClient();
+  const navigation = useNavigation();
   const today = dayjs().format('YYYY-MM-DD');
 
   const [filters, setFilters] = useState<AllFilters>({
@@ -45,7 +49,7 @@ export default function AllTransactionsScreen() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['transactions'] }),
   });
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey: ['transactions', 'all', filters],
     queryFn: () => getTransactionsFiltered({
       startDate: filters.startDate,
@@ -80,13 +84,22 @@ export default function AllTransactionsScreen() {
     return { canScroll: true, enableTransition: true };
   }, [contentHeight, listLayoutHeight]);
 
+  React.useEffect(() => {
+    const unsubscribe = navigation.addListener('tabPress', () => {
+      if (!offlineMode && isAuthenticated) {
+        void refetch();
+      }
+    });
+    return unsubscribe;
+  }, [navigation, offlineMode, isAuthenticated, refetch]);
+
   return (
     <HomeContent bleedBottom>
       <HomeStickyHeader
         variant="all"
         filters={filters}
         grouping={grouping}
-        isLoading={isLoading}
+        isLoading={isFetching || isLoading}
         onOpenFilters={() => setIsFiltersOpen(true)}
         collapsedSummary={collapsedSummary}
         disableTransition={!enableTransition} // Apply switch
@@ -107,6 +120,13 @@ export default function AllTransactionsScreen() {
               contentContainerStyle={[contentContainerStyle, { paddingBottom: HOME_BOTTOM_BAR_CLEARANCE }]}
               onLayout={(event) => setListLayoutHeight(event.nativeEvent.layout.height)}
               onContentSizeChange={(_, height) => setContentHeight(height)}
+              refreshControl={
+                <RefreshControl
+                  refreshing={isFetching}
+                  onRefresh={refetch}
+                  tintColor={colors.primaryAccent}
+                />
+              }
             />
           </View>
         )}

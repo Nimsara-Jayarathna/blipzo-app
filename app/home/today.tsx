@@ -9,6 +9,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import Animated from 'react-native-reanimated';
+import { useNavigation } from '@react-navigation/native';
 
 import { deleteTransaction, getTransactionsFiltered, type TransactionFilters } from '@/api/transactions';
 import { ThemedText } from '@/components/themed-text';
@@ -34,6 +35,7 @@ export default function TodayScreen() {
   const { colors } = useAppTheme();
   const { offlineMode, capabilities } = useOffline();
   const queryClient = useQueryClient();
+  const navigation = useNavigation();
   const todayDate = dayjs().format('YYYY-MM-DD');
   
   // PRECISION MEASUREMENTS
@@ -161,6 +163,15 @@ export default function TodayScreen() {
       </View>
     );
   };
+
+  React.useEffect(() => {
+    const unsubscribe = navigation.addListener('tabPress', () => {
+      if (!offlineMode && isAuthenticated) {
+        void refetch();
+      }
+    });
+    return unsubscribe;
+  }, [navigation, offlineMode, isAuthenticated, refetch]);
 
   return (
     <HomeContent bleedBottom>
