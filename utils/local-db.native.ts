@@ -1,3 +1,4 @@
+import dayjs from 'dayjs';
 import { openDatabaseSync, type SQLiteDatabase } from 'expo-sqlite';
 
 import type { Category, Transaction } from '@/types';
@@ -147,11 +148,20 @@ export const getPendingTransactions = async () => {
   );
 };
 
+const normalizeLocalDate = (value: string) => {
+  const parsed = dayjs(value);
+  return parsed.isValid() ? parsed.format('YYYY-MM-DD') : value;
+};
+
 export const getLocalTransactionsByDate = async (date: string) => {
-  return getAll<LocalTransactionRow>(
-    `SELECT * FROM transactions WHERE date = ? ORDER BY createdAt DESC`,
-    [date]
+  const base = dayjs(date);
+  const prev = base.subtract(1, 'day').format('YYYY-MM-DD');
+  const next = base.add(1, 'day').format('YYYY-MM-DD');
+  const rows = await getAll<LocalTransactionRow>(
+    `SELECT * FROM transactions WHERE date LIKE ? OR date LIKE ? OR date LIKE ? ORDER BY createdAt DESC`,
+    [`${prev}%`, `${date}%`, `${next}%`]
   );
+  return rows.filter(row => normalizeLocalDate(row.date) === date);
 };
 
 export const deleteTransactionByLocalId = async (localId: string) => {
@@ -163,6 +173,7 @@ export const replaceSyncedTransactions = async (transactions: Transaction[]) => 
 
   for (const item of transactions) {
     const serverId = item._id ?? item.id ?? '';
+    const normalizedDate = normalizeLocalDate(item.date);
     await run(
       `INSERT INTO transactions (
         localId, serverId, type, amount, categoryId, categoryName, note, date, status, createdAt, updatedAt
@@ -175,7 +186,7 @@ export const replaceSyncedTransactions = async (transactions: Transaction[]) => 
         item.categoryId ?? (typeof item.category === 'string' ? item.category : '') ?? '',
         item.categoryName ?? (typeof item.category === 'string' ? item.category : null),
         item.note ?? null,
-        item.date,
+        normalizedDate,
         item.createdAt,
         item.updatedAt,
       ]

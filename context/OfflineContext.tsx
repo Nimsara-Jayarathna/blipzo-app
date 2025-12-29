@@ -1,9 +1,11 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { apiClient } from '@/api/client';
 import { refreshSession } from '@/api/auth';
+import { useAuth } from '@/hooks/useAuth';
 import { registerOfflinePrompt, type OfflinePromptPayload } from '@/utils/offline-prompt';
 
 export type Capabilities = {
@@ -42,6 +44,8 @@ type OfflineContextValue = {
 const OfflineContext = createContext<OfflineContextValue | null>(null);
 
 export const OfflineProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
+  const { setAuth } = useAuth();
+  const queryClient = useQueryClient();
   // Offline state combines manual override + device connectivity.
   const [networkConnected, setNetworkConnected] = useState(true);
   const [manualOffline, setManualOffline] = useState(false);
@@ -56,6 +60,7 @@ export const OfflineProvider: React.FC<React.PropsWithChildren> = ({ children })
   const [isPromptRetrying, setIsPromptRetrying] = useState(false);
   const [isBooting, setIsBooting] = useState(true);
   const [startupOfflineTaken, setStartupOfflineTaken] = useState(false);
+  const lastOfflineRef = useRef(manualOffline);
 
   const offlineMode = manualOffline;
 
@@ -139,7 +144,10 @@ export const OfflineProvider: React.FC<React.PropsWithChildren> = ({ children })
   const tryGoOnline = useCallback(async () => {
     try {
       await apiClient.get('/health', { timeout: 5000 });
-      await refreshSession();
+      const refreshed = await refreshSession();
+      if (refreshed?.user) {
+        setAuth(refreshed);
+      }
       setManualOffline(false);
       return true;
     } catch {
@@ -148,7 +156,15 @@ export const OfflineProvider: React.FC<React.PropsWithChildren> = ({ children })
       });
       return false;
     }
-  }, [openPrompt]);
+  }, [openPrompt, setAuth]);
+
+  useEffect(() => {
+    if (lastOfflineRef.current && !manualOffline) {
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+    }
+    lastOfflineRef.current = manualOffline;
+  }, [manualOffline, queryClient]);
 
   useEffect(() => {
     // NetInfo: fast local signal for online/offline mode.

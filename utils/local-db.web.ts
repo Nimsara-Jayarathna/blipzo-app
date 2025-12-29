@@ -1,3 +1,5 @@
+import dayjs from 'dayjs';
+
 import type { Category, Transaction } from '@/types';
 
 export type LocalTransactionStatus = 'pending' | 'synced';
@@ -51,8 +53,21 @@ export const insertPendingTransaction = async (row: LocalTransactionRow) => {
 export const getPendingTransactions = async () =>
   webStore.transactions.filter(row => row.status === 'pending');
 
-export const getLocalTransactionsByDate = async (date: string) =>
-  webStore.transactions.filter(row => row.date === date);
+const normalizeLocalDate = (value: string) => {
+  const parsed = dayjs(value);
+  return parsed.isValid() ? parsed.format('YYYY-MM-DD') : value;
+};
+
+export const getLocalTransactionsByDate = async (date: string) => {
+  const base = dayjs(date);
+  const prev = base.subtract(1, 'day').format('YYYY-MM-DD');
+  const next = base.add(1, 'day').format('YYYY-MM-DD');
+  const candidates = webStore.transactions.filter(row => {
+    const raw = row.date;
+    return raw.startsWith(date) || raw.startsWith(prev) || raw.startsWith(next);
+  });
+  return candidates.filter(row => normalizeLocalDate(row.date) === date);
+};
 
 export const deleteTransactionByLocalId = async (localId: string) => {
   webStore.transactions = webStore.transactions.filter(row => row.localId !== localId);
@@ -62,6 +77,7 @@ export const replaceSyncedTransactions = async (transactions: Transaction[]) => 
   webStore.transactions = webStore.transactions.filter(row => row.status !== 'synced');
   for (const item of transactions) {
     const serverId = item._id ?? item.id ?? '';
+    const normalizedDate = normalizeLocalDate(item.date);
     webStore.transactions.push({
       localId: serverId,
       serverId,
@@ -70,7 +86,7 @@ export const replaceSyncedTransactions = async (transactions: Transaction[]) => 
       categoryId: item.categoryId ?? (typeof item.category === 'string' ? item.category : '') ?? '',
       categoryName: item.categoryName ?? (typeof item.category === 'string' ? item.category : null),
       note: item.note ?? null,
-      date: item.date,
+      date: normalizedDate,
       status: 'synced',
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,
