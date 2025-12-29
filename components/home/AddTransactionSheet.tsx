@@ -159,6 +159,7 @@ export function AddTransactionSheet({ visible, onClose, onTransactionCreated }: 
       // Offline: enqueue for local sync later.
       const now = new Date().toISOString();
       const localId = `offline-${Date.now()}`;
+      const categoryName = categories.find(item => item.id === selectedCategory)?.name ?? null;
       void initDb()
         .then(() =>
           insertPendingTransaction({
@@ -167,7 +168,7 @@ export function AddTransactionSheet({ visible, onClose, onTransactionCreated }: 
             type: transactionType,
             amount: Number(amount),
             categoryId: selectedCategory,
-            categoryName: null,
+            categoryName,
             note: note.trim() || null,
             date: dayjs(date).format('YYYY-MM-DD'),
             status: 'pending',
@@ -176,6 +177,7 @@ export function AddTransactionSheet({ visible, onClose, onTransactionCreated }: 
           })
         )
         .then(() => {
+          queryClient.invalidateQueries({ queryKey: ['transactions', 'today-local'] });
           Alert.alert('Saved locally', 'This record will sync when you are back online.');
           onClose();
         })

@@ -51,6 +51,9 @@ export const insertPendingTransaction = async (row: LocalTransactionRow) => {
 export const getPendingTransactions = async () =>
   webStore.transactions.filter(row => row.status === 'pending');
 
+export const getLocalTransactionsByDate = async (date: string) =>
+  webStore.transactions.filter(row => row.date === date);
+
 export const deleteTransactionByLocalId = async (localId: string) => {
   webStore.transactions = webStore.transactions.filter(row => row.localId !== localId);
 };

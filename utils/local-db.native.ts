@@ -1,4 +1,4 @@
-import * as SQLite from 'expo-sqlite';
+import { openDatabaseSync, type SQLiteDatabase } from 'expo-sqlite';
 
 import type { Category, Transaction } from '@/types';
 
@@ -31,25 +31,26 @@ export type LocalProfileRow = {
   defaultExpenseCategories?: string[];
 };
 
-const db = SQLite.openDatabase('blipzo.db');
+let db: SQLiteDatabase | null = null;
 
-const executeSql = (sql: string, params: (string | number | null)[] = []) =>
-  new Promise<SQLite.SQLResultSet>((resolve, reject) => {
-    db.transaction(tx => {
-      tx.executeSql(
-        sql,
-        params,
-        (_, result) => resolve(result),
-        (_, error) => {
-          reject(error);
-          return false;
-        }
-      );
-    });
-  });
+const getDb = () => {
+  if (!db) {
+    db = openDatabaseSync('blipzo.db');
+  }
+  return db;
+};
+
+const run = async (sql: string, params: (string | number | null)[] = []) =>
+  getDb().runAsync(sql, params);
+
+const getAll = async <T,>(sql: string, params: (string | number | null)[] = []) =>
+  getDb().getAllAsync<T>(sql, params);
+
+const getFirst = async <T,>(sql: string, params: (string | number | null)[] = []) =>
+  getDb().getFirstAsync<T>(sql, params);
 
 export const initDb = async () => {
-  await executeSql(
+  await run(
     `CREATE TABLE IF NOT EXISTS transactions (
       localId TEXT PRIMARY KEY NOT NULL,
       serverId TEXT,
@@ -65,7 +66,7 @@ export const initDb = async () => {
     );`
   );
 
-  await executeSql(
+  await run(
     `CREATE TABLE IF NOT EXISTS categories (
       localId TEXT PRIMARY KEY NOT NULL,
       serverId TEXT NOT NULL,
@@ -76,7 +77,7 @@ export const initDb = async () => {
     );`
   );
 
-  await executeSql(
+  await run(
     `CREATE TABLE IF NOT EXISTS profile (
       id TEXT PRIMARY KEY NOT NULL,
       name TEXT NOT NULL,
@@ -91,7 +92,7 @@ export const initDb = async () => {
     );`
   );
 
-  await executeSql(
+  await run(
     `CREATE TABLE IF NOT EXISTS meta (
       key TEXT PRIMARY KEY NOT NULL,
       value TEXT NOT NULL
@@ -100,7 +101,7 @@ export const initDb = async () => {
 };
 
 export const insertPendingTransaction = async (row: LocalTransactionRow) => {
-  await executeSql(
+  await run(
     `INSERT INTO transactions (
       localId, serverId, type, amount, categoryId, categoryName, note, date, status, createdAt, updatedAt
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -121,22 +122,28 @@ export const insertPendingTransaction = async (row: LocalTransactionRow) => {
 };
 
 export const getPendingTransactions = async () => {
-  const result = await executeSql(
+  return getAll<LocalTransactionRow>(
     `SELECT * FROM transactions WHERE status = 'pending' ORDER BY createdAt ASC`
   );
-  return result.rows._array as LocalTransactionRow[];
+};
+
+export const getLocalTransactionsByDate = async (date: string) => {
+  return getAll<LocalTransactionRow>(
+    `SELECT * FROM transactions WHERE date = ? ORDER BY createdAt DESC`,
+    [date]
+  );
 };
 
 export const deleteTransactionByLocalId = async (localId: string) => {
-  await executeSql(`DELETE FROM transactions WHERE localId = ?`, [localId]);
+  await run(`DELETE FROM transactions WHERE localId = ?`, [localId]);
 };
 
 export const replaceSyncedTransactions = async (transactions: Transaction[]) => {
-  await executeSql(`DELETE FROM transactions WHERE status = 'synced'`);
+  await run(`DELETE FROM transactions WHERE status = 'synced'`);
 
   for (const item of transactions) {
     const serverId = item._id ?? item.id ?? '';
-    await executeSql(
+    await run(
       `INSERT INTO transactions (
         localId, serverId, type, amount, categoryId, categoryName, note, date, status, createdAt, updatedAt
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'synced', ?, ?)`,
@@ -157,11 +164,11 @@ export const replaceSyncedTransactions = async (transactions: Transaction[]) => 
 };
 
 export const replaceCategories = async (categories: Category[]) => {
-  await executeSql(`DELETE FROM categories`);
+  await run(`DELETE FROM categories`);
 
   for (const category of categories) {
     const serverId = category._id ?? category.id ?? '';
-    await executeSql(
+    await run(
       `INSERT INTO categories (
         localId, serverId, name, type, isDefault, updatedAt
       ) VALUES (?, ?, ?, ?, ?, ?)`,
@@ -178,17 +185,16 @@ export const replaceCategories = async (categories: Category[]) => {
 };
 
 export const getLocalCategories = async () => {
-  const result = await executeSql(`SELECT * FROM categories`);
-  return result.rows._array as Array<{
+  return getAll<{
     serverId: string;
     name: string;
     type: 'income' | 'expense';
     isDefault: number;
-  }>;
+  }>(`SELECT * FROM categories`);
 };
 
 export const upsertProfile = async (profile: LocalProfileRow) => {
-  await executeSql(
+  await run(
     `INSERT OR REPLACE INTO profile (
       id, name, fname, lname, email, createdAt, updatedAt, categoryLimit, defaultIncomeCategories, defaultExpenseCategories
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -212,26 +218,28 @@ export const upsertProfile = async (profile: LocalProfileRow) => {
 };
 
 export const getAllRows = async (table: 'transactions' | 'categories' | 'profile') => {
-  const result = await executeSql(`SELECT * FROM ${table} LIMIT 200`);
-  return result.rows._array;
+  return getAll<Record<string, unknown>>(`SELECT * FROM ${table} LIMIT 200`);
 };
 
 export const setMetaValue = async (key: string, value: string) => {
-  await executeSql(`INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)`, [key, value]);
+  await run(`INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)`, [key, value]);
 };
 
 export const getMetaValue = async (key: string) => {
-  const result = await executeSql(`SELECT value FROM meta WHERE key = ? LIMIT 1`, [key]);
-  return result.rows._array[0]?.value as string | undefined;
+  const result = await getFirst<{ value: string }>(
+    `SELECT value FROM meta WHERE key = ? LIMIT 1`,
+    [key]
+  );
+  return result?.value;
 };
 
 export const getCounts = async () => {
-  const tx = await executeSql(`SELECT COUNT(*) as count FROM transactions`);
-  const cat = await executeSql(`SELECT COUNT(*) as count FROM categories`);
-  const prof = await executeSql(`SELECT COUNT(*) as count FROM profile`);
+  const tx = await getFirst<{ count: number }>(`SELECT COUNT(*) as count FROM transactions`);
+  const cat = await getFirst<{ count: number }>(`SELECT COUNT(*) as count FROM categories`);
+  const prof = await getFirst<{ count: number }>(`SELECT COUNT(*) as count FROM profile`);
   return {
-    transactions: tx.rows._array[0]?.count ?? 0,
-    categories: cat.rows._array[0]?.count ?? 0,
-    profile: prof.rows._array[0]?.count ?? 0,
+    transactions: tx?.count ?? 0,
+    categories: cat?.count ?? 0,
+    profile: prof?.count ?? 0,
   };
 };
