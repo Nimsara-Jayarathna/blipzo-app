@@ -19,6 +19,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { HomeBackground } from '@/components/home/HomeBackground';
 import { useOffline } from '@/context/OfflineContext';
 import { isAuthError, isNetworkOrTimeoutError } from '@/utils/api-retry';
+import { runFullSync } from '@/utils/sync-service';
 
 const ACCENT_COLOR = '#3498db';
 const SESSION_CACHE_KEY = 'has_valid_session';
@@ -114,6 +115,7 @@ export default function IndexScreen() {
 
         if (result.status === 'ok') {
           setAuth(result.authData);
+          void runFullSync(result.authData.user);
           await AsyncStorage.setItem(SESSION_CACHE_KEY, 'true');
           hasNavigatedRef.current = true;
           router.replace('/home' as any);

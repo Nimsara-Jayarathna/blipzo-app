@@ -19,7 +19,14 @@ export interface SessionResponse {
 export interface UserProfile {
   id: string;
   name: string;
+  fname?: string;
+  lname?: string;
   email: string;
+  createdAt: string;
+  updatedAt: string;
+  categoryLimit?: number;
+  defaultIncomeCategories?: string[];
+  defaultExpenseCategories?: string[];
 }
 
 export interface Category {

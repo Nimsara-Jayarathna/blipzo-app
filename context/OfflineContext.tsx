@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 
 import { apiClient } from '@/api/client';
+import { refreshSession } from '@/api/auth';
 import { registerOfflinePrompt, type OfflinePromptPayload } from '@/utils/offline-prompt';
 
 export type Capabilities = {
@@ -138,6 +139,7 @@ export const OfflineProvider: React.FC<React.PropsWithChildren> = ({ children })
   const tryGoOnline = useCallback(async () => {
     try {
       await apiClient.get('/health', { timeout: 5000 });
+      await refreshSession();
       setManualOffline(false);
       return true;
     } catch {

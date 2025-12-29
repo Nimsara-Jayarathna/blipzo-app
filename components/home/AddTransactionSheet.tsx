@@ -24,7 +24,7 @@ import { getCategories } from '@/api/categories';
 import { ThemedText } from '@/components/themed-text';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useOffline } from '@/context/OfflineContext';
-import { enqueueOfflineTransaction } from '@/utils/offline-queue';
+import { getLocalCategories, insertPendingTransaction, initDb } from '@/utils/local-db';
 import type { Category, Transaction, TransactionInput } from '@/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -94,10 +94,24 @@ export function AddTransactionSheet({ visible, onClose, onTransactionCreated }: 
   useEffect(() => {
     if (!visible || step !== 2) return;
     const loadCategories = async () => {
-      // Offline: categories will come from local storage later.
+      // Offline: load categories from local DB.
       if (offlineMode) {
-        setCategories(OFFLINE_CATEGORIES);
-        setIsLoadingCategories(false);
+        try {
+          setIsLoadingCategories(true);
+          await initDb();
+          const local = await getLocalCategories();
+          const mapped = local.map(item => ({
+            id: item.serverId,
+            name: item.name,
+            type: item.type,
+            isDefault: item.isDefault === 1,
+          }));
+          setCategories(mapped.length ? mapped : OFFLINE_CATEGORIES);
+        } catch {
+          setCategories(OFFLINE_CATEGORIES);
+        } finally {
+          setIsLoadingCategories(false);
+        }
         return;
       }
 
@@ -143,16 +157,24 @@ export function AddTransactionSheet({ visible, onClose, onTransactionCreated }: 
   const handleSave = () => {
     if (offlineMode) {
       // Offline: enqueue for local sync later.
-      void enqueueOfflineTransaction({
-        id: `offline-${Date.now()}`,
-        amount: Number(amount),
-        type: transactionType,
-        categoryId: selectedCategory,
-        date: dayjs(date).format('YYYY-MM-DD'),
-        note: note.trim() || undefined,
-        isServerRecord: false,
-        createdAt: new Date().toISOString(),
-      })
+      const now = new Date().toISOString();
+      const localId = `offline-${Date.now()}`;
+      void initDb()
+        .then(() =>
+          insertPendingTransaction({
+            localId,
+            serverId: null,
+            type: transactionType,
+            amount: Number(amount),
+            categoryId: selectedCategory,
+            categoryName: null,
+            note: note.trim() || null,
+            date: dayjs(date).format('YYYY-MM-DD'),
+            status: 'pending',
+            createdAt: now,
+            updatedAt: now,
+          })
+        )
         .then(() => {
           Alert.alert('Saved locally', 'This record will sync when you are back online.');
           onClose();

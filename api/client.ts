@@ -4,6 +4,8 @@ import { useAuthStore } from '@/context/auth-store';
 import { logDebug, logError } from '@/utils/logger';
 import { triggerOfflinePrompt } from '@/utils/offline-prompt';
 import { isNetworkOrTimeoutError, withRetry } from '@/utils/api-retry';
+import { runFullSync } from '@/utils/sync-service';
+import type { AuthResponse } from '@/types';
 
 const normalizeBaseUrl = (value: string) => value.replace(/\/+$/, '');
 
@@ -61,8 +63,10 @@ let refreshRequest: Promise<void> | null = null;
 const refreshSession = async () => {
   if (!refreshRequest) {
     refreshRequest = apiClient
-      .post('/api/auth/refresh')
-      .then(() => {})
+      .post<AuthResponse>('/api/auth/refresh')
+      .then(response => {
+        void runFullSync(response.data?.user);
+      })
       .finally(() => {
         refreshRequest = null;
       });
