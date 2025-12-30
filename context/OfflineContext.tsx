@@ -36,8 +36,6 @@ type OfflineContextValue = {
   tryGoOnline: () => Promise<boolean>;
   isBooting: boolean;
   setIsBooting: (next: boolean) => void;
-  startupOfflineTaken: boolean;
-  setStartupOfflineTaken: (next: boolean) => void;
   capabilities: Capabilities;
 };
 
@@ -59,7 +57,6 @@ export const OfflineProvider: React.FC<React.PropsWithChildren> = ({ children })
   }>({ visible: false, reason: '', allowOffline: true, primaryLabel: 'Retry' });
   const [isPromptRetrying, setIsPromptRetrying] = useState(false);
   const [isBooting, setIsBooting] = useState(true);
-  const [startupOfflineTaken, setStartupOfflineTaken] = useState(false);
   const lastOfflineRef = useRef(manualOffline);
   const suppressPromptUntilRef = useRef(0);
 
@@ -263,8 +260,6 @@ export const OfflineProvider: React.FC<React.PropsWithChildren> = ({ children })
         tryGoOnline,
         isBooting,
         setIsBooting,
-        startupOfflineTaken,
-        setStartupOfflineTaken,
         capabilities,
       }}
     >

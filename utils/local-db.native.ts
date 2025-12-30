@@ -248,6 +248,10 @@ export const upsertProfile = async (profile: LocalProfileRow) => {
   );
 };
 
+export const getLocalProfile = async () => {
+  return getFirst<LocalProfileRow>(`SELECT * FROM profile LIMIT 1`);
+};
+
 export const getAllRows = async (table: 'transactions' | 'categories' | 'profile') => {
   return getAll<Record<string, unknown>>(`SELECT * FROM ${table} LIMIT 200`);
 };

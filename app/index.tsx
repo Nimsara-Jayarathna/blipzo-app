@@ -20,6 +20,7 @@ import { HomeBackground } from '@/components/home/HomeBackground';
 import { useOffline } from '@/context/OfflineContext';
 import { isAuthError, isNetworkOrTimeoutError } from '@/utils/api-retry';
 import { runFullSync } from '@/utils/sync-service';
+import { getLocalProfile, initDb } from '@/utils/local-db';
 
 const ACCENT_COLOR = '#3498db';
 const SESSION_CACHE_KEY = 'has_valid_session';
@@ -27,10 +28,22 @@ const SESSION_CACHE_KEY = 'has_valid_session';
 export default function IndexScreen() {
   const router = useRouter();
   const { setAuth, logout } = useAuth();
-  const { offlineMode, promptToGoOffline, setIsBooting, setStartupOfflineTaken } = useOffline();
+  const { offlineMode, promptToGoOffline, setIsBooting } = useOffline();
   const hasNavigatedRef = useRef(false);
   const sessionCacheLoadedRef = useRef(false);
   const hasValidSessionRef = useRef(false);
+  const localProfileRef = useRef<null | {
+    id: string;
+    name: string;
+    fname?: string | null;
+    lname?: string | null;
+    email: string;
+    createdAt: string;
+    updatedAt: string;
+    categoryLimit?: number | null;
+    defaultIncomeCategories?: string[];
+    defaultExpenseCategories?: string[];
+  }>(null);
 
   // Animation Values
   const logoScale = useSharedValue(0);
@@ -55,6 +68,20 @@ export default function IndexScreen() {
       const cached = await AsyncStorage.getItem(SESSION_CACHE_KEY);
       hasValidSessionRef.current = cached === 'true';
       sessionCacheLoadedRef.current = true;
+    };
+
+    const loadLocalProfile = async () => {
+      if (localProfileRef.current) return localProfileRef.current;
+      try {
+        await initDb();
+        const profile = await getLocalProfile();
+        if (profile) {
+          localProfileRef.current = profile;
+        }
+        return profile ?? null;
+      } catch {
+        return null;
+      }
     };
 
     // 3. Run Auth Logic
@@ -92,6 +119,7 @@ export default function IndexScreen() {
         await minWait;
 
         await loadSessionCache();
+        const localProfile = await loadLocalProfile();
         if (!hasValidSessionRef.current) {
           try {
             await apiClient.get('/health', { timeout: 5000 });
@@ -105,7 +133,18 @@ export default function IndexScreen() {
                 hasNavigatedRef.current = true;
                 router.replace('/welcome');
               },
-              { allowOffline: false, primaryLabel: 'Go to sign in', force: true }
+              {
+                allowOffline: Boolean(localProfile),
+                primaryLabel: 'Go to sign in',
+                onConfirm: localProfile
+                  ? () => {
+                      setAuth({ user: localProfile });
+                      hasNavigatedRef.current = true;
+                      router.replace('/home/today' as any);
+                    }
+                  : undefined,
+                force: true,
+              }
             );
           }
           return;
@@ -138,7 +177,7 @@ export default function IndexScreen() {
         }
 
         if (result.status === 'network') {
-          const allowOffline = hasValidSessionRef.current;
+          const allowOffline = Boolean(localProfile);
           promptToGoOffline(
             allowOffline
               ? 'Unable to reach the server.'
@@ -172,7 +211,9 @@ export default function IndexScreen() {
               primaryLabel: 'Retry',
               onConfirm: allowOffline
                 ? () => {
-                    setStartupOfflineTaken(true);
+                    if (localProfile) {
+                      setAuth({ user: localProfile });
+                    }
                     hasNavigatedRef.current = true;
                     router.replace('/home/today' as any);
                   }

@@ -117,6 +117,8 @@ export const upsertProfile = async (profile: LocalProfileRow) => {
   webStore.profile = [profile];
 };
 
+export const getLocalProfile = async () => webStore.profile[0];
+
 export const getAllRows = async (table: 'transactions' | 'categories' | 'profile') => {
   if (table === 'transactions') return webStore.transactions.slice(0, 200);
   if (table === 'categories') return webStore.categories.slice(0, 200);

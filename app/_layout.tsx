@@ -10,7 +10,6 @@ import { OfflineProvider } from '@/context/OfflineContext';
 import { AppThemeProvider, useAppTheme } from '@/context/ThemeContext';
 import { useHeartbeat } from '@/hooks/useHeartbeat';
 import { OfflinePromptHost } from '@/components/offline/OfflinePromptHost';
-import { useResumeAuthOnReconnect } from '@/hooks/useResumeAuthOnReconnect';
 import { SyncOverlay } from '@/components/sync/SyncOverlay';
 
 // Prevent native splash from hiding immediately
@@ -43,7 +42,6 @@ export default function RootLayout() {
 function OfflineLifecycle() {
   // Startup check + background health monitoring.
   useHeartbeat();
-  useResumeAuthOnReconnect();
   return null;
 }
 
