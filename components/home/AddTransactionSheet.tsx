@@ -25,6 +25,7 @@ import { ThemedText } from '@/components/themed-text';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useOffline } from '@/context/OfflineContext';
 import { getLocalCategories, insertPendingTransaction, initDb } from '@/utils/local-db';
+import { logDebug, logError } from '@/utils/logger';
 import type { Category, Transaction, TransactionInput } from '@/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -160,28 +161,47 @@ export function AddTransactionSheet({ visible, onClose, onTransactionCreated }: 
       const now = new Date().toISOString();
       const localId = `offline-${Date.now()}`;
       const categoryName = categories.find(item => item.id === selectedCategory)?.name ?? null;
+      const safeCategoryId =
+        typeof selectedCategory === 'string' ? selectedCategory : String(selectedCategory ?? '');
+      const safeCategoryName =
+        typeof categoryName === 'string'
+          ? categoryName
+          : categoryName
+          ? JSON.stringify(categoryName)
+          : null;
+      logDebug('offline-save: start', {
+        localId,
+        type: transactionType,
+        amount: Number(amount),
+        categoryId: safeCategoryId,
+        categoryName: safeCategoryName,
+        date: dayjs(date).format('YYYY-MM-DD'),
+      });
       void initDb()
-        .then(() =>
-          insertPendingTransaction({
+        .then(() => {
+          logDebug('offline-save: initDb done', { localId });
+          return insertPendingTransaction({
             localId,
             serverId: null,
             type: transactionType,
             amount: Number(amount),
-            categoryId: selectedCategory,
-            categoryName,
+            categoryId: safeCategoryId,
+            categoryName: safeCategoryName,
             note: note.trim() || null,
             date: dayjs(date).format('YYYY-MM-DD'),
             status: 'pending',
             createdAt: now,
             updatedAt: now,
-          })
-        )
+          });
+        })
         .then(() => {
+          logDebug('offline-save: insert success', { localId });
           queryClient.invalidateQueries({ queryKey: ['transactions', 'today-local'] });
           Alert.alert('Saved locally', 'This record will sync when you are back online.');
           onClose();
         })
-        .catch(() => {
+        .catch((error) => {
+          logError('offline-save: failed', error);
           Alert.alert('Error', 'Unable to save offline record.');
         });
       return;

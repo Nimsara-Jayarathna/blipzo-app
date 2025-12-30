@@ -2,6 +2,7 @@ import dayjs from 'dayjs';
 import { openDatabaseSync, type SQLiteDatabase } from 'expo-sqlite';
 
 import type { Category, Transaction } from '@/types';
+import { logDebug, logError } from '@/utils/logger';
 
 export type LocalTransactionStatus = 'pending' | 'synced';
 
@@ -34,8 +35,11 @@ export type LocalProfileRow = {
 
 let db: SQLiteDatabase | null = null;
 
+const NULL_SENTINEL = '__BLIPZO_NULL__';
+
 const getDb = () => {
   if (!db) {
+    logDebug('local-db: opening sqlite db', { name: 'blipzo.db' });
     db = openDatabaseSync('blipzo.db');
   }
   return db;
@@ -43,103 +47,176 @@ const getDb = () => {
 
 type BindValue = string | number | null;
 
+const toNullableParam = (value: unknown): string | number => {
+  if (value === undefined || value === null) return NULL_SENTINEL;
+  if (typeof value === 'string' || typeof value === 'number') return value;
+  return String(value);
+};
+
+const coerceParam = (value: unknown): BindValue => {
+  if (value === undefined || value === null) return null;
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === 'string' || typeof value === 'number') return value;
+  if (typeof value === 'boolean') return value ? 1 : 0;
+  if (typeof value === 'bigint') return Number(value);
+  if (typeof value === 'object') {
+    try {
+      return JSON.stringify(value);
+    } catch (error) {
+      logError('local-db: failed to serialize param, using String()', error);
+      return String(value);
+    }
+  }
+  return String(value);
+};
+
 const normalizeParams = (params: unknown[]): BindValue[] =>
   params.map((value) => {
-    if (value === undefined) return null;
-    if (value === null) return null;
-    if (value instanceof Date) return value.toISOString();
-    if (typeof value === 'object') return JSON.stringify(value);
-    return value as BindValue;
+    const normalized = coerceParam(value);
+    if (typeof value === 'object' && value !== null) {
+      logDebug('local-db: coerced object param', { normalized });
+    }
+    return normalized;
   });
 
 const run = async (sql: string, params: unknown[] = []) => {
   const normalized = normalizeParams(params);
   if (!normalized.length) return getDb().runAsync(sql);
-  return getDb().runAsync(sql, normalized);
+  const debugParams = normalized.map((value) => ({
+    type: value === null ? 'null' : typeof value,
+    value,
+  }));
+  logDebug('local-db: run params', { sql, params: debugParams });
+  try {
+    return await getDb().runAsync(sql, ...normalized);
+  } catch (error) {
+    logError('local-db: run failed', {
+      sql,
+      paramTypes: normalized.map((value) => (value === null ? 'null' : typeof value)),
+    });
+    throw error;
+  }
 };
 
 const getAll = async <T,>(sql: string, params: unknown[] = []) => {
   const normalized = normalizeParams(params);
   if (!normalized.length) return getDb().getAllAsync<T>(sql);
-  return getDb().getAllAsync<T>(sql, normalized);
+  return getDb().getAllAsync<T>(sql, ...normalized);
 };
 
 const getFirst = async <T,>(sql: string, params: unknown[] = []) => {
   const normalized = normalizeParams(params);
   if (!normalized.length) return getDb().getFirstAsync<T>(sql);
-  return getDb().getFirstAsync<T>(sql, normalized);
+  return getDb().getFirstAsync<T>(sql, ...normalized);
 };
 
 export const initDb = async () => {
-  await run(
-    `CREATE TABLE IF NOT EXISTS transactions (
-      localId TEXT PRIMARY KEY NOT NULL,
-      serverId TEXT,
-      type TEXT NOT NULL,
-      amount REAL NOT NULL,
-      categoryId TEXT NOT NULL,
-      categoryName TEXT,
-      note TEXT,
-      date TEXT NOT NULL,
-      status TEXT NOT NULL,
-      createdAt TEXT NOT NULL,
-      updatedAt TEXT NOT NULL
-    );`
-  );
+  logDebug('local-db: initDb start');
+  try {
+    await run(
+      `CREATE TABLE IF NOT EXISTS transactions (
+        localId TEXT PRIMARY KEY NOT NULL,
+        serverId TEXT,
+        type TEXT NOT NULL,
+        amount REAL NOT NULL,
+        categoryId TEXT NOT NULL,
+        categoryName TEXT,
+        note TEXT,
+        date TEXT NOT NULL,
+        status TEXT NOT NULL,
+        createdAt TEXT NOT NULL,
+        updatedAt TEXT NOT NULL
+      );`
+    );
 
-  await run(
-    `CREATE TABLE IF NOT EXISTS categories (
-      localId TEXT PRIMARY KEY NOT NULL,
-      serverId TEXT NOT NULL,
-      name TEXT NOT NULL,
-      type TEXT NOT NULL,
-      isDefault INTEGER NOT NULL,
-      updatedAt TEXT NOT NULL
-    );`
-  );
+    await run(
+      `CREATE TABLE IF NOT EXISTS categories (
+        localId TEXT PRIMARY KEY NOT NULL,
+        serverId TEXT NOT NULL,
+        name TEXT NOT NULL,
+        type TEXT NOT NULL,
+        isDefault INTEGER NOT NULL,
+        updatedAt TEXT NOT NULL
+      );`
+    );
 
-  await run(
-    `CREATE TABLE IF NOT EXISTS profile (
-      id TEXT PRIMARY KEY NOT NULL,
-      name TEXT NOT NULL,
-      fname TEXT,
-      lname TEXT,
-      email TEXT NOT NULL,
-      createdAt TEXT NOT NULL,
-      updatedAt TEXT NOT NULL,
-      categoryLimit INTEGER,
-      defaultIncomeCategories TEXT,
-      defaultExpenseCategories TEXT
-    );`
-  );
+    await run(
+      `CREATE TABLE IF NOT EXISTS profile (
+        id TEXT PRIMARY KEY NOT NULL,
+        name TEXT NOT NULL,
+        fname TEXT,
+        lname TEXT,
+        email TEXT NOT NULL,
+        createdAt TEXT NOT NULL,
+        updatedAt TEXT NOT NULL,
+        categoryLimit INTEGER,
+        defaultIncomeCategories TEXT,
+        defaultExpenseCategories TEXT
+      );`
+    );
 
-  await run(
-    `CREATE TABLE IF NOT EXISTS meta (
-      key TEXT PRIMARY KEY NOT NULL,
-      value TEXT NOT NULL
-    );`
-  );
+    await run(
+      `CREATE TABLE IF NOT EXISTS meta (
+        key TEXT PRIMARY KEY NOT NULL,
+        value TEXT NOT NULL
+      );`
+    );
+    logDebug('local-db: initDb success');
+  } catch (error) {
+    logError('local-db: initDb failed', error);
+    throw error;
+  }
 };
 
 export const insertPendingTransaction = async (row: LocalTransactionRow) => {
-  await run(
-    `INSERT INTO transactions (
-      localId, serverId, type, amount, categoryId, categoryName, note, date, status, createdAt, updatedAt
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      row.localId,
-      row.serverId ?? null,
-      row.type,
-      row.amount,
-      row.categoryId,
-      row.categoryName ?? null,
-      row.note ?? null,
-      row.date,
-      row.status,
-      row.createdAt,
-      row.updatedAt,
-    ]
-  );
+  logDebug('local-db: insertPendingTransaction start', {
+    localId: row.localId,
+    type: row.type,
+    amount: row.amount,
+    categoryId: row.categoryId,
+    date: row.date,
+    status: row.status,
+    valueTypes: {
+      localId: typeof row.localId,
+      serverId: row.serverId === null ? 'null' : typeof row.serverId,
+      type: typeof row.type,
+      amount: typeof row.amount,
+      categoryId: typeof row.categoryId,
+      categoryName: row.categoryName === null ? 'null' : typeof row.categoryName,
+      note: row.note === null ? 'null' : typeof row.note,
+      date: typeof row.date,
+      status: typeof row.status,
+      createdAt: typeof row.createdAt,
+      updatedAt: typeof row.updatedAt,
+    },
+  });
+  try {
+    await run(
+      `INSERT INTO transactions (
+        localId, serverId, type, amount, categoryId, categoryName, note, date, status, createdAt, updatedAt
+      ) VALUES (
+        ?, NULLIF(?, '${NULL_SENTINEL}'), ?, ?, ?, NULLIF(?, '${NULL_SENTINEL}'),
+        NULLIF(?, '${NULL_SENTINEL}'), ?, ?, ?, ?
+      )`,
+      [
+        row.localId,
+        toNullableParam(row.serverId),
+        row.type,
+        row.amount,
+        row.categoryId,
+        toNullableParam(row.categoryName),
+        toNullableParam(row.note),
+        row.date,
+        row.status,
+        row.createdAt,
+        row.updatedAt,
+      ]
+    );
+    logDebug('local-db: insertPendingTransaction success', { localId: row.localId });
+  } catch (error) {
+    logError('local-db: insertPendingTransaction failed', error);
+    throw error;
+  }
 };
 
 export const getPendingTransactions = async () => {
@@ -177,15 +254,18 @@ export const replaceSyncedTransactions = async (transactions: Transaction[]) => 
     await run(
       `INSERT INTO transactions (
         localId, serverId, type, amount, categoryId, categoryName, note, date, status, createdAt, updatedAt
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'synced', ?, ?)`,
+      ) VALUES (
+        ?, NULLIF(?, '${NULL_SENTINEL}'), ?, ?, ?, NULLIF(?, '${NULL_SENTINEL}'),
+        NULLIF(?, '${NULL_SENTINEL}'), ?, 'synced', ?, ?
+      )`,
       [
         serverId,
-        serverId,
+        toNullableParam(serverId),
         item.type,
         item.amount,
         item.categoryId ?? (typeof item.category === 'string' ? item.category : '') ?? '',
-        item.categoryName ?? (typeof item.category === 'string' ? item.category : null),
-        item.note ?? null,
+        toNullableParam(item.categoryName ?? (typeof item.category === 'string' ? item.category : null)),
+        toNullableParam(item.note),
         normalizedDate,
         item.createdAt,
         item.updatedAt,
@@ -228,22 +308,25 @@ export const upsertProfile = async (profile: LocalProfileRow) => {
   await run(
     `INSERT OR REPLACE INTO profile (
       id, name, fname, lname, email, createdAt, updatedAt, categoryLimit, defaultIncomeCategories, defaultExpenseCategories
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ) VALUES (
+      ?, ?, NULLIF(?, '${NULL_SENTINEL}'), NULLIF(?, '${NULL_SENTINEL}'), ?, ?, ?,
+      NULLIF(?, '${NULL_SENTINEL}'), NULLIF(?, '${NULL_SENTINEL}'), NULLIF(?, '${NULL_SENTINEL}')
+    )`,
     [
       profile.id,
       profile.name,
-      profile.fname ?? null,
-      profile.lname ?? null,
+      toNullableParam(profile.fname),
+      toNullableParam(profile.lname),
       profile.email,
       profile.createdAt,
       profile.updatedAt,
-      profile.categoryLimit ?? null,
+      toNullableParam(profile.categoryLimit),
       profile.defaultIncomeCategories
         ? JSON.stringify(profile.defaultIncomeCategories)
-        : null,
+        : NULL_SENTINEL,
       profile.defaultExpenseCategories
         ? JSON.stringify(profile.defaultExpenseCategories)
-        : null,
+        : NULL_SENTINEL,
     ]
   );
 };
