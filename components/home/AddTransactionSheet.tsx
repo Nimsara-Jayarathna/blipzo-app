@@ -23,6 +23,10 @@ import { createTransaction } from '@/api/transactions';
 import { getCategories } from '@/api/categories';
 import { ThemedText } from '@/components/themed-text';
 import { useAppTheme } from '@/context/ThemeContext';
+import { useOffline } from '@/context/OfflineContext';
+import { getLocalCategories, insertPendingTransaction, initDb } from '@/utils/local-db';
+import { triggerToast } from '@/utils/toast';
+import { logError } from '@/utils/logger';
 import type { Category, Transaction, TransactionInput } from '@/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -31,6 +35,11 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GRID_GAP = 8;
 const PADDING_H = 24;
 const CHIP_WIDTH = (SCREEN_WIDTH - (PADDING_H * 2) - (GRID_GAP * 4)) / 5;
+
+const OFFLINE_CATEGORIES: CategoryOption[] = [
+  { id: 'offline-income', name: 'Income', type: 'income', isDefault: true },
+  { id: 'offline-expense', name: 'Expense', type: 'expense', isDefault: true },
+];
 
 type AddTransactionStep = 1 | 2;
 
@@ -50,6 +59,7 @@ type AddTransactionSheetProps = {
 export function AddTransactionSheet({ visible, onClose, onTransactionCreated }: AddTransactionSheetProps) {
   const queryClient = useQueryClient();
   const { colors, resolvedTheme } = useAppTheme();
+  const { offlineMode, capabilities } = useOffline();
   const inputRef = useRef<TextInput>(null);
 
   const [step, setStep] = useState<AddTransactionStep>(1);
@@ -64,6 +74,7 @@ export function AddTransactionSheet({ visible, onClose, onTransactionCreated }: 
   const [note, setNote] = useState('');
 
   const isDark = resolvedTheme === 'dark';
+  const canAdd = capabilities.canAdd;
 
   useEffect(() => {
     if (visible) {
@@ -85,6 +96,27 @@ export function AddTransactionSheet({ visible, onClose, onTransactionCreated }: 
   useEffect(() => {
     if (!visible || step !== 2) return;
     const loadCategories = async () => {
+      // Offline: load categories from local DB.
+      if (offlineMode) {
+        try {
+          setIsLoadingCategories(true);
+          await initDb();
+          const local = await getLocalCategories();
+          const mapped = local.map(item => ({
+            id: item.serverId,
+            name: item.name,
+            type: item.type,
+            isDefault: item.isDefault === 1,
+          }));
+          setCategories(mapped.length ? mapped : OFFLINE_CATEGORIES);
+        } catch {
+          setCategories(OFFLINE_CATEGORIES);
+        } finally {
+          setIsLoadingCategories(false);
+        }
+        return;
+      }
+
       try {
         setIsLoadingCategories(true);
         const result = await getCategories();
@@ -102,7 +134,7 @@ export function AddTransactionSheet({ visible, onClose, onTransactionCreated }: 
       }
     };
     void loadCategories();
-  }, [visible, step]);
+  }, [visible, step, offlineMode]);
 
   useEffect(() => {
     const nextFiltered = categories.filter(category => category.type === transactionType);
@@ -125,6 +157,47 @@ export function AddTransactionSheet({ visible, onClose, onTransactionCreated }: 
   });
 
   const handleSave = () => {
+    if (offlineMode) {
+      // Offline: enqueue for local sync later.
+      const now = new Date().toISOString();
+      const localId = `offline-${Date.now()}`;
+      const categoryName = categories.find(item => item.id === selectedCategory)?.name ?? null;
+      const safeCategoryId =
+        typeof selectedCategory === 'string' ? selectedCategory : String(selectedCategory ?? '');
+      const safeCategoryName =
+        typeof categoryName === 'string'
+          ? categoryName
+          : categoryName
+          ? JSON.stringify(categoryName)
+          : null;
+      void initDb()
+        .then(() =>
+          insertPendingTransaction({
+            localId,
+            serverId: null,
+            type: transactionType,
+            amount: Number(amount),
+            categoryId: safeCategoryId,
+            categoryName: safeCategoryName,
+            note: note.trim() || null,
+            date: dayjs(date).format('YYYY-MM-DD'),
+            status: 'pending',
+            createdAt: now,
+            updatedAt: now,
+          })
+        )
+        .then(() => {
+          queryClient.invalidateQueries({ queryKey: ['transactions', 'today-local'] });
+          triggerToast({ message: 'Saved locally. This will sync when you are back online.' });
+          onClose();
+        })
+        .catch((error) => {
+          logError('offline-save: failed', error);
+          Alert.alert('Error', 'Unable to save offline record.');
+        });
+      return;
+    }
+
     mutation.mutate({
       amount: Number(amount),
       type: transactionType,
@@ -197,11 +270,29 @@ export function AddTransactionSheet({ visible, onClose, onTransactionCreated }: 
 
                 <ThemedText style={styles.typeLabel}>Select transaction type</ThemedText>
                 <View style={styles.typeRow}>
-                  <Pressable style={[styles.typeBtn, styles.incomeBtn, isDark && styles.incomeBtnDark]} onPress={() => { setTransactionType('income'); setStep(2); }}>
+                  <Pressable
+                    style={[
+                      styles.typeBtn,
+                      styles.incomeBtn,
+                      isDark && styles.incomeBtnDark,
+                      !canAdd && { opacity: 0.6 },
+                    ]}
+                    disabled={!canAdd}
+                    onPress={() => { setTransactionType('income'); setStep(2); }}
+                  >
                     <View style={styles.typeIconBg}><MaterialIcons name="add" size={18} color="#22c55e" /></View>
                     <ThemedText style={styles.btnLabel}>Income</ThemedText>
                   </Pressable>
-                  <Pressable style={[styles.typeBtn, styles.expenseBtn, isDark && styles.expenseBtnDark]} onPress={() => { setTransactionType('expense'); setStep(2); }}>
+                  <Pressable
+                    style={[
+                      styles.typeBtn,
+                      styles.expenseBtn,
+                      isDark && styles.expenseBtnDark,
+                      !canAdd && { opacity: 0.6 },
+                    ]}
+                    disabled={!canAdd}
+                    onPress={() => { setTransactionType('expense'); setStep(2); }}
+                  >
                     <View style={styles.typeIconBg}><MaterialIcons name="remove" size={18} color="#ef4444" /></View>
                     <ThemedText style={styles.btnLabel}>Expense</ThemedText>
                   </Pressable>
@@ -218,10 +309,12 @@ export function AddTransactionSheet({ visible, onClose, onTransactionCreated }: 
                       <Pressable 
                         key={cat.id} 
                         onPress={() => setSelectedCategory(cat.id)}
+                        disabled={!capabilities.canSelectCategory}
                         style={[
                           styles.catChip, 
                           { backgroundColor: colors.surface2, borderColor: colors.borderSoft },
-                          selectedCategory === cat.id && { borderColor: colors.primaryAccent, backgroundColor: colors.primaryAccent + '15'}
+                          selectedCategory === cat.id && { borderColor: colors.primaryAccent, backgroundColor: colors.primaryAccent + '15'},
+                          !capabilities.canSelectCategory && { opacity: 0.6 },
                         ]}
                       >
                         <Text numberOfLines={1} style={[styles.catName, { color: colors.textMain }, selectedCategory === cat.id && { color: colors.primaryAccent, fontWeight: 'bold' }]}>
@@ -252,7 +345,15 @@ export function AddTransactionSheet({ visible, onClose, onTransactionCreated }: 
                   />
                 </View>
 
-                <Pressable onPress={handleSave} style={[styles.saveBtn, { backgroundColor: colors.primaryAccent }]}>
+                <Pressable
+                  onPress={handleSave}
+                  disabled={!canAdd}
+                  style={[
+                    styles.saveBtn,
+                    { backgroundColor: colors.primaryAccent },
+                    !canAdd && { opacity: 0.6 },
+                  ]}
+                >
                   {mutation.isPending ? <ActivityIndicator color="#fff" /> : <ThemedText style={styles.saveText}>Complete</ThemedText>}
                 </Pressable>
               </View>

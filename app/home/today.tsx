@@ -9,13 +9,16 @@ import {
   RefreshControl,
 } from 'react-native';
 import Animated from 'react-native-reanimated';
+import { useNavigation } from '@react-navigation/native';
 
 import { deleteTransaction, getTransactionsFiltered, type TransactionFilters } from '@/api/transactions';
 import { ThemedText } from '@/components/themed-text';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
+import { useOffline } from '@/context/OfflineContext';
 import type { Transaction } from '@/types';
 import { TransactionRow } from '@/components/home/TransactionRow';
+import { deleteTransactionByLocalId, getLocalTransactionsByDate, initDb, type LocalTransactionRow } from '@/utils/local-db';
 import {
   HOME_BOTTOM_BAR_CLEARANCE,
   HOME_LIST_ITEM_GAP,
@@ -30,7 +33,9 @@ const transactionKey = ['transactions'];
 export default function TodayScreen() {
   const { isAuthenticated } = useAuth();
   const { colors } = useAppTheme();
+  const { offlineMode, capabilities } = useOffline();
   const queryClient = useQueryClient();
+  const navigation = useNavigation();
   const todayDate = dayjs().format('YYYY-MM-DD');
   
   // PRECISION MEASUREMENTS
@@ -51,10 +56,41 @@ export default function TodayScreen() {
         startDate: todayDate,
         endDate: todayDate,
       } as TransactionFilters),
-    enabled: isAuthenticated,
+    // Offline: will switch to local data source later.
+    enabled: isAuthenticated && !offlineMode,
+  });
+
+  const {
+    data: localRows,
+    isLoading: isLocalLoading,
+    refetch: refetchLocal,
+    isRefetching: isLocalRefetching,
+  } = useQuery({
+    queryKey: [...transactionKey, 'today-local', todayDate],
+    queryFn: async () => {
+      await initDb();
+      return getLocalTransactionsByDate(todayDate);
+    },
+    enabled: offlineMode,
   });
 
   const { transactions, income, expense, balance } = useMemo(() => {
+    if (offlineMode) {
+      const items = localRows ?? [];
+      let inc = 0;
+      let exp = 0;
+      items.forEach(item => {
+        if (item.type === 'income') inc += item.amount;
+        else if (item.type === 'expense') exp += item.amount;
+      });
+      return {
+        transactions: items,
+        income: inc,
+        expense: exp,
+        balance: inc - exp,
+      };
+    }
+
     const items = todayData?.transactions ?? [];
     let inc = 0;
     let exp = 0;
@@ -68,7 +104,7 @@ export default function TodayScreen() {
       expense: exp,
       balance: inc - exp,
     };
-  }, [todayData]);
+  }, [offlineMode, todayData, localRows]);
 
   // --- THE BULLETPROOF LOGIC (SAME AS ALL SCREEN) ---
   const { canScroll, enableTransition } = useMemo(() => {
@@ -100,8 +136,18 @@ export default function TodayScreen() {
     },
   });
 
+  const deleteLocalMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await initDb();
+      await deleteTransactionByLocalId(id);
+    },
+    onSuccess: () => {
+      refetchLocal();
+    },
+  });
+
   const renderEmptyState = () => {
-    if (isLoading) {
+    if (offlineMode ? isLocalLoading : isLoading) {
       return (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.primaryAccent} />
@@ -118,6 +164,15 @@ export default function TodayScreen() {
     );
   };
 
+  React.useEffect(() => {
+    const unsubscribe = navigation.addListener('tabPress', () => {
+      if (!offlineMode && isAuthenticated) {
+        void refetch();
+      }
+    });
+    return unsubscribe;
+  }, [navigation, offlineMode, isAuthenticated, refetch]);
+
   return (
     <HomeContent bleedBottom>
       <HomeStickyHeader 
@@ -132,7 +187,9 @@ export default function TodayScreen() {
           <Pressable style={styles.listWrapper} onPress={() => setOpenNoteId(null)}>
             <Animated.FlatList
               data={transactions}
-              keyExtractor={(item) => item._id ?? item.id ?? Math.random().toString()}
+              keyExtractor={(item: any) =>
+                item.localId ?? item._id ?? item.id ?? Math.random().toString()
+              }
               
               // Apply Threshold Logic
               scrollEnabled={canScroll}
@@ -149,8 +206,8 @@ export default function TodayScreen() {
               showsVerticalScrollIndicator={false}
               refreshControl={
                 <RefreshControl
-                  refreshing={isRefetching}
-                  onRefresh={refetch}
+                  refreshing={offlineMode ? isLocalRefetching : isRefetching}
+                  onRefresh={offlineMode ? refetchLocal : refetch}
                   tintColor={colors.primaryAccent}
                 />
               }
@@ -161,11 +218,42 @@ export default function TodayScreen() {
               
               ListEmptyComponent={renderEmptyState}
               renderItem={({ item }) => {
-                const id = item._id ?? item.id ?? '';
+                if (offlineMode) {
+                  const row = item as LocalTransactionRow;
+                  const localTransaction: Transaction = {
+                    id: row.localId,
+                    amount: row.amount,
+                    type: row.type,
+                    category: row.categoryName ?? row.categoryId,
+                    categoryName: row.categoryName ?? undefined,
+                    categoryId: row.categoryId,
+                    date: row.date,
+                    note: row.note ?? undefined,
+                    createdAt: row.createdAt,
+                    updatedAt: row.updatedAt,
+                  };
+                  const canDeleteLocal = row.status === 'pending';
+                  const id = localTransaction.id ?? '';
+                  return (
+                    <TransactionRow
+                      transaction={localTransaction}
+                      mode="today"
+                      canDelete={canDeleteLocal}
+                      onDelete={(delId) => deleteLocalMutation.mutate(delId)}
+                      isNoteOpen={Boolean(id && openNoteId === id)}
+                      onToggleNote={() => setOpenNoteId(curr => (curr === id ? null : id))}
+                      onRowPress={() => setOpenNoteId(null)}
+                    />
+                  );
+                }
+
+                const serverItem = item as Transaction;
+                const id = serverItem._id ?? serverItem.id ?? '';
                 return (
                   <TransactionRow
-                    transaction={item}
+                    transaction={serverItem}
                     mode="today"
+                    canDelete={capabilities.canDelete}
                     onDelete={(delId) => deleteMutation.mutate(delId)}
                     isNoteOpen={Boolean(id && openNoteId === id)}
                     onToggleNote={() => setOpenNoteId(curr => (curr === id ? null : id))}

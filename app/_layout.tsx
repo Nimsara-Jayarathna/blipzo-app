@@ -6,7 +6,12 @@ import * as SplashScreen from 'expo-splash-screen';
 import React, { useEffect, useMemo } from 'react';
 import 'react-native-reanimated';
 import { AuthProvider } from '@/context/AuthContext'; // Ensure this path is correct
+import { OfflineProvider } from '@/context/OfflineContext';
 import { AppThemeProvider, useAppTheme } from '@/context/ThemeContext';
+import { useHeartbeat } from '@/hooks/useHeartbeat';
+import { OfflinePromptHost } from '@/components/offline/OfflinePromptHost';
+import { SyncOverlay } from '@/components/sync/SyncOverlay';
+import { AppToastHost } from '@/components/toast/AppToastHost';
 
 // Prevent native splash from hiding immediately
 SplashScreen.preventAutoHideAsync();
@@ -22,12 +27,24 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <AppThemeProvider>
-          <ThemedNavigation />
-        </AppThemeProvider>
+        <OfflineProvider>
+          <AppThemeProvider>
+            <OfflineLifecycle />
+            <OfflinePromptHost />
+            <SyncOverlay />
+            <AppToastHost />
+            <ThemedNavigation />
+          </AppThemeProvider>
+        </OfflineProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
+}
+
+function OfflineLifecycle() {
+  // Startup check + background health monitoring.
+  useHeartbeat();
+  return null;
 }
 
 function ThemedNavigation() {

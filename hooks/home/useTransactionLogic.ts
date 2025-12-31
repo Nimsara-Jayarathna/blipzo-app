@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { useEffect, useMemo } from 'react';
 import { getAllCategories } from '@/api/categories';
+import { useOffline } from '@/context/OfflineContext';
 import type { Transaction } from '@/types';
 
 // --- Types ---
@@ -29,9 +30,19 @@ export function useTransactionCategories(
   filters: AllFilters,
   onFiltersChange: (f: AllFilters) => void
 ) {
+  const { offlineMode } = useOffline();
   const { data: categoriesData } = useQuery({
-    queryKey: ['categoriesAll'],
-    queryFn: () => getAllCategories(),
+    queryKey: ['categoriesAll', filters.typeFilter],
+    queryFn: () =>
+      getAllCategories(
+        filters.typeFilter === 'all'
+          ? undefined
+          : filters.typeFilter === 'income' || filters.typeFilter === 'expense'
+          ? filters.typeFilter
+          : undefined
+      ),
+    // Offline: categories will come from local storage later.
+    enabled: !offlineMode,
   });
 
   const categoriesForType = useMemo(

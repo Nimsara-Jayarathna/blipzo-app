@@ -1,5 +1,6 @@
 import { apiClient } from '@/api/client';
 import type { AuthCredentials, AuthResponse, SessionResponse } from '@/types';
+import { runFullSync } from '@/utils/sync-service';
 
 export const login = async (credentials: AuthCredentials) => {
   const { data } = await apiClient.post<AuthResponse>('/api/auth/login', credentials);
@@ -18,6 +19,7 @@ export const getSession = async () => {
 
 export const refreshSession = async () => {
   const { data } = await apiClient.post<AuthResponse>('/api/auth/refresh');
+  void runFullSync(data?.user);
   return data;
 };
 

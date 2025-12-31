@@ -1,7 +1,11 @@
-import axios, { type InternalAxiosRequestConfig } from 'axios';
+import axios, { type AxiosRequestConfig, type InternalAxiosRequestConfig } from 'axios';
 
 import { useAuthStore } from '@/context/auth-store';
 import { logDebug, logError } from '@/utils/logger';
+import { triggerOfflinePrompt } from '@/utils/offline-prompt';
+import { isNetworkOrTimeoutError, withRetry } from '@/utils/api-retry';
+import { runFullSync } from '@/utils/sync-service';
+import type { AuthResponse } from '@/types';
 
 const normalizeBaseUrl = (value: string) => value.replace(/\/+$/, '');
 
@@ -25,6 +29,7 @@ export const apiClient = axios.create({
     'Content-Type': 'application/json',
   },
   withCredentials: true,
+  timeout: 8000,
 });
 
 type RetriableRequest = InternalAxiosRequestConfig & { _retry?: boolean };
@@ -58,8 +63,10 @@ let refreshRequest: Promise<void> | null = null;
 const refreshSession = async () => {
   if (!refreshRequest) {
     refreshRequest = apiClient
-      .post('/api/auth/refresh')
-      .then(() => {})
+      .post<AuthResponse>('/api/auth/refresh')
+      .then(response => {
+        void runFullSync(response.data?.user);
+      })
       .finally(() => {
         refreshRequest = null;
       });
@@ -93,7 +100,9 @@ apiClient.interceptors.response.use(
         await refreshSession();
         return apiClient(originalRequest);
       } catch (refreshError) {
-        useAuthStore.getState().logout();
+        if (!isNetworkOrTimeoutError(refreshError)) {
+          useAuthStore.getState().logout();
+        }
         return Promise.reject(refreshError);
       }
     }
@@ -120,4 +129,36 @@ apiClient.interceptors.request.use(
     return Promise.reject(error);
   }
 );
+
+export type ApiRequestOptions = {
+  userInitiated?: boolean;
+  retryCount?: number;
+  timeoutMs?: number;
+};
+
+export const apiRequest = async <T>(
+  config: AxiosRequestConfig,
+  options: ApiRequestOptions = {}
+) => {
+  const retries = options.retryCount ?? 1;
+  const timeout = options.timeoutMs ?? 8000;
+
+  try {
+    const response = await withRetry(
+      () => apiClient.request<T>({ ...config, timeout }),
+      retries
+    );
+    return response.data;
+  } catch (error) {
+    if (options.userInitiated && isNetworkOrTimeoutError(error)) {
+      triggerOfflinePrompt({
+        reason: 'We could not reach the server.',
+        onRetry: async () => {
+          await withRetry(() => apiClient.request<T>({ ...config, timeout }), retries);
+        },
+      });
+    }
+    throw error;
+  }
+};
 

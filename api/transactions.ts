@@ -1,4 +1,4 @@
-import { apiClient } from '@/api/client';
+import { apiClient, apiRequest } from '@/api/client';
 import type { SummaryResponse, Transaction, TransactionInput } from '@/types';
 
 type TransactionApiShape = Transaction & {
@@ -81,9 +81,14 @@ export const getTransactionsFiltered = async (filters: TransactionFilters = {}) 
 };
 
 export const createTransaction = async (payload: TransactionInput) => {
-  const { data } = await apiClient.post<
-    TransactionApiShape | { transaction: TransactionApiShape }
-  >('/api/transactions', payload);
+  const data = await apiRequest<TransactionApiShape | { transaction: TransactionApiShape }>(
+    {
+      method: 'post',
+      url: '/api/transactions',
+      data: payload,
+    },
+    { userInitiated: true }
+  );
 
   if (!data) {
     throw new Error('Transaction response missing');
@@ -105,11 +110,16 @@ const resolveTimezoneHeader = () => {
 };
 
 export const deleteTransaction = async (id: string) => {
-  await apiClient.delete(`/api/transactions/${id}`, {
-    headers: {
-      'X-Timezone': resolveTimezoneHeader(),
+  await apiRequest(
+    {
+      method: 'delete',
+      url: `/api/transactions/${id}`,
+      headers: {
+        'X-Timezone': resolveTimezoneHeader(),
+      },
     },
-  });
+    { userInitiated: true }
+  );
 };
 
 export const getTransactionSummary = async () => {
