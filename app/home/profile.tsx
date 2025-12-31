@@ -1,20 +1,22 @@
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useNavigation } from '@react-navigation/native';
+import Constants from 'expo-constants';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useNavigation } from '@react-navigation/native';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { logoutSession } from '@/api/auth';
+import { HomeContent } from '@/components/home/layout/HomeContent';
+import { SectionHeader } from '@/components/home/layout/SectionHeader';
+import { HOME_CONTENT_PADDING_H } from '@/components/home/layout/spacing';
 import { ThemedText } from '@/components/themed-text';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
+import { useOffline } from '@/context/OfflineContext';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
-import { useOffline } from '@/context/OfflineContext';
-import { HomeContent } from '@/components/home/layout/HomeContent';
-import { HOME_CONTENT_PADDING_H } from '@/components/home/layout/spacing';
-import { SectionHeader } from '@/components/home/layout/SectionHeader';
 
 export default function ProfileScreen() {
+  const version = Constants.expoConfig?.version ?? '1.0.0';
   const { user, logout } = useAuth();
   const { colors } = useAppTheme();
   const { offlineMode, capabilities, tryGoOnline } = useOffline();
@@ -136,10 +138,10 @@ export default function ProfileScreen() {
                     onlineCheckState === 'success'
                       ? '#22c55e'
                       : onlineCheckState === 'failed'
-                      ? '#f59e0b'
-                      : offlineMode
-                      ? colors.primaryAccent
-                      : colors.surface2,
+                        ? '#f59e0b'
+                        : offlineMode
+                          ? colors.primaryAccent
+                          : colors.surface2,
                   opacity: pressed ? 0.85 : 1,
                 },
               ]}
@@ -156,10 +158,10 @@ export default function ProfileScreen() {
                   {onlineCheckState === 'success'
                     ? 'Online'
                     : onlineCheckState === 'failed'
-                    ? 'Still offline'
-                    : offlineMode
-                    ? 'Go online'
-                    : 'Online'}
+                      ? 'Still offline'
+                      : offlineMode
+                        ? 'Go online'
+                        : 'Online'}
                 </ThemedText>
               )}
             </Pressable>
@@ -205,6 +207,9 @@ export default function ProfileScreen() {
           ]}>
           <ThemedText style={styles.logoutText}>Log out</ThemedText>
         </Pressable>
+        <ThemedText style={[styles.versionText, { color: colors.textMuted }]}>
+          Version {version}
+        </ThemedText>
       </View>
     </HomeContent>
   );
@@ -307,5 +312,12 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: '600',
     fontSize: 15,
+  },
+  versionText: {
+    marginTop: 24,
+    fontSize: 12,
+    opacity: 0.5,
+    textAlign: 'center',
+    marginBottom: 8,
   },
 });
