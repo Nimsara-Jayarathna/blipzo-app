@@ -25,7 +25,7 @@ import { ThemedText } from '@/components/themed-text';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useOffline } from '@/context/OfflineContext';
 import { getLocalCategories, insertPendingTransaction, initDb } from '@/utils/local-db';
-import { logDebug, logError } from '@/utils/logger';
+import { logError } from '@/utils/logger';
 import type { Category, Transaction, TransactionInput } from '@/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -169,18 +169,9 @@ export function AddTransactionSheet({ visible, onClose, onTransactionCreated }: 
           : categoryName
           ? JSON.stringify(categoryName)
           : null;
-      logDebug('offline-save: start', {
-        localId,
-        type: transactionType,
-        amount: Number(amount),
-        categoryId: safeCategoryId,
-        categoryName: safeCategoryName,
-        date: dayjs(date).format('YYYY-MM-DD'),
-      });
       void initDb()
-        .then(() => {
-          logDebug('offline-save: initDb done', { localId });
-          return insertPendingTransaction({
+        .then(() =>
+          insertPendingTransaction({
             localId,
             serverId: null,
             type: transactionType,
@@ -192,10 +183,9 @@ export function AddTransactionSheet({ visible, onClose, onTransactionCreated }: 
             status: 'pending',
             createdAt: now,
             updatedAt: now,
-          });
-        })
+          })
+        )
         .then(() => {
-          logDebug('offline-save: insert success', { localId });
           queryClient.invalidateQueries({ queryKey: ['transactions', 'today-local'] });
           Alert.alert('Saved locally', 'This record will sync when you are back online.');
           onClose();

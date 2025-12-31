@@ -2,7 +2,7 @@ import dayjs from 'dayjs';
 import { openDatabaseSync, type SQLiteDatabase } from 'expo-sqlite';
 
 import type { Category, Transaction } from '@/types';
-import { logDebug, logError } from '@/utils/logger';
+import { logError } from '@/utils/logger';
 
 export type LocalTransactionStatus = 'pending' | 'synced';
 
@@ -39,7 +39,6 @@ const NULL_SENTINEL = '__BLIPZO_NULL__';
 
 const getDb = () => {
   if (!db) {
-    logDebug('local-db: opening sqlite db', { name: 'blipzo.db' });
     db = openDatabaseSync('blipzo.db');
   }
   return db;
@@ -70,30 +69,15 @@ const coerceParam = (value: unknown): BindValue => {
   return String(value);
 };
 
-const normalizeParams = (params: unknown[]): BindValue[] =>
-  params.map((value) => {
-    const normalized = coerceParam(value);
-    if (typeof value === 'object' && value !== null) {
-      logDebug('local-db: coerced object param', { normalized });
-    }
-    return normalized;
-  });
+const normalizeParams = (params: unknown[]): BindValue[] => params.map((value) => coerceParam(value));
 
 const run = async (sql: string, params: unknown[] = []) => {
   const normalized = normalizeParams(params);
   if (!normalized.length) return getDb().runAsync(sql);
-  const debugParams = normalized.map((value) => ({
-    type: value === null ? 'null' : typeof value,
-    value,
-  }));
-  logDebug('local-db: run params', { sql, params: debugParams });
   try {
     return await getDb().runAsync(sql, ...normalized);
   } catch (error) {
-    logError('local-db: run failed', {
-      sql,
-      paramTypes: normalized.map((value) => (value === null ? 'null' : typeof value)),
-    });
+    logError('local-db: run failed', error);
     throw error;
   }
 };
@@ -111,7 +95,6 @@ const getFirst = async <T,>(sql: string, params: unknown[] = []) => {
 };
 
 export const initDb = async () => {
-  logDebug('local-db: initDb start');
   try {
     await run(
       `CREATE TABLE IF NOT EXISTS transactions (
@@ -161,7 +144,6 @@ export const initDb = async () => {
         value TEXT NOT NULL
       );`
     );
-    logDebug('local-db: initDb success');
   } catch (error) {
     logError('local-db: initDb failed', error);
     throw error;
@@ -169,27 +151,6 @@ export const initDb = async () => {
 };
 
 export const insertPendingTransaction = async (row: LocalTransactionRow) => {
-  logDebug('local-db: insertPendingTransaction start', {
-    localId: row.localId,
-    type: row.type,
-    amount: row.amount,
-    categoryId: row.categoryId,
-    date: row.date,
-    status: row.status,
-    valueTypes: {
-      localId: typeof row.localId,
-      serverId: row.serverId === null ? 'null' : typeof row.serverId,
-      type: typeof row.type,
-      amount: typeof row.amount,
-      categoryId: typeof row.categoryId,
-      categoryName: row.categoryName === null ? 'null' : typeof row.categoryName,
-      note: row.note === null ? 'null' : typeof row.note,
-      date: typeof row.date,
-      status: typeof row.status,
-      createdAt: typeof row.createdAt,
-      updatedAt: typeof row.updatedAt,
-    },
-  });
   try {
     await run(
       `INSERT INTO transactions (
@@ -212,7 +173,6 @@ export const insertPendingTransaction = async (row: LocalTransactionRow) => {
         row.updatedAt,
       ]
     );
-    logDebug('local-db: insertPendingTransaction success', { localId: row.localId });
   } catch (error) {
     logError('local-db: insertPendingTransaction failed', error);
     throw error;
