@@ -11,6 +11,7 @@ import { AppThemeProvider, useAppTheme } from '@/context/ThemeContext';
 import { useHeartbeat } from '@/hooks/useHeartbeat';
 import { OfflinePromptHost } from '@/components/offline/OfflinePromptHost';
 import { SyncOverlay } from '@/components/sync/SyncOverlay';
+import { AppToastHost } from '@/components/toast/AppToastHost';
 
 // Prevent native splash from hiding immediately
 SplashScreen.preventAutoHideAsync();
@@ -31,6 +32,7 @@ export default function RootLayout() {
             <OfflineLifecycle />
             <OfflinePromptHost />
             <SyncOverlay />
+            <AppToastHost />
             <ThemedNavigation />
           </AppThemeProvider>
         </OfflineProvider>

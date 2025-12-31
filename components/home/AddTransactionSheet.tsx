@@ -25,6 +25,7 @@ import { ThemedText } from '@/components/themed-text';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useOffline } from '@/context/OfflineContext';
 import { getLocalCategories, insertPendingTransaction, initDb } from '@/utils/local-db';
+import { triggerToast } from '@/utils/toast';
 import { logError } from '@/utils/logger';
 import type { Category, Transaction, TransactionInput } from '@/types';
 
@@ -187,7 +188,7 @@ export function AddTransactionSheet({ visible, onClose, onTransactionCreated }: 
         )
         .then(() => {
           queryClient.invalidateQueries({ queryKey: ['transactions', 'today-local'] });
-          Alert.alert('Saved locally', 'This record will sync when you are back online.');
+          triggerToast({ message: 'Saved locally. This will sync when you are back online.' });
           onClose();
         })
         .catch((error) => {
