@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import { useEffect, useMemo } from 'react';
 import { getAllCategories } from '@/api/categories';
+import { useOffline } from '@/context/OfflineContext';
 import type { Transaction } from '@/types';
 
 // --- Types ---
@@ -29,6 +30,7 @@ export function useTransactionCategories(
   filters: AllFilters,
   onFiltersChange: (f: AllFilters) => void
 ) {
+  const { offlineMode } = useOffline();
   const { data: categoriesData } = useQuery({
     queryKey: ['categoriesAll', filters.typeFilter],
     queryFn: () =>
@@ -39,6 +41,8 @@ export function useTransactionCategories(
           ? filters.typeFilter
           : undefined
       ),
+    // Offline: categories will come from local storage later.
+    enabled: !offlineMode,
   });
 
   const categoriesForType = useMemo(
@@ -56,8 +60,19 @@ export function useTransactionCategories(
     if (filters.categoryFilter === 'all') return;
     if (!categoriesForType.length) return;
 
-    const stillValid = categoriesForType.some((cat) => cat.id === filters.categoryFilter);
-    if (!stillValid) {
+    const selectedCategory = categoriesForType.find((cat) => cat.id === filters.categoryFilter);
+
+    // Reset if category doesn't exist at all
+    if (!selectedCategory) {
+      onFiltersChange({ ...filters, categoryFilter: 'all' });
+      return;
+    }
+
+    // Reset if category type doesn't match the current type filter
+    if (
+      filters.typeFilter !== 'all' &&
+      selectedCategory.type !== filters.typeFilter
+    ) {
       onFiltersChange({ ...filters, categoryFilter: 'all' });
     }
   }, [categoriesForType, filters, onFiltersChange]);
@@ -74,7 +89,7 @@ export function useGroupedTransactions(
     if (grouping === 'none') return null;
 
     const buckets = new Map<string, Transaction[]>();
-    
+
     transactions.forEach((txn) => {
       let key: string;
       if (grouping === 'month') {
@@ -85,7 +100,7 @@ export function useGroupedTransactions(
             ? txn.category || txn.categoryName || txn.title || 'Uncategorised'
             : txn.category?.name ?? txn.categoryName ?? txn.title ?? 'Uncategorised';
       }
-      
+
       if (!buckets.has(key)) buckets.set(key, []);
       buckets.get(key)!.push(txn);
     });

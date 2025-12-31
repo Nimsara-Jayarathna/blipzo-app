@@ -13,6 +13,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useAppTheme } from '@/context/ThemeContext';
+import { useOffline } from '@/context/OfflineContext';
 
 type UserSummary = {
   name: string;
@@ -36,6 +37,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 }) => {
   const router = useRouter();
   const { colors } = useAppTheme();
+  const { offlineMode } = useOffline();
 
   const handlePressProfile = () => {
     router.navigate('/home/profile');
@@ -52,6 +54,8 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
     .slice(0, 2)
     .map(part => part[0]?.toUpperCase())
     .join('');
+
+  const statusColor = offlineMode ? '#FFA500' : '#22c55e';
 
   return (
     <View style={[styles.safeArea, { backgroundColor: colors.surface1 }, containerStyle]}>
@@ -72,13 +76,17 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             accessibilityRole="button"
             accessibilityLabel="Open profile"
             accessibilityHint="Opens profile management so you can edit your details">
-            {user?.avatarUrl ? (
-              <Image source={{ uri: user.avatarUrl }} style={styles.avatar} />
-            ) : (
-              <View style={[styles.avatarPlaceholder, { backgroundColor: colors.primaryAccent }]}>
-                <ThemedText style={styles.avatarInitials}>{initials || '?'}</ThemedText>
-              </View>
-            )}
+            <View style={styles.avatarWrapper}>
+              {user?.avatarUrl ? (
+                <Image source={{ uri: user.avatarUrl }} style={styles.avatar} />
+              ) : (
+                <View style={[styles.avatarPlaceholder, { backgroundColor: colors.primaryAccent }]}>
+                  <ThemedText style={styles.avatarInitials}>{initials || '?'}</ThemedText>
+                </View>
+              )}
+              {/* Status indicator: green online, orange offline */}
+              <View style={[styles.statusDot, { backgroundColor: statusColor, borderColor: colors.surface1 }]} />
+            </View>
 
             <View>
               <ThemedText style={[styles.greeting, nameStyle]}>Hello</ThemedText>
@@ -144,6 +152,19 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  avatarWrapper: {
+    width: 40,
+    height: 40,
+  },
+  statusDot: {
+    position: 'absolute',
+    right: -1,
+    bottom: -1,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 2,
   },
   avatarInitials: {
     color: '#ffffff',

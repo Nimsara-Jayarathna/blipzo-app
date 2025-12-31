@@ -1,4 +1,4 @@
-import { apiClient } from '@/api/client';
+import { apiClient, apiRequest } from '@/api/client';
 import type { SummaryResponse, Transaction, TransactionInput } from '@/types';
 
 type TransactionApiShape = Transaction & {
@@ -22,7 +22,7 @@ const normalizeTransaction = (transaction: TransactionApiShape): Transaction => 
   const category =
     typeof transaction.category === 'string'
       ? transaction.category
-      : transaction.category?.name ?? transaction.category;
+      : transaction.category;
 
   return {
     ...transaction,
@@ -47,7 +47,7 @@ const extractTransactions = (data: TransactionsResponse): TransactionApiShape[] 
 };
 
 export const getTransactions = async () => {
-  const { data } = await apiClient.get<TransactionsResponse>('/api/transactions');
+  const { data } = await apiClient.get<TransactionsResponse>('/api/v1/transactions');
   return extractTransactions(data).map(normalizeTransaction);
 };
 
@@ -64,7 +64,7 @@ export interface TransactionFilters {
 
 export const getTransactionsFiltered = async (filters: TransactionFilters = {}) => {
   const { data } = await apiClient.get<TransactionsResponse | PaginatedTransactionsResponse>(
-    '/api/transactions',
+    '/api/v1/transactions',
     {
       params: {
         ...filters,
@@ -81,9 +81,14 @@ export const getTransactionsFiltered = async (filters: TransactionFilters = {}) 
 };
 
 export const createTransaction = async (payload: TransactionInput) => {
-  const { data } = await apiClient.post<
-    TransactionApiShape | { transaction: TransactionApiShape }
-  >('/api/transactions', payload);
+  const data = await apiRequest<TransactionApiShape | { transaction: TransactionApiShape }>(
+    {
+      method: 'post',
+      url: '/api/v1/transactions',
+      data: payload,
+    },
+    { userInitiated: true }
+  );
 
   if (!data) {
     throw new Error('Transaction response missing');
@@ -105,14 +110,19 @@ const resolveTimezoneHeader = () => {
 };
 
 export const deleteTransaction = async (id: string) => {
-  await apiClient.delete(`/api/transactions/${id}`, {
-    headers: {
-      'X-Timezone': resolveTimezoneHeader(),
+  await apiRequest(
+    {
+      method: 'delete',
+      url: `/api/v1/transactions/${id}`,
+      headers: {
+        'X-Timezone': resolveTimezoneHeader(),
+      },
     },
-  });
+    { userInitiated: true }
+  );
 };
 
 export const getTransactionSummary = async () => {
-  const { data } = await apiClient.get<SummaryResponse>('/api/transactions/summary');
+  const { data } = await apiClient.get<SummaryResponse>('/api/v1/transactions/summary');
   return data;
 };

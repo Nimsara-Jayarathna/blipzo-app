@@ -1,4 +1,4 @@
-import { apiClient } from '@/api/client';
+import { apiClient, apiRequest } from '@/api/client';
 import type { Category } from '@/types';
 
 type CategoryApiShape = Category & {
@@ -6,7 +6,7 @@ type CategoryApiShape = Category & {
   id?: string;
 };
 
-type CategoriesResponse = CategoryApiShape[] | { categories: CategoryApiShape[] };
+type CategoriesResponse = CategoryApiShape[] | { categories: CategoryApiShape[]; limit?: number };
 
 const normalizeCategory = (category: CategoryApiShape): Category => {
   const identifier = category._id ?? category.id;
@@ -34,22 +34,44 @@ const extractCategories = (data: CategoriesResponse): CategoryApiShape[] => {
   return [];
 };
 
+const extractCategoriesWithLimit = (
+  data: CategoriesResponse
+): { categories: CategoryApiShape[]; limit?: number } => {
+  if (Array.isArray(data)) {
+    return { categories: data };
+  }
+
+  if (data?.categories) {
+    return {
+      categories: data.categories,
+      limit: typeof data.limit === 'number' ? data.limit : undefined,
+    };
+  }
+
+  return { categories: [] };
+};
+
 export const getCategories = async () => {
-  const { data } = await apiClient.get<CategoriesResponse>('/api/categories/active');
-  return extractCategories(data).map(normalizeCategory);
+  const { data } = await apiClient.get<CategoriesResponse>('/api/v1/categories/active');
+  const { categories, limit } = extractCategoriesWithLimit(data);
+  return { categories: categories.map(normalizeCategory), limit };
 };
 
 export const getAllCategories = async (type?: 'income' | 'expense') => {
-  const { data } = await apiClient.get<CategoriesResponse>('/api/categories/all', {
+  const { data } = await apiClient.get<CategoriesResponse>('/api/v1/categories/all', {
     params: type ? { type } : {},
   });
   return extractCategories(data).map(normalizeCategory);
 };
 
 export const createCategory = async (payload: Pick<Category, 'name' | 'type'>) => {
-  const { data } = await apiClient.post<CategoryApiShape | { category: CategoryApiShape }>(
-    '/api/categories',
-    payload
+  const data = await apiRequest<CategoryApiShape | { category: CategoryApiShape }>(
+    {
+      method: 'post',
+      url: '/api/v1/categories',
+      data: payload,
+    },
+    { userInitiated: true }
   );
 
   if (!data) {
@@ -64,13 +86,23 @@ export const createCategory = async (payload: Pick<Category, 'name' | 'type'>) =
 };
 
 export const deleteCategory = async (categoryId: string) => {
-  await apiClient.delete(`/api/categories/${categoryId}`);
+  await apiRequest(
+    {
+      method: 'delete',
+      url: `/api/v1/categories/${categoryId}`,
+    },
+    { userInitiated: true }
+  );
 };
 
 export const setDefaultCategory = async (categoryId: string) => {
-  const { data } = await apiClient.patch<CategoryApiShape | { category: CategoryApiShape }>(
-    `/api/categories/${categoryId}`,
-    { isDefault: true }
+  const data = await apiRequest<CategoryApiShape | { category: CategoryApiShape }>(
+    {
+      method: 'patch',
+      url: `/api/v1/categories/${categoryId}`,
+      data: { isDefault: true },
+    },
+    { userInitiated: true }
   );
 
   if (

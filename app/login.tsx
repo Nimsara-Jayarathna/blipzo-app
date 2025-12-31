@@ -22,6 +22,7 @@ import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/hooks/useAuth';
 import { HomeBackground } from '@/components/home/HomeBackground';
 import { useAppTheme } from '@/context/ThemeContext';
+import { logDebug, logError } from '@/utils/logger';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -41,12 +42,18 @@ export default function LoginScreen() {
 
   const loginMutation = useMutation({
     mutationFn: login,
-    onSuccess: data => {
+    onMutate: variables => {
+      logDebug('Login mutation started', { email: variables.email });
+      return { email: variables.email };
+    },
+    onSuccess: (data, variables, context) => {
+      logDebug('Login mutation success', { data, context });
       setAuth(data);
       setErrorMessage(null);
       router.replace('/home');
     },
-    onError: () => {
+    onError: (error, variables, context) => {
+      logError('Login mutation failed', { error, variables, context });
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setErrorMessage('Invalid email or password');
     },
@@ -61,7 +68,18 @@ export default function LoginScreen() {
       return;
     }
     setErrorMessage(null);
-    loginMutation.mutate({ email, password });
+    logDebug('Login request started', { email });
+    loginMutation.mutate(
+      { email, password },
+      {
+        onSuccess: data => {
+          logDebug('Login successful', data);
+        },
+        onError: error => {
+          logError('Login failed', error);
+        },
+      }
+    );
   };
 
   return (

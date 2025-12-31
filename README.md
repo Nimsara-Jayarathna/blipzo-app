@@ -1,50 +1,72 @@
-# Welcome to your Expo app 👋
+# Blipzo
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+> Everything you earn and spend.
 
-## Get started
+Blipzo is a modern, offline-first personal finance application built with Expo and React Native. It allows users to track their income and expenses seamlessly, even without an internet connection, syncing data when back online.
 
-1. Install dependencies
+## Features
 
-   ```bash
-   npm install
-   ```
+-   **Offline-First Architecture**: Continue working without internet; data syncs automatically when connection is restored.
+-   **Secure Authentication**: Robust user session management with JWT.
+-   **Smart Syncing**: Background synchronization engine to keep local and remote data consistent.
+-   **Theming**: Support for light and dark modes with a custom design system.
+-   **Performance**: Built with `react-native-reanimated` for smooth UI interactions and `expo-sqlite` for fast local data access.
 
-2. Start the app
+## Tech Stack
 
-   ```bash
-   npx expo start
-   ```
+-   **Framework**: [Expo](https://expo.dev) / React Native
+-   **Language**: TypeScript
+-   **State Management**: [Zustand](https://github.com/pmndrs/zustand) & [TanStack React Query](https://tanstack.com/query/latest)
+-   **Navigation**: [Expo Router](https://docs.expo.dev/router/introduction)
+-   **Local Database**: [Expo SQLite](https://docs.expo.dev/versions/latest/sdk/sqlite/)
+-   **Styling**: Custom theme system + Reanimated
 
-In the output, you'll find options to open the app in a
+## Getting Started
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+### Prerequisites
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+-   Node.js (LTS recommended)
+-   npm or yarn
 
-## Get a fresh project
+### Installation
 
-When you're ready, run:
+1.  Clone the repository:
+    ```bash
+    git clone <repository-url>
+    cd blipzo-app
+    ```
 
-```bash
-npm run reset-project
-```
+2.  Install dependencies:
+    ```bash
+    npm install
+    ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+3.  Configure Environment:
+    Create a `.env` file in the root directory (copy from example if available, otherwise creaete new) and add your API URL. 
+    
+    *Note: The app requires a valid backend URL to function fully.*
+    ```bash
+    EXPO_PUBLIC_API_BASE_URL=http://your-api-url.com
+    ```
 
-## Learn more
+4.  Start the application:
+    ```bash
+    npx expo start
+    ```
 
-To learn more about developing your project with Expo, look at the following resources:
+## Project Structure
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+-   `app/`: Application screens and routing (Expo Router).
+-   `api/`: API client configuration and endpoints.
+-   `components/`: Reusable UI components.
+-   `context/`: React Context providers (Auth, Theme, Offline).
+-   `hooks/`: Custom React hooks (useAuth, useHeartbeat, etc.).
+-   `utils/`: Helper functions and services (Sync, Logger, Local DB).
+-   `types/`: TypeScript type definitions.
 
-## Join the community
+## Scripts
 
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+-   `npm start`: Start the Expo development server.
+-   `npm run android`: Run on Android emulator/device.
+-   `npm run ios`: Run on iOS simulator/device.
+-   `npm run reset-project`: Reset the project to a blank slate (Use with caution).

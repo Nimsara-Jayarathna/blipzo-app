@@ -53,3 +53,5 @@ blipzo-icon-spec.md
 /.vscode
 
 .env
+
+scripts/

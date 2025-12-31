@@ -1,26 +1,49 @@
-import React, { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withSpring, 
-  withTiming, 
-  withRepeat, 
-  withSequence 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useRef } from 'react';
+import { StyleSheet, View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withSpring,
+  withTiming
 } from 'react-native-reanimated';
 
 import { getSession, refreshSession } from '@/api/auth';
-import { ThemedText } from '@/components/themed-text';
-import { useAuth } from '@/hooks/useAuth';
+import { apiClient } from '@/api/client';
 import { HomeBackground } from '@/components/home/HomeBackground';
+import { ThemedText } from '@/components/themed-text';
+import { useOffline } from '@/context/OfflineContext';
+import { useAuth } from '@/hooks/useAuth';
+import { isAuthError, isNetworkOrTimeoutError, withRetry } from '@/utils/api-retry';
+import { getLocalProfile, initDb } from '@/utils/local-db';
+import { runFullSync } from '@/utils/sync-service';
 
 const ACCENT_COLOR = '#3498db';
+const SESSION_CACHE_KEY = 'has_valid_session';
 
 export default function IndexScreen() {
   const router = useRouter();
   const { setAuth, logout } = useAuth();
+  const { offlineMode, promptToGoOffline, setIsBooting } = useOffline();
+  const hasNavigatedRef = useRef(false);
+  const sessionCacheLoadedRef = useRef(false);
+  const hasValidSessionRef = useRef(false);
+  const localProfileRef = useRef<null | {
+    id: string;
+    name: string;
+    fname?: string | null;
+    lname?: string | null;
+    email: string;
+    createdAt: string;
+    updatedAt: string;
+    categoryLimit?: number | null;
+    defaultIncomeCategories?: string[];
+    defaultExpenseCategories?: string[];
+  }>(null);
 
   // Animation Values
   const logoScale = useSharedValue(0);
@@ -29,7 +52,7 @@ export default function IndexScreen() {
   useEffect(() => {
     // 1. Start Logo Animation
     logoScale.value = withSpring(1, { damping: 12, stiffness: 90 });
-    
+
     // 2. Pulse Loading Text
     loadingOpacity.value = withRepeat(
       withSequence(
@@ -40,39 +63,189 @@ export default function IndexScreen() {
       true
     );
 
+    const loadSessionCache = async () => {
+      if (sessionCacheLoadedRef.current) return;
+      const cached = await AsyncStorage.getItem(SESSION_CACHE_KEY);
+      hasValidSessionRef.current = cached === 'true';
+      sessionCacheLoadedRef.current = true;
+    };
+
+    const loadLocalProfile = async () => {
+      if (localProfileRef.current) return localProfileRef.current;
+      try {
+        await initDb();
+        const profile = await getLocalProfile();
+        if (profile) {
+          localProfileRef.current = profile;
+        }
+        return profile ?? null;
+      } catch {
+        return null;
+      }
+    };
+
     // 3. Run Auth Logic
-    const checkAuth = async () => {
+    const runSessionCheck = async () => {
+      try {
+        const session = await getSession();
+        if (!session?.user) {
+          return { status: 'unauth' as const };
+        }
+
+        let authData = session;
+        try {
+          const refreshed = await refreshSession();
+          if (refreshed?.user) authData = refreshed;
+        } catch {
+          // Ignore refresh error; session is still valid.
+        }
+
+        return { status: 'ok' as const, authData };
+      } catch (e) {
+        if (isNetworkOrTimeoutError(e)) {
+          return { status: 'network' as const };
+        }
+        if (isAuthError(e)) {
+          return { status: 'unauth' as const };
+        }
+        return { status: 'error' as const };
+      }
+    };
+
+    const checkAuth = async (skipMinWait = false) => {
       try {
         // Minimum wait time for aesthetic purposes (1.5s)
-        const minWait = new Promise(resolve => setTimeout(resolve, 1500));
-        
-        // Fetch session in parallel
-        const sessionPromise = getSession();
-        
-        // Wait for both
-        const [_, session] = await Promise.all([minWait, sessionPromise]);
+        const minWait = skipMinWait ? Promise.resolve() : new Promise(resolve => setTimeout(resolve, 1500));
+        await minWait;
 
-        if (session?.user) {
-          let authData = session;
+        await loadSessionCache();
+        const localProfile = await loadLocalProfile();
+        if (!hasValidSessionRef.current) {
           try {
-            const refreshed = await refreshSession();
-            if (refreshed?.user) authData = refreshed;
-          } catch { /* ignore refresh error */ }
-
-          setAuth(authData);
-          router.replace('/home' as any);
-        } else {
-          logout();
-          router.replace('/welcome');
+            await withRetry(() => apiClient.get('/health', { timeout: 5000 }), 2);
+            hasNavigatedRef.current = true;
+            router.replace('/welcome');
+          } catch {
+            promptToGoOffline(
+              'You need to be online to sign in.',
+              async () => {
+                await apiClient.get('/health', { timeout: 5000 });
+                hasNavigatedRef.current = true;
+                router.replace('/welcome');
+              },
+              {
+                allowOffline: Boolean(localProfile),
+                primaryLabel: 'Go to sign in',
+                onConfirm: localProfile
+                  ? () => {
+                    setAuth({ user: localProfile });
+                    hasNavigatedRef.current = true;
+                    router.replace('/home/today' as any);
+                  }
+                  : undefined,
+                force: true,
+              }
+            );
+          }
+          return;
         }
-      } catch (e) {
+
+        const result = await runSessionCheck();
+
+        if (result.status === 'ok') {
+          setAuth(result.authData);
+          void runFullSync(result.authData.user);
+          await AsyncStorage.setItem(SESSION_CACHE_KEY, 'true');
+          hasNavigatedRef.current = true;
+          router.replace('/home' as any);
+          return;
+        }
+
+        if (result.status === 'unauth') {
+          logout();
+          await AsyncStorage.setItem(SESSION_CACHE_KEY, 'false');
+          promptToGoOffline(
+            'You need to be online to sign in.',
+            async () => {
+              await apiClient.get('/health', { timeout: 5000 });
+              hasNavigatedRef.current = true;
+              router.replace('/welcome');
+            },
+            { allowOffline: false, primaryLabel: 'Go to sign in' }
+          );
+          return;
+        }
+
+        if (result.status === 'network') {
+          const allowOffline = Boolean(localProfile);
+          promptToGoOffline(
+            allowOffline
+              ? 'Unable to reach the server.'
+              : 'You need to be online to continue.',
+            async () => {
+              const retryResult = await runSessionCheck();
+              if (retryResult.status === 'ok') {
+                setAuth(retryResult.authData);
+                await AsyncStorage.setItem(SESSION_CACHE_KEY, 'true');
+                hasNavigatedRef.current = true;
+                router.replace('/home' as any);
+                return;
+              }
+              if (retryResult.status === 'unauth') {
+                await AsyncStorage.setItem(SESSION_CACHE_KEY, 'false');
+                promptToGoOffline(
+                  'You need to be online to sign in.',
+                  async () => {
+                    await apiClient.get('/health', { timeout: 5000 });
+                    hasNavigatedRef.current = true;
+                    router.replace('/welcome');
+                  },
+                  { allowOffline: false, primaryLabel: 'Go to sign in' }
+                );
+                throw new Error('AUTH_INVALID');
+              }
+              throw new Error('NETWORK');
+            },
+            {
+              allowOffline,
+              primaryLabel: 'Retry',
+              onConfirm: allowOffline
+                ? () => {
+                  if (localProfile) {
+                    setAuth({ user: localProfile });
+                  }
+                  hasNavigatedRef.current = true;
+                  router.replace('/home/today' as any);
+                }
+                : undefined,
+              force: true,
+            }
+          );
+          return;
+        }
+
         logout();
+        await AsyncStorage.setItem(SESSION_CACHE_KEY, 'false');
+        hasNavigatedRef.current = true;
+        router.replace('/welcome');
+      } catch {
+        logout();
+        await AsyncStorage.setItem(SESSION_CACHE_KEY, 'false');
+        hasNavigatedRef.current = true;
         router.replace('/welcome');
       }
     };
 
-    checkAuth();
+    setIsBooting(true);
+    void checkAuth().finally(() => setIsBooting(false));
   }, []);
+
+  useEffect(() => {
+    if (offlineMode && !hasNavigatedRef.current) {
+      hasNavigatedRef.current = true;
+      router.replace('/home' as any);
+    }
+  }, [offlineMode, router]);
 
   const logoStyle = useAnimatedStyle(() => ({
     transform: [{ scale: logoScale.value }],
@@ -85,7 +258,7 @@ export default function IndexScreen() {
   return (
     <HomeBackground>
       <View style={styles.container}>
-        
+
         {/* Animated Logo */}
         <Animated.View style={[styles.logoWrapper, logoStyle]}>
           <View style={styles.logoGlow} />
@@ -156,6 +329,7 @@ const styles = StyleSheet.create({
     color: '#2c3e50',
     letterSpacing: -1,
     marginBottom: 4,
+    lineHeight: 52,
   },
   tagline: {
     fontSize: 16,
