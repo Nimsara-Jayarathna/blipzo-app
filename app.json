@@ -17,7 +17,7 @@
         "backgroundColor": "#F0F7FF",
         "foregroundImage": "./assets/images/android-icon-foreground.png"
       },
-      "package": "com.nimsara.jayarathna.blipzoapp"
+      "package": "com.nimsara.blipzoapp"
     },
     "web": {
       "output": "static",
