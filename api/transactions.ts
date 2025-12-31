@@ -47,7 +47,7 @@ const extractTransactions = (data: TransactionsResponse): TransactionApiShape[] 
 };
 
 export const getTransactions = async () => {
-  const { data } = await apiClient.get<TransactionsResponse>('/api/transactions');
+  const { data } = await apiClient.get<TransactionsResponse>('/api/v1/transactions');
   return extractTransactions(data).map(normalizeTransaction);
 };
 
@@ -64,7 +64,7 @@ export interface TransactionFilters {
 
 export const getTransactionsFiltered = async (filters: TransactionFilters = {}) => {
   const { data } = await apiClient.get<TransactionsResponse | PaginatedTransactionsResponse>(
-    '/api/transactions',
+    '/api/v1/transactions',
     {
       params: {
         ...filters,
@@ -84,7 +84,7 @@ export const createTransaction = async (payload: TransactionInput) => {
   const data = await apiRequest<TransactionApiShape | { transaction: TransactionApiShape }>(
     {
       method: 'post',
-      url: '/api/transactions',
+      url: '/api/v1/transactions',
       data: payload,
     },
     { userInitiated: true }
@@ -113,7 +113,7 @@ export const deleteTransaction = async (id: string) => {
   await apiRequest(
     {
       method: 'delete',
-      url: `/api/transactions/${id}`,
+      url: `/api/v1/transactions/${id}`,
       headers: {
         'X-Timezone': resolveTimezoneHeader(),
       },
@@ -123,6 +123,6 @@ export const deleteTransaction = async (id: string) => {
 };
 
 export const getTransactionSummary = async () => {
-  const { data } = await apiClient.get<SummaryResponse>('/api/transactions/summary');
+  const { data } = await apiClient.get<SummaryResponse>('/api/v1/transactions/summary');
   return data;
 };

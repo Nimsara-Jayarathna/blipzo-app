@@ -1,11 +1,11 @@
 import axios, { type AxiosRequestConfig, type InternalAxiosRequestConfig } from 'axios';
 
 import { useAuthStore } from '@/context/auth-store';
+import type { AuthResponse } from '@/types';
+import { isNetworkOrTimeoutError, withRetry } from '@/utils/api-retry';
 import { logDebug, logError } from '@/utils/logger';
 import { triggerOfflinePrompt } from '@/utils/offline-prompt';
-import { isNetworkOrTimeoutError, withRetry } from '@/utils/api-retry';
 import { runFullSync } from '@/utils/sync-service';
-import type { AuthResponse } from '@/types';
 
 const normalizeBaseUrl = (value: string) => value.replace(/\/+$/, '');
 
@@ -53,7 +53,7 @@ const shouldSkipRefresh = (url?: string) => {
     return true;
   }
 
-  return ['/api/auth/login', '/api/auth/register', '/api/auth/refresh', '/api/auth/logout'].some(
+  return ['/api/v1/auth/login', '/api/v1/auth/register', '/api/v1/auth/refresh', '/api/v1/auth/logout'].some(
     path => url.includes(path)
   );
 };
@@ -63,7 +63,7 @@ let refreshRequest: Promise<void> | null = null;
 const refreshSession = async () => {
   if (!refreshRequest) {
     refreshRequest = apiClient
-      .post<AuthResponse>('/api/auth/refresh')
+      .post<AuthResponse>('/api/v1/auth/refresh')
       .then(response => {
         void runFullSync(response.data?.user);
       })

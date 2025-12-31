@@ -18,14 +18,14 @@ export const useStartupSessionCheck = () => {
       try {
         // Startup: verify server reachability before normal navigation.
         await withRetry(
-          () => apiClient.get('/api/auth/session', { timeout: SESSION_TIMEOUT_MS }),
+          () => apiClient.get('/api/v1/auth/session', { timeout: SESSION_TIMEOUT_MS }),
           1
         );
       } catch {
         if (!cancelled) {
           promptToGoOffline('Session check failed.', async () => {
             await withRetry(
-              () => apiClient.get('/api/auth/session', { timeout: SESSION_TIMEOUT_MS }),
+              () => apiClient.get('/api/v1/auth/session', { timeout: SESSION_TIMEOUT_MS }),
               1
             );
           });
