@@ -43,6 +43,7 @@ export default function ProfileScreen() {
       // silent
     }
     logout();
+    router.replace('/welcome');
   };
 
   return (
