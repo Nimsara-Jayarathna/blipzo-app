@@ -329,6 +329,7 @@ const styles = StyleSheet.create({
     color: '#2c3e50',
     letterSpacing: -1,
     marginBottom: 4,
+    lineHeight: 52,
   },
   tagline: {
     fontSize: 16,
