@@ -1,9 +1,11 @@
 import { apiClient } from '@/api/client';
 import type { AuthCredentials, AuthResponse, SessionResponse } from '@/types';
+import { clearDb } from '@/utils/local-db';
 import { runFullSync } from '@/utils/sync-service';
 
 export const login = async (credentials: AuthCredentials) => {
   const { data } = await apiClient.post<AuthResponse>('/api/v1/auth/login', credentials);
+  void runFullSync(data?.user);
   return data;
 };
 
@@ -24,6 +26,10 @@ export const refreshSession = async () => {
 };
 
 export const logoutSession = async () => {
-  await apiClient.post('/api/v1/auth/logout');
+  try {
+    await apiClient.post('/api/v1/auth/logout');
+  } finally {
+    await clearDb();
+  }
 };
 

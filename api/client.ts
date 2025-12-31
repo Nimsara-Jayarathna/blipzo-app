@@ -3,6 +3,7 @@ import axios, { type AxiosRequestConfig, type InternalAxiosRequestConfig } from 
 import { useAuthStore } from '@/context/auth-store';
 import type { AuthResponse } from '@/types';
 import { isNetworkOrTimeoutError, withRetry } from '@/utils/api-retry';
+import { clearDb } from '@/utils/local-db';
 import { logDebug, logError } from '@/utils/logger';
 import { triggerOfflinePrompt } from '@/utils/offline-prompt';
 import { runFullSync } from '@/utils/sync-service';
@@ -102,6 +103,7 @@ apiClient.interceptors.response.use(
       } catch (refreshError) {
         if (!isNetworkOrTimeoutError(refreshError)) {
           useAuthStore.getState().logout();
+          void clearDb();
         }
         return Promise.reject(refreshError);
       }
@@ -109,6 +111,7 @@ apiClient.interceptors.response.use(
 
     if (status === 401) {
       useAuthStore.getState().logout();
+      void clearDb();
     }
 
     return Promise.reject(error);

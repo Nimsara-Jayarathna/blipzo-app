@@ -44,7 +44,7 @@ const webStore = {
   profile: [] as LocalProfileRow[],
 };
 
-export const initDb = async () => {};
+export const initDb = async () => { };
 
 export const insertPendingTransaction = async (row: LocalTransactionRow) => {
   webStore.transactions.push(row);
@@ -138,3 +138,10 @@ export const getCounts = async () => ({
   categories: webStore.categories.length,
   profile: webStore.profile.length,
 });
+
+export const clearDb = async () => {
+  webStore.transactions = [];
+  webStore.categories = [];
+  webStore.profile = [];
+  metaStore = {};
+};

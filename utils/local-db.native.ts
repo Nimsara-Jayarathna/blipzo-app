@@ -321,3 +321,15 @@ export const getCounts = async () => {
     profile: prof?.count ?? 0,
   };
 };
+
+export const clearDb = async () => {
+  try {
+    await run(`DELETE FROM transactions`);
+    await run(`DELETE FROM categories`);
+    await run(`DELETE FROM profile`);
+    await run(`DELETE FROM meta`);
+  } catch (error) {
+    logError('local-db: clearDb failed', error);
+    throw error;
+  }
+};
