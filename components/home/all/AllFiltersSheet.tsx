@@ -48,6 +48,11 @@ export function AllFiltersSheet({
     onClose();
   };
 
+  const visibleCategories = React.useMemo(() => {
+    if (draftFilters.typeFilter === 'all') return categories;
+    return categories.filter((c) => c.type === draftFilters.typeFilter);
+  }, [categories, draftFilters.typeFilter]);
+
   if (!visible) {
     return null;
   }
@@ -85,7 +90,7 @@ export function AllFiltersSheet({
           >
             <FilterControls
               filters={draftFilters}
-              categories={categories}
+              categories={visibleCategories}
               onChange={setDraftFilters}
             />
 
@@ -132,7 +137,7 @@ export function AllFiltersSheet({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.22)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
   backdropTouchable: {

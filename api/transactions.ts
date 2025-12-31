@@ -22,7 +22,7 @@ const normalizeTransaction = (transaction: TransactionApiShape): Transaction => 
   const category =
     typeof transaction.category === 'string'
       ? transaction.category
-      : transaction.category?.name ?? transaction.category;
+      : transaction.category;
 
   return {
     ...transaction,

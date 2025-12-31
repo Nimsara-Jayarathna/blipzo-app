@@ -62,8 +62,30 @@ export default function AllTransactionsScreen() {
     enabled: isAuthenticated && !offlineMode,
   });
 
-  const filteredTransactions = data?.transactions ?? [];
+  // Get available categories to help with robust matching (ID vs Name)
   const { categoriesForType } = useTransactionCategories(filters, setFilters);
+
+  const filteredTransactions = useMemo(() => {
+    const raw = data?.transactions ?? [];
+    if (filters.categoryFilter === 'all') return raw;
+
+    // Find the full category object for the selected filter
+    const selectedCat = categoriesForType.find(c => c.id === filters.categoryFilter);
+    const targetName = selectedCat?.name;
+
+    return raw.filter((txn) => {
+      // 1. Resolve Transaction Category Data
+      const tCat = txn.category;
+      const tCatId = typeof tCat === 'object' ? (tCat?._id ?? tCat?.id) : tCat;
+      const tCatName = (typeof tCat === 'object' ? tCat?.name : tCat) ?? txn.categoryName; // Fallback to categoryName field
+
+      // 2. Check Match (ID or Name)
+      const matchesId = tCatId === filters.categoryFilter;
+      const matchesName = targetName && tCatName === targetName;
+
+      return matchesId || matchesName;
+    });
+  }, [data?.transactions, filters.categoryFilter, categoriesForType]);
   const groupedData = useGroupedTransactions(filteredTransactions, grouping);
 
   const typeLabel = filters.typeFilter === 'all' ? 'All types' : filters.typeFilter === 'income' ? 'Income' : 'Expense';
