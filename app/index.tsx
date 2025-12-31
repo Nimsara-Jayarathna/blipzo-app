@@ -1,26 +1,26 @@
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { useRouter } from 'expo-router';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withSpring, 
-  withTiming, 
-  withRepeat, 
-  withSequence 
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withSpring,
+  withTiming
 } from 'react-native-reanimated';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { getSession, refreshSession } from '@/api/auth';
 import { apiClient } from '@/api/client';
-import { ThemedText } from '@/components/themed-text';
-import { useAuth } from '@/hooks/useAuth';
 import { HomeBackground } from '@/components/home/HomeBackground';
+import { ThemedText } from '@/components/themed-text';
 import { useOffline } from '@/context/OfflineContext';
-import { isAuthError, isNetworkOrTimeoutError } from '@/utils/api-retry';
-import { runFullSync } from '@/utils/sync-service';
+import { useAuth } from '@/hooks/useAuth';
+import { isAuthError, isNetworkOrTimeoutError, withRetry } from '@/utils/api-retry';
 import { getLocalProfile, initDb } from '@/utils/local-db';
+import { runFullSync } from '@/utils/sync-service';
 
 const ACCENT_COLOR = '#3498db';
 const SESSION_CACHE_KEY = 'has_valid_session';
@@ -52,7 +52,7 @@ export default function IndexScreen() {
   useEffect(() => {
     // 1. Start Logo Animation
     logoScale.value = withSpring(1, { damping: 12, stiffness: 90 });
-    
+
     // 2. Pulse Loading Text
     loadingOpacity.value = withRepeat(
       withSequence(
@@ -122,7 +122,7 @@ export default function IndexScreen() {
         const localProfile = await loadLocalProfile();
         if (!hasValidSessionRef.current) {
           try {
-            await apiClient.get('/health', { timeout: 5000 });
+            await withRetry(() => apiClient.get('/health', { timeout: 5000 }), 2);
             hasNavigatedRef.current = true;
             router.replace('/welcome');
           } catch {
@@ -138,10 +138,10 @@ export default function IndexScreen() {
                 primaryLabel: 'Go to sign in',
                 onConfirm: localProfile
                   ? () => {
-                      setAuth({ user: localProfile });
-                      hasNavigatedRef.current = true;
-                      router.replace('/home/today' as any);
-                    }
+                    setAuth({ user: localProfile });
+                    hasNavigatedRef.current = true;
+                    router.replace('/home/today' as any);
+                  }
                   : undefined,
                 force: true,
               }
@@ -211,12 +211,12 @@ export default function IndexScreen() {
               primaryLabel: 'Retry',
               onConfirm: allowOffline
                 ? () => {
-                    if (localProfile) {
-                      setAuth({ user: localProfile });
-                    }
-                    hasNavigatedRef.current = true;
-                    router.replace('/home/today' as any);
+                  if (localProfile) {
+                    setAuth({ user: localProfile });
                   }
+                  hasNavigatedRef.current = true;
+                  router.replace('/home/today' as any);
+                }
                 : undefined,
               force: true,
             }
@@ -258,7 +258,7 @@ export default function IndexScreen() {
   return (
     <HomeBackground>
       <View style={styles.container}>
-        
+
         {/* Animated Logo */}
         <Animated.View style={[styles.logoWrapper, logoStyle]}>
           <View style={styles.logoGlow} />
