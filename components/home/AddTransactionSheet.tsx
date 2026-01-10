@@ -1,8 +1,12 @@
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Dimensions,
   InteractionManager,
   KeyboardAvoidingView,
   Modal,
@@ -10,24 +14,21 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Text,
   TextInput,
   View,
-  Dimensions,
-  Text,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { createTransaction } from '@/api/transactions';
 import { getCategories } from '@/api/categories';
+import { createTransaction } from '@/api/transactions';
 import { ThemedText } from '@/components/themed-text';
-import { useAppTheme } from '@/context/ThemeContext';
+import { useAuthStore } from '@/context/auth-store';
 import { useOffline } from '@/context/OfflineContext';
-import { getLocalCategories, insertPendingTransaction, initDb } from '@/utils/local-db';
-import { triggerToast } from '@/utils/toast';
-import { logError } from '@/utils/logger';
+import { useAppTheme } from '@/context/ThemeContext';
 import type { Category, Transaction, TransactionInput } from '@/types';
+import { getLocalCategories, initDb, insertPendingTransaction } from '@/utils/local-db';
+import { logError } from '@/utils/logger';
+import { triggerToast } from '@/utils/toast';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -61,6 +62,8 @@ export function AddTransactionSheet({ visible, onClose, onTransactionCreated }: 
   const { colors, resolvedTheme } = useAppTheme();
   const { offlineMode, capabilities } = useOffline();
   const inputRef = useRef<TextInput>(null);
+  const { user } = useAuthStore();
+  const currencySymbol = user?.currency?.symbol ?? '$';
 
   const [step, setStep] = useState<AddTransactionStep>(1);
   const [amount, setAmount] = useState('');
@@ -168,8 +171,8 @@ export function AddTransactionSheet({ visible, onClose, onTransactionCreated }: 
         typeof categoryName === 'string'
           ? categoryName
           : categoryName
-          ? JSON.stringify(categoryName)
-          : null;
+            ? JSON.stringify(categoryName)
+            : null;
       void initDb()
         .then(() =>
           insertPendingTransaction({
@@ -225,22 +228,22 @@ export function AddTransactionSheet({ visible, onClose, onTransactionCreated }: 
       onRequestClose={onClose}
       onShow={handleModalShow}
     >
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.backdrop}
       >
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-        
+
         <View style={[styles.sheet, { backgroundColor: colors.surface1, borderColor: colors.borderSoft }]}>
           <View style={[styles.handle, { backgroundColor: colors.borderSoft }]} />
-          
+
           <View style={styles.header}>
             <View style={styles.headerTitleGroup}>
               <ThemedText style={styles.titleText}>New Transaction</ThemedText>
               {step === 2 && (
                 <Pressable onPress={() => setStep(1)} style={styles.editAmountPill}>
                   <MaterialIcons name="edit" size={12} color={colors.primaryAccent} />
-                  <ThemedText style={[styles.editAmountText, { color: colors.primaryAccent }]}>${amount}</ThemedText>
+                  <ThemedText style={[styles.editAmountText, { color: colors.primaryAccent }]}>{currencySymbol}{amount}</ThemedText>
                 </Pressable>
               )}
             </View>
@@ -254,7 +257,7 @@ export function AddTransactionSheet({ visible, onClose, onTransactionCreated }: 
               <View style={styles.stepContainer}>
                 {/* AMOUNT INPUT: Fixed symbol clipping and alignment */}
                 <View style={styles.amountContainer}>
-                  <Text style={[styles.currency, { color: colors.textSubtle }]}>$</Text>
+                  <Text style={[styles.currency, { color: colors.textSubtle }]}>{currencySymbol}</Text>
                   <TextInput
                     ref={inputRef}
                     value={amount}
@@ -304,24 +307,24 @@ export function AddTransactionSheet({ visible, onClose, onTransactionCreated }: 
                 <View style={styles.section}>
                   <ThemedText style={styles.label}>Category</ThemedText>
                   <View style={styles.categoryGrid}>
-                    {isLoadingCategories ? <ActivityIndicator size="small" color={colors.primaryAccent} /> : 
+                    {isLoadingCategories ? <ActivityIndicator size="small" color={colors.primaryAccent} /> :
                       filteredCategories.map(cat => (
-                      <Pressable 
-                        key={cat.id} 
-                        onPress={() => setSelectedCategory(cat.id)}
-                        disabled={!capabilities.canSelectCategory}
-                        style={[
-                          styles.catChip, 
-                          { backgroundColor: colors.surface2, borderColor: colors.borderSoft },
-                          selectedCategory === cat.id && { borderColor: colors.primaryAccent, backgroundColor: colors.primaryAccent + '15'},
-                          !capabilities.canSelectCategory && { opacity: 0.6 },
-                        ]}
-                      >
-                        <Text numberOfLines={1} style={[styles.catName, { color: colors.textMain }, selectedCategory === cat.id && { color: colors.primaryAccent, fontWeight: 'bold' }]}>
-                          {cat.name}
-                        </Text>
-                      </Pressable>
-                    ))}
+                        <Pressable
+                          key={cat.id}
+                          onPress={() => setSelectedCategory(cat.id)}
+                          disabled={!capabilities.canSelectCategory}
+                          style={[
+                            styles.catChip,
+                            { backgroundColor: colors.surface2, borderColor: colors.borderSoft },
+                            selectedCategory === cat.id && { borderColor: colors.primaryAccent, backgroundColor: colors.primaryAccent + '15' },
+                            !capabilities.canSelectCategory && { opacity: 0.6 },
+                          ]}
+                        >
+                          <Text numberOfLines={1} style={[styles.catName, { color: colors.textMain }, selectedCategory === cat.id && { color: colors.primaryAccent, fontWeight: 'bold' }]}>
+                            {cat.name}
+                          </Text>
+                        </Pressable>
+                      ))}
                   </View>
                 </View>
 
@@ -363,24 +366,24 @@ export function AddTransactionSheet({ visible, onClose, onTransactionCreated }: 
           {/* DATE PICKER POPUP (MODAL) */}
           <Modal visible={showDatePicker} transparent animationType="fade">
             <View style={styles.pickerBackdrop}>
-               <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowDatePicker(false)} />
-               <View style={[styles.pickerPopup, { backgroundColor: colors.surface2 }]}>
-                  <DateTimePicker
-                    value={date}
-                    mode="date"
-                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                    onChange={(e, d) => {
-                      if (Platform.OS === 'android') setShowDatePicker(false);
-                      if (d) setDate(d);
-                    }}
-                    textColor={colors.textMain}
-                  />
-                  {Platform.OS === 'ios' && (
-                    <Pressable onPress={() => setShowDatePicker(false)} style={styles.pickerDoneBtn}>
-                      <ThemedText style={{ color: colors.primaryAccent, fontWeight: 'bold' }}>Done</ThemedText>
-                    </Pressable>
-                  )}
-               </View>
+              <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowDatePicker(false)} />
+              <View style={[styles.pickerPopup, { backgroundColor: colors.surface2 }]}>
+                <DateTimePicker
+                  value={date}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={(e, d) => {
+                    if (Platform.OS === 'android') setShowDatePicker(false);
+                    if (d) setDate(d);
+                  }}
+                  textColor={colors.textMain}
+                />
+                {Platform.OS === 'ios' && (
+                  <Pressable onPress={() => setShowDatePicker(false)} style={styles.pickerDoneBtn}>
+                    <ThemedText style={{ color: colors.primaryAccent, fontWeight: 'bold' }}>Done</ThemedText>
+                  </Pressable>
+                )}
+              </View>
             </View>
           </Modal>
         </View>
@@ -401,18 +404,18 @@ const styles = StyleSheet.create({
   closeBtn: { padding: 4 },
   scrollContent: { paddingHorizontal: 24, paddingBottom: 20 },
   stepContainer: { gap: 24 },
-  
+
   // Amount Section Fixes
-  amountContainer: { 
-    flexDirection: 'row', 
+  amountContainer: {
+    flexDirection: 'row',
     alignItems: 'center', // Changed to center for better input compatibility
-    justifyContent: 'center', 
+    justifyContent: 'center',
     paddingVertical: 30,
     height: 120, // Explicit height to prevent clipping
   },
   currency: { fontSize: 32, fontWeight: '600', marginRight: 10 },
   mainInput: { fontSize: 64, fontWeight: 'bold', minWidth: 160, textAlign: 'center', height: 80, padding: 0 },
-  
+
   typeLabel: { textAlign: 'center', fontSize: 13, opacity: 0.6 },
   typeRow: { flexDirection: 'row', gap: 12 },
   typeBtn: { flex: 1, height: 56, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
@@ -422,15 +425,15 @@ const styles = StyleSheet.create({
   incomeBtnDark: { backgroundColor: 'rgba(34, 197, 94, 0.25)' },
   expenseBtn: { backgroundColor: '#ef4444' },
   expenseBtnDark: { backgroundColor: 'rgba(239, 68, 68, 0.25)' },
-  
+
   section: { gap: 10 },
   label: { fontSize: 11, fontWeight: 'bold', textTransform: 'uppercase', opacity: 0.5, letterSpacing: 1 },
-  
+
   // Category Grid Fixes
   categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: GRID_GAP },
   catChip: { width: CHIP_WIDTH, height: 42, justifyContent: 'center', alignItems: 'center', borderRadius: 10, borderWidth: 1.5, paddingHorizontal: 2 },
   catName: { fontSize: 10, fontWeight: '600', textAlign: 'center' },
-  
+
   inputBox: { height: 54, borderRadius: 14, borderWidth: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, gap: 12 },
   inputText: { fontSize: 15, fontWeight: 'bold' },
   noteInput: { minHeight: 80, borderRadius: 14, borderWidth: 1, padding: 14, fontSize: 15, textAlignVertical: 'top' },
