@@ -23,6 +23,7 @@ const resolveBaseUrl = () => {
 };
 
 export const API_BASE_URL = resolveBaseUrl();
+export const API_VERSION = 'v1.1';
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -54,9 +55,12 @@ const shouldSkipRefresh = (url?: string) => {
     return true;
   }
 
-  return ['/api/v1/auth/login', '/api/v1/auth/register', '/api/v1/auth/refresh', '/api/v1/auth/logout'].some(
-    path => url.includes(path)
-  );
+  return [
+    `/api/${API_VERSION}/auth/login`,
+    `/api/${API_VERSION}/auth/register`,
+    `/api/${API_VERSION}/auth/refresh`,
+    `/api/${API_VERSION}/auth/logout`,
+  ].some(path => url.includes(path));
 };
 
 let refreshRequest: Promise<void> | null = null;
@@ -64,7 +68,7 @@ let refreshRequest: Promise<void> | null = null;
 const refreshSession = async () => {
   if (!refreshRequest) {
     refreshRequest = apiClient
-      .post<AuthResponse>('/api/v1/auth/refresh')
+      .post<AuthResponse>(`/api/${API_VERSION}/auth/refresh`)
       .then(response => {
         void runFullSync(response.data?.user);
       })
