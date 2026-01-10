@@ -1,9 +1,9 @@
-import React, { useEffect } from 'react';
 import { Tabs, useRouter, useSegments } from 'expo-router';
+import React, { useEffect } from 'react';
 
-import { useAuth } from '@/hooks/useAuth';
 import { HomeShell } from '@/components/home/layout/HomeShell';
 import { useOffline } from '@/context/OfflineContext';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function HomeTabLayout() {
   const router = useRouter();
@@ -38,6 +38,7 @@ export default function HomeTabLayout() {
       <Tabs.Screen name="today" options={{ title: 'Today' }} />
       <Tabs.Screen name="all" options={{ title: 'All' }} />
       <Tabs.Screen name="settings" options={{ title: 'Settings', href: null, headerShown: false }} />
+      <Tabs.Screen name="currency" options={{ title: 'Currency', href: null, headerShown: false }} />
       <Tabs.Screen name="profile" options={{ href: null }} />
     </HomeShell>
   );
