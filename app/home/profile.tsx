@@ -103,15 +103,24 @@ export default function ProfileScreen() {
             <View style={[styles.rowDivider, { backgroundColor: colors.borderSoft }]} />
             <Pressable
               onPress={() => router.navigate('/home/currency')}
+              disabled={offlineMode}
               style={styles.listRow}
               accessibilityRole="button"
               accessibilityLabel="Currency setting"
+              accessibilityState={{ disabled: offlineMode }}
             >
               <View style={styles.listRowLeft}>
                 <View style={[styles.iconBadge, { backgroundColor: colors.surface2 }]}>
                   <MaterialIcons name="attach-money" size={18} color={colors.textMuted} />
                 </View>
-                <ThemedText style={styles.listLabel}>Currency setting</ThemedText>
+                <ThemedText
+                  style={[
+                    styles.listLabel,
+                    offlineMode && { color: colors.textSubtle },
+                  ]}
+                >
+                  Currency setting
+                </ThemedText>
               </View>
               <MaterialIcons name="chevron-right" size={20} color={colors.textMuted} />
             </Pressable>
