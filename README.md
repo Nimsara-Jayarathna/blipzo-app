@@ -64,6 +64,11 @@ Blipzo is a modern, offline-first personal finance application built with Expo a
 -   `utils/`: Helper functions and services (Sync, Logger, Local DB).
 -   `types/`: TypeScript type definitions.
 
+## Release Notes
+Detailed release notes for each version can be found in the [docs/releases](docs/releases/) directory.
+- Latest Release: [v1.0.0](docs/releases/v1.0.0.md)
+
+
 ## Scripts
 
 -   `npm start`: Start the Expo development server.
