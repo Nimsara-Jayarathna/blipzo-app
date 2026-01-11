@@ -1,16 +1,92 @@
 import { API_VERSION, apiClient } from '@/api/client';
-import type { AuthCredentials, AuthResponse, SessionResponse } from '@/types';
+import type {
+  AuthResponse,
+  ChangeEmailConfirmRequest,
+  ChangeEmailRequestNewRequest,
+  ChangeEmailVerifyRequest,
+  ChangeEmailVerifyResponse,
+  ChangePasswordRequest,
+  ForgotPasswordRequest,
+  LoginRequest,
+  RegisterCompleteRequest,
+  RegisterInitRequest,
+  RegisterVerifyRequest,
+  RegisterVerifyResponse,
+  ResetPasswordRequest,
+  SessionResponse,
+  UpdateProfileRequest,
+  UserProfile,
+} from '@/types';
 import { clearDb } from '@/utils/local-db';
 import { runFullSync } from '@/utils/sync-service';
 
-export const login = async (credentials: AuthCredentials) => {
-  const { data } = await apiClient.post<AuthResponse>(`/api/${API_VERSION}/auth/login`, credentials);
+export const login = async (credentials: LoginRequest) => {
+  const { data } = await apiClient.post<AuthResponse>(`/api/v1/auth/login`, credentials);
   void runFullSync(data?.user);
   return data;
 };
 
-export const register = async (credentials: AuthCredentials) => {
-  const { data } = await apiClient.post<AuthResponse>(`/api/${API_VERSION}/auth/register`, credentials);
+// --- Registration Flow ---
+
+export const registerInit = async (payload: RegisterInitRequest) => {
+  const { data } = await apiClient.post<{ message: string }>(`/api/v1.1/auth/register/init`, payload);
+  return data;
+};
+
+export const registerVerify = async (payload: RegisterVerifyRequest) => {
+  const { data } = await apiClient.post<RegisterVerifyResponse>(`/api/v1.1/auth/register/verify`, payload);
+  return data;
+};
+
+export const registerComplete = async (payload: RegisterCompleteRequest) => {
+  const { data } = await apiClient.post<AuthResponse>(`/api/v1.1/auth/register/complete`, payload);
+  void runFullSync(data?.user);
+  return data;
+};
+
+// --- Password Management ---
+
+export const forgotPassword = async (payload: ForgotPasswordRequest) => {
+  const { data } = await apiClient.post<{ message: string }>(`/api/v1.1/auth/password/forgot`, payload);
+  return data;
+};
+
+export const resetPassword = async (payload: ResetPasswordRequest) => {
+  const { data } = await apiClient.post<{ message: string }>(`/api/v1.1/auth/password/reset`, payload);
+  return data;
+};
+
+export const changePassword = async (payload: ChangePasswordRequest) => {
+  const { data } = await apiClient.post<{ message: string }>(`/api/v1.1/auth/password/change`, payload);
+  return data;
+};
+
+// --- Email Management ---
+
+export const changeEmailInit = async () => {
+  const { data } = await apiClient.post<{ message: string }>(`/api/v1.1/auth/email/change/init`);
+  return data;
+};
+
+export const changeEmailVerifyCurrent = async (payload: ChangeEmailVerifyRequest) => {
+  const { data } = await apiClient.post<ChangeEmailVerifyResponse>(`/api/v1.1/auth/email/change/verify-current`, payload);
+  return data;
+};
+
+export const changeEmailRequestNew = async (payload: ChangeEmailRequestNewRequest) => {
+  const { data } = await apiClient.post<{ message: string }>(`/api/v1.1/auth/email/change/request-new`, payload);
+  return data;
+};
+
+export const changeEmailConfirm = async (payload: ChangeEmailConfirmRequest) => {
+  const { data } = await apiClient.post<{ message: string; email: string }>(`/api/v1.1/auth/email/change/confirm`, payload);
+  return data;
+};
+
+// --- Profile Management ---
+
+export const updateProfile = async (payload: UpdateProfileRequest) => {
+  const { data } = await apiClient.put<{ user: UserProfile }>(`/api/v1.1/auth/me`, payload);
   return data;
 };
 
