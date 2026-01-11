@@ -285,20 +285,22 @@ export default function ProfileScreen() {
           </>
         )}
 
-        <View style={styles.footer}>
-          <Pressable
-            onPress={handleLogout}
-            style={({ pressed }) => [
-              styles.logoutButton,
-              { backgroundColor: '#ef4444' },
-              pressed && styles.logoutButtonPressed,
-            ]}>
-            <ThemedText style={styles.logoutText}>Log out</ThemedText>
-          </Pressable>
-          <ThemedText style={[styles.versionText, { color: colors.textMuted }]}>
-            Version {version}
-          </ThemedText>
-        </View>
+        {activeSection === 'menu' && (
+          <View style={styles.footer}>
+            <Pressable
+              onPress={handleLogout}
+              style={({ pressed }) => [
+                styles.logoutButton,
+                { backgroundColor: '#ef4444' },
+                pressed && styles.logoutButtonPressed,
+              ]}>
+              <ThemedText style={styles.logoutText}>Log out</ThemedText>
+            </Pressable>
+            <ThemedText style={[styles.versionText, { color: colors.textMuted }]}>
+              Version {version}
+            </ThemedText>
+          </View>
+        )}
       </HomeContent>
 
       {/* Sheets */}
