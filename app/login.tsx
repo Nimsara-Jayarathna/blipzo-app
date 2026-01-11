@@ -1,27 +1,27 @@
-import React, { useState } from 'react';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
+  LayoutAnimation,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   TextInput,
-  View,
-  LayoutAnimation,
   UIManager,
-  Image,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { login } from '@/api/auth';
-import { ThemedText } from '@/components/themed-text';
-import { useAuth } from '@/hooks/useAuth';
 import { HomeBackground } from '@/components/home/HomeBackground';
+import { ThemedText } from '@/components/themed-text';
 import { useAppTheme } from '@/context/ThemeContext';
+import { useAuth } from '@/hooks/useAuth';
 import { logDebug, logError } from '@/utils/logger';
 
 // Enable LayoutAnimation on Android
@@ -91,12 +91,12 @@ export default function LoginScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
         >
-          <ScrollView 
+          <ScrollView
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            
+
             {/* --- Header Section --- */}
             <View style={styles.header}>
               <View style={[styles.logoCircle, { backgroundColor: accentColor, shadowColor: accentColor }]}>
@@ -112,7 +112,7 @@ export default function LoginScreen() {
 
             {/* --- Form Section --- */}
             <View style={[styles.card, { backgroundColor: colors.surface1 }]}>
-              
+
               {/* Error Banner */}
               {errorMessage && (
                 <View style={[styles.errorBanner, { backgroundColor: colors.surface2 }]}>
@@ -134,9 +134,9 @@ export default function LoginScreen() {
                     { backgroundColor: colors.inputBg, borderColor: colors.inputBorder },
                   ]}
                 >
-                  <MaterialIcons 
-                    name="mail-outline" 
-                    size={20} 
+                  <MaterialIcons
+                    name="mail-outline"
+                    size={20}
                     color={colors.textMuted}
                     style={styles.inputIcon}
                   />
@@ -163,9 +163,9 @@ export default function LoginScreen() {
                     { backgroundColor: colors.inputBg, borderColor: colors.inputBorder },
                   ]}
                 >
-                  <MaterialIcons 
-                    name="lock-outline" 
-                    size={20} 
+                  <MaterialIcons
+                    name="lock-outline"
+                    size={20}
                     color={colors.textMuted}
                     style={styles.inputIcon}
                   />
@@ -178,7 +178,7 @@ export default function LoginScreen() {
                     style={[styles.input, { color: colors.textMain }]}
                   />
                 </View>
-                <Pressable onPress={() => { /* TODO */ }} style={styles.forgotPassRow}>
+                <Pressable onPress={() => router.push('/auth/forgot-password')} style={styles.forgotPassRow}>
                   <ThemedText style={[styles.forgotPassText, { color: accentColor }]}>
                     Forgot Password?
                   </ThemedText>
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingBottom: 40,
   },
-  
+
   // --- Header ---
   header: {
     alignItems: 'center',
@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
     elevation: 4,
     marginBottom: 24,
   },
-  
+
   inputContainer: {
     marginBottom: 20,
   },
@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     height: '100%',
   },
-  
+
   forgotPassRow: {
     alignSelf: 'flex-end',
     marginTop: 6,

@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   LayoutAnimation,
   Platform,
@@ -12,21 +14,21 @@ import {
   TextInput,
   UIManager,
   View,
-  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
-import { register } from '@/api/auth';
-import { ThemedText } from '@/components/themed-text';
-import { useAuth } from '@/hooks/useAuth';
+import { registerComplete, registerInit, registerVerify } from '@/api/auth';
 import { HomeBackground } from '@/components/home/HomeBackground';
+import { ThemedText } from '@/components/themed-text';
 import { useAppTheme } from '@/context/ThemeContext';
+import { useAuth } from '@/hooks/useAuth';
 
 // Enable animations for Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
+
+type RegistrationStep = 'email' | 'otp' | 'details';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -35,49 +37,103 @@ export default function RegisterScreen() {
   const accentColor = colors.primaryAccent;
   const appIcon = require('../assets/images/icon.png');
 
+  // State
+  const [step, setStep] = useState<RegistrationStep>('email');
+
+  // Form Data
+  const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [registrationToken, setRegistrationToken] = useState('');
+
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const registerMutation = useMutation({
-    mutationFn: register,
-    onSuccess: data => {
+  // Mutations
+  const initMutation = useMutation({
+    mutationFn: registerInit,
+    onSuccess: () => {
+      setErrorMessage(null);
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setStep('otp');
+    },
+    onError: () => {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setErrorMessage('Unable to send verification code. Try again.');
+    },
+  });
+
+  const verifyMutation = useMutation({
+    mutationFn: registerVerify,
+    onSuccess: (data) => {
+      setErrorMessage(null);
+      setRegistrationToken(data.registrationToken);
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setStep('details');
+    },
+    onError: () => {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setErrorMessage('Invalid verification code.');
+    },
+  });
+
+  const completeMutation = useMutation({
+    mutationFn: registerComplete,
+    onSuccess: (data) => {
       setAuth(data);
       setErrorMessage(null);
       router.replace('/home');
     },
     onError: () => {
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-      setErrorMessage('Unable to create account. Email might be in use.');
+      setErrorMessage('Failed to create account. Please try again.');
     },
   });
 
-  const isLoading = registerMutation.isPending;
+  const isLoading = initMutation.isPending || verifyMutation.isPending || completeMutation.isPending;
 
-  const handleSubmit = () => {
+  // Handlers
+  const handleEmailSubmit = () => {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      setErrorMessage('Please enter your email.');
+      return;
+    }
+    setErrorMessage(null);
+    initMutation.mutate({ email: trimmedEmail });
+  };
+
+  const handleOtpSubmit = () => {
+    const trimmedOtp = otp.trim();
+    if (trimmedOtp.length !== 6) {
+      setErrorMessage('Please enter a valid 6-digit code.');
+      return;
+    }
+    setErrorMessage(null);
+    verifyMutation.mutate({ email: email.trim(), otp: trimmedOtp });
+  };
+
+  const handleDetailsSubmit = () => {
     const trimmed = {
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      email: email.trim(),
+      fname: firstName.trim(),
+      lname: lastName.trim(),
       password: password.trim(),
     };
 
-    if (!trimmed.firstName || !trimmed.lastName || !trimmed.email || !trimmed.password) {
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-      setErrorMessage('Please fill in all fields.');
+    if (!trimmed.fname || !trimmed.lname || !trimmed.password) {
+      setErrorMessage('Please fill in all details.');
       return;
     }
-
     setErrorMessage(null);
-    registerMutation.mutate({
-      email: trimmed.email,
-      password: trimmed.password,
-      fname: trimmed.firstName,
-      lname: trimmed.lastName,
+    completeMutation.mutate({
+      registrationToken,
+      email: email.trim(),
+      ...trimmed,
     });
   };
+
+
 
   return (
     <HomeBackground>
@@ -87,14 +143,15 @@ export default function RegisterScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
         >
-          <ScrollView 
+          <ScrollView
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            
+
             {/* --- Header --- */}
             <View style={styles.header}>
+
               <View style={[styles.logoCircle, { backgroundColor: accentColor, shadowColor: accentColor }]}>
                 <Image source={appIcon} style={styles.logoImage} resizeMode="contain" />
               </View>
@@ -102,13 +159,15 @@ export default function RegisterScreen() {
                 Create Account
               </ThemedText>
               <ThemedText style={[styles.subtitle, { color: colors.textMuted }]}>
-                Start tracking your finances in seconds.
+                {step === 'email' && 'Enter your email to get started.'}
+                {step === 'otp' && `We sent a code to ${email}`}
+                {step === 'details' && 'One last step to set up your profile.'}
               </ThemedText>
             </View>
 
             {/* --- Card Form --- */}
             <View style={[styles.card, { backgroundColor: colors.surface1 }]}>
-              
+
               {/* Error Banner */}
               {errorMessage && (
                 <View style={[styles.errorBanner, { backgroundColor: colors.surface2 }]}>
@@ -119,109 +178,100 @@ export default function RegisterScreen() {
                 </View>
               )}
 
-              {/* Row: First & Last Name */}
-              <View style={styles.row}>
-                <View style={styles.fieldGroupHalf}>
+              {/* Steps Content */}
+              {step === 'email' && (
+                <View style={styles.fieldGroup}>
                   <ThemedText style={[styles.label, { color: colors.textSubtle }]}>
-                    First Name
+                    Email Address
                   </ThemedText>
-                  <View
-                    style={[
-                      styles.inputWrapper,
-                      { backgroundColor: colors.inputBg, borderColor: colors.inputBorder },
-                    ]}
-                  >
+                  <View style={[styles.inputWrapper, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder }]}>
+                    <MaterialIcons name="mail-outline" size={20} color={colors.textMuted} style={styles.inputIcon} />
                     <TextInput
-                      value={firstName}
-                      onChangeText={setFirstName}
-                      placeholder="Alex"
+                      value={email}
+                      onChangeText={setEmail}
+                      placeholder="you@example.com"
                       placeholderTextColor={colors.textMuted}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
                       style={[styles.input, { color: colors.textMain }]}
                     />
                   </View>
                 </View>
+              )}
 
-                <View style={styles.fieldGroupHalf}>
+              {step === 'otp' && (
+                <View style={styles.fieldGroup}>
                   <ThemedText style={[styles.label, { color: colors.textSubtle }]}>
-                    Last Name
+                    Verification Code
                   </ThemedText>
-                  <View
-                    style={[
-                      styles.inputWrapper,
-                      { backgroundColor: colors.inputBg, borderColor: colors.inputBorder },
-                    ]}
-                  >
+                  <View style={[styles.inputWrapper, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder }]}>
+                    <MaterialIcons name="lock-clock" size={20} color={colors.textMuted} style={styles.inputIcon} />
                     <TextInput
-                      value={lastName}
-                      onChangeText={setLastName}
-                      placeholder="Doe"
+                      value={otp}
+                      onChangeText={setOtp}
+                      placeholder="123456"
                       placeholderTextColor={colors.textMuted}
+                      keyboardType="number-pad"
+                      maxLength={6}
                       style={[styles.input, { color: colors.textMain }]}
                     />
                   </View>
                 </View>
-              </View>
+              )}
 
-              {/* Email */}
-              <View style={styles.fieldGroup}>
-                <ThemedText style={[styles.label, { color: colors.textSubtle }]}>
-                  Email Address
-                </ThemedText>
-                <View
-                  style={[
-                    styles.inputWrapper,
-                    { backgroundColor: colors.inputBg, borderColor: colors.inputBorder },
-                  ]}
-                >
-                  <MaterialIcons 
-                    name="mail-outline" 
-                    size={20} 
-                    color={colors.textMuted}
-                    style={styles.inputIcon} 
-                  />
-                  <TextInput
-                    value={email}
-                    onChangeText={setEmail}
-                    placeholder="you@example.com"
-                    placeholderTextColor={colors.textMuted}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    style={[styles.input, { color: colors.textMain }]}
-                  />
-                </View>
-              </View>
+              {step === 'details' && (
+                <>
+                  <View style={styles.row}>
+                    <View style={styles.fieldGroupHalf}>
+                      <ThemedText style={[styles.label, { color: colors.textSubtle }]}>First Name</ThemedText>
+                      <View style={[styles.inputWrapper, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder }]}>
+                        <TextInput
+                          value={firstName}
+                          onChangeText={setFirstName}
+                          placeholder="Alex"
+                          placeholderTextColor={colors.textMuted}
+                          style={[styles.input, { color: colors.textMain }]}
+                        />
+                      </View>
+                    </View>
+                    <View style={styles.fieldGroupHalf}>
+                      <ThemedText style={[styles.label, { color: colors.textSubtle }]}>Last Name</ThemedText>
+                      <View style={[styles.inputWrapper, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder }]}>
+                        <TextInput
+                          value={lastName}
+                          onChangeText={setLastName}
+                          placeholder="Doe"
+                          placeholderTextColor={colors.textMuted}
+                          style={[styles.input, { color: colors.textMain }]}
+                        />
+                      </View>
+                    </View>
+                  </View>
 
-              {/* Password */}
-              <View style={styles.fieldGroup}>
-                <ThemedText style={[styles.label, { color: colors.textSubtle }]}>
-                  Password
-                </ThemedText>
-                <View
-                  style={[
-                    styles.inputWrapper,
-                    { backgroundColor: colors.inputBg, borderColor: colors.inputBorder },
-                  ]}
-                >
-                  <MaterialIcons 
-                    name="lock-outline" 
-                    size={20} 
-                    color={colors.textMuted}
-                    style={styles.inputIcon} 
-                  />
-                  <TextInput
-                    value={password}
-                    onChangeText={setPassword}
-                    placeholder="Min. 6 characters"
-                    placeholderTextColor={colors.textMuted}
-                    secureTextEntry
-                    style={[styles.input, { color: colors.textMain }]}
-                  />
-                </View>
-              </View>
+                  <View style={styles.fieldGroup}>
+                    <ThemedText style={[styles.label, { color: colors.textSubtle }]}>Password</ThemedText>
+                    <View style={[styles.inputWrapper, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder }]}>
+                      <MaterialIcons name="lock-outline" size={20} color={colors.textMuted} style={styles.inputIcon} />
+                      <TextInput
+                        value={password}
+                        onChangeText={setPassword}
+                        placeholder="Min. 6 characters"
+                        placeholderTextColor={colors.textMuted}
+                        secureTextEntry
+                        style={[styles.input, { color: colors.textMain }]}
+                      />
+                    </View>
+                  </View>
+                </>
+              )}
 
               {/* Submit Button */}
               <Pressable
-                onPress={handleSubmit}
+                onPress={
+                  step === 'email' ? handleEmailSubmit :
+                    step === 'otp' ? handleOtpSubmit :
+                      handleDetailsSubmit
+                }
                 disabled={isLoading}
                 style={({ pressed }) => [
                   styles.primaryButton,
@@ -232,7 +282,9 @@ export default function RegisterScreen() {
                   <ActivityIndicator color="#ffffff" />
                 ) : (
                   <View style={styles.btnContent}>
-                    <ThemedText style={styles.primaryButtonText}>Sign Up</ThemedText>
+                    <ThemedText style={styles.primaryButtonText}>
+                      {step === 'details' ? 'Complete Sign Up' : 'Continue'}
+                    </ThemedText>
                     <MaterialIcons name="arrow-forward" size={18} color="#fff" />
                   </View>
                 )}
@@ -270,11 +322,13 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
 
-  // --- Header ---
+  // Header styles updated
   header: {
     alignItems: 'center',
     marginBottom: 24,
+    position: 'relative',
   },
+  // backButton style removed
   logoCircle: {
     width: 60,
     height: 60,
@@ -296,11 +350,13 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: 'bold',
     marginBottom: 6,
+    textAlign: 'center',
   },
   subtitle: {
     textAlign: 'center',
     fontSize: 14,
     maxWidth: '80%',
+    lineHeight: 20,
   },
 
   // --- Card ---
@@ -314,7 +370,7 @@ const styles = StyleSheet.create({
     elevation: 4,
     marginBottom: 24,
   },
-  
+
   row: {
     flexDirection: 'row',
     gap: 12,
@@ -332,7 +388,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginLeft: 4,
   },
-  
+
   // Input Styles
   inputWrapper: {
     flexDirection: 'row',
