@@ -27,6 +27,16 @@ export interface UserProfile {
   categoryLimit?: number;
   defaultIncomeCategories?: string[];
   defaultExpenseCategories?: string[];
+  currency?: Currency;
+}
+
+export interface Currency {
+  _id?: string;
+  id: string;
+  name: string;
+  code: string;
+  symbol: string;
+  isSelected?: boolean;
 }
 
 export interface Category {
