@@ -77,13 +77,14 @@ export default function ProfileScreen() {
               {/* Profile Setting */}
               <Pressable
                 onPress={() => setActiveSection('profile')}
+                disabled={offlineMode}
                 style={styles.listRow}
               >
                 <View style={styles.listRowLeft}>
                   <View style={[styles.iconBadge, { backgroundColor: colors.surface2 }]}>
                     <MaterialIcons name="person" size={18} color={colors.textMuted} />
                   </View>
-                  <ThemedText style={styles.listLabel}>Profile setting</ThemedText>
+                  <ThemedText style={[styles.listLabel, offlineMode && { color: colors.textSubtle }]}>Profile setting</ThemedText>
                 </View>
                 <MaterialIcons name="chevron-right" size={20} color={colors.textMuted} />
               </Pressable>
@@ -93,13 +94,14 @@ export default function ProfileScreen() {
               {/* Security Setting */}
               <Pressable
                 onPress={() => setActiveSection('security')}
+                disabled={offlineMode}
                 style={styles.listRow}
               >
                 <View style={styles.listRowLeft}>
                   <View style={[styles.iconBadge, { backgroundColor: colors.surface2 }]}>
                     <MaterialIcons name="security" size={18} color={colors.textMuted} />
                   </View>
-                  <ThemedText style={styles.listLabel}>Security setting</ThemedText>
+                  <ThemedText style={[styles.listLabel, offlineMode && { color: colors.textSubtle }]}>Security setting</ThemedText>
                 </View>
                 <MaterialIcons name="chevron-right" size={20} color={colors.textMuted} />
               </Pressable>
