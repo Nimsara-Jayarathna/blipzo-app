@@ -30,10 +30,10 @@ export default function AllTransactionsScreen() {
   const { offlineMode, capabilities } = useOffline();
   const queryClient = useQueryClient();
   const navigation = useNavigation();
-  const today = dayjs().format('YYYY-MM-DD');
 
   const [filters, setFilters] = useState<AllFilters>({
-    startDate: today, endDate: today,
+    startDate: dayjs().startOf('month').format('YYYY-MM-DD'),
+    endDate: dayjs().endOf('month').format('YYYY-MM-DD'),
     typeFilter: 'all', categoryFilter: 'all',
     sortField: 'date', sortDirection: 'desc',
   });
