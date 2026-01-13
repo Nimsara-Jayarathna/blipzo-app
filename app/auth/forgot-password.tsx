@@ -51,7 +51,7 @@ export default function ForgotPasswordScreen() {
         }
         setErrorMessage(null);
         setSuccessMessage(null);
-        mutation.mutate({ email: trimmedEmail });
+        mutation.mutate({ email: trimmedEmail, platform: 'mobile' });
     };
 
     return (

@@ -25,7 +25,7 @@ interface EditNameSheetProps {
 
 export function EditNameSheet({ visible, onClose }: EditNameSheetProps) {
     const { colors } = useAppTheme();
-    const { user, setAuth } = useAuth();
+    const { user, updateUser } = useAuth();
 
     const [fname, setFname] = useState(user?.fname ?? '');
     const [lname, setLname] = useState(user?.lname ?? '');
@@ -34,37 +34,8 @@ export function EditNameSheet({ visible, onClose }: EditNameSheetProps) {
     const mutation = useMutation({
         mutationFn: updateProfile,
         onSuccess: (data) => {
-            // Manually update local user state if needed, or rely on response
-            // ideally response returns updated user, which we pass to setAuth
-            // But setAuth expects AuthResponse { user, tokens }, updateProfile returns { user }.
-            // We might need to handle this carefully.
-            // Assuming setAuth can take partial updates or we just update the user part.
-            // But setAuth replaces the whole user object usually.
-            // Let's rely on data.user
-
-            // We can't use setAuth(data) directly because data is { user }.
-            // We need to merge or just update the user in store. 
-            // But useAuthStore usually has setAuth which expects full payload.
-            // Actually setAuth implementation: ({ user }: AuthResponse) => set({ user, ... }).
-            // So calling setAuth({ user: data.user, tokens: ... }) is tricky if we don't have tokens.
-            // However, we just need to update the user reference in the store. 
-            // Let's assume for now we might need to refresh session or we modify the store to allow updating user only.
-            // Or we can just trigger a sync.
-
-            // A quick hack/fix: If setAuth only needs user property to update user:
-            // setAuth({ user: data.user } as any); // if tokens are optional or we ignore types for a sec.
-            // But better: refreshSession() might be cleaner, but slower.
-            // Let's check auth-store again. it takes AuthResponse. { user, token }.
-
-            // Let's just close and let the user see the change if we rely on refetching or sync.
-            // Actually `runFullSync` updates local DB, but store might need update.
-            // Ideally we should have `updateUser` action in store.
-            // For now, let's just close. `updateProfile` in `api/auth.ts` response is `{ user }`.
-            // We can do `void runFullSync(data.user);`
-
+            updateUser(data.user);
             void runFullSync(data.user);
-            // We should probably force a reload or have a way to update context.
-            // Proceed with closing for now.
             onClose();
         },
         onError: () => {

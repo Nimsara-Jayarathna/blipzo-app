@@ -43,6 +43,7 @@ export interface LoginRequest {
 
 export interface ForgotPasswordRequest {
   email: string;
+  platform?: 'mobile' | 'web';
 }
 
 export interface ResetPasswordRequest {

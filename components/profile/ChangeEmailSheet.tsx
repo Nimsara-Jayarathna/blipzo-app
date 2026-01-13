@@ -32,7 +32,7 @@ type Step = 'init' | 'verify-current' | 'request-new' | 'confirm-new';
 
 export function ChangeEmailSheet({ visible, onClose }: ChangeEmailSheetProps) {
     const { colors } = useAppTheme();
-    const { user, setAuth } = useAuth();
+    const { user, updateUser } = useAuth();
 
     const [step, setStep] = useState<Step>('init');
     const [currentOtp, setCurrentOtp] = useState('');
@@ -78,8 +78,8 @@ export function ChangeEmailSheet({ visible, onClose }: ChangeEmailSheetProps) {
         mutationFn: changeEmailConfirm,
         onSuccess: (data) => {
             Alert.alert('Success', 'Email updated successfully.');
-            // We might need to update local user email or refresh session
-            // data usually contains { message, email } or user
+            // Update local user state
+            updateUser({ email: data.email });
             onClose();
             setStep('init');
             setCurrentOtp('');

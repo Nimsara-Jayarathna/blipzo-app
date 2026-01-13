@@ -8,6 +8,7 @@ export const useAuth = () => {
   const isSessionChecked = useAuthStore(state => state.isSessionChecked);
   const logout = useAuthStore(state => state.logout);
   const setAuth = useAuthStore(state => state.setAuth);
+  const updateUser = useAuthStore(state => state.updateUser);
   const markSessionChecked = useAuthStore(state => state.markSessionChecked);
 
   return useMemo(
@@ -17,9 +18,10 @@ export const useAuth = () => {
       isSessionChecked,
       logout,
       setAuth,
+      updateUser,
       markSessionChecked,
     }),
-    [user, isAuthenticated, isSessionChecked, logout, setAuth, markSessionChecked]
+    [user, isAuthenticated, isSessionChecked, logout, setAuth, updateUser, markSessionChecked]
   );
 };
 
