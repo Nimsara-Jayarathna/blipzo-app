@@ -112,14 +112,22 @@ export function FloatingSummaryButton({ transactions, visible = true }: Floating
             <Animated.View 
               entering={FadeIn.duration(200)} 
               exiting={FadeOut.duration(150)} 
-              style={[styles.backdropFill, { backgroundColor: 'rgba(0,0,0,0.3)' }]} 
-            />
+              style={styles.backdropFill} 
+            >
+              <BlurView 
+                intensity={15}
+                tint={isDark ? 'dark' : 'light'}
+                style={StyleSheet.absoluteFill}
+              />
+              {/* Optional slight dimming on top of blur */}
+              <View style={[StyleSheet.absoluteFill, { backgroundColor: isDark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.1)' }]} />
+            </Animated.View>
           </Pressable>
 
           {/* Summary Card */}
           <Animated.View 
-            entering={SlideInDown.springify().damping(18).stiffness(150)} 
-            exiting={SlideOutDown.duration(150)}
+            entering={FadeIn.springify().damping(18).stiffness(150)} 
+            exiting={FadeOut.duration(150)}
             style={styles.cardWrapper}
           >
              <BlurView intensity={isDark ? 40 : 60} tint={isDark ? 'dark' : 'light'} style={styles.blurContainer}>
@@ -167,7 +175,7 @@ export function FloatingSummaryButton({ transactions, visible = true }: Floating
 const styles = StyleSheet.create({
   fabContainer: {
     position: 'absolute',
-    bottom: PADDING + 80, // Adjust for tab bar height usually
+    bottom: PADDING + 120, // Raised higher as requested
     right: PADDING,
     zIndex: 100,
   },
@@ -185,9 +193,9 @@ const styles = StyleSheet.create({
   overlayContainer: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 200,
-    justifyContent: 'flex-end',
+    justifyContent: 'center', // Centered vertically
     alignItems: 'center',
-    paddingBottom: 100, // Position popup slightly above bottom
+    // Removed paddingBottom to allow true centering
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
