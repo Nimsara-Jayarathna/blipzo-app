@@ -172,10 +172,12 @@ export function FloatingSummaryButton({ transactions, visible = true }: Floating
   );
 }
 
+import { HOME_CONTENT_PADDING_H, HOME_CONTENT_PADDING_TOP } from '@/components/home/layout/spacing';
+
 const styles = StyleSheet.create({
   fabContainer: {
     position: 'absolute',
-    bottom: PADDING + 120, // Raised higher as requested
+    bottom: PADDING + 150, // Raised higher as requested
     right: PADDING,
     zIndex: 100,
   },
@@ -193,9 +195,8 @@ const styles = StyleSheet.create({
   overlayContainer: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 200,
-    justifyContent: 'center', // Centered vertically
+    justifyContent: 'center',
     alignItems: 'center',
-    // Removed paddingBottom to allow true centering
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
