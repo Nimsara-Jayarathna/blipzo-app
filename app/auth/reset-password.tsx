@@ -1,7 +1,7 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useMutation } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -26,8 +26,14 @@ export default function ResetPasswordScreen() {
     const { colors } = useAppTheme();
     const accentColor = colors.primaryAccent;
 
-    const [token, setToken] = useState('');
+    const params = useLocalSearchParams<{ token?: string }>();
+    const [token, setToken] = useState(params.token ?? '');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+
+    useEffect(() => {
+        if (params.token) setToken(params.token);
+    }, [params.token]);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     const mutation = useMutation({
@@ -48,6 +54,14 @@ export default function ResetPasswordScreen() {
     const handleSubmit = () => {
         if (!token.trim() || !password.trim()) {
             setErrorMessage('Please fill in all fields.');
+            return;
+        }
+        if (!token.trim() || !password.trim()) {
+            setErrorMessage('Please fill in all fields.');
+            return;
+        }
+        if (password !== confirmPassword) {
+            setErrorMessage('Passwords do not match.');
             return;
         }
         setErrorMessage(null);
@@ -86,8 +100,20 @@ export default function ResetPasswordScreen() {
                                     </ThemedText>
                                 </View>
                             )}
-
-                            <View style={styles.fieldGroup}>
+                            
+                            {/* If deep linked, maybe hide the token field or make it readonly. 
+                                For better UX, let's just show it readonly if present from params. */}
+                            {params.token && (
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 24, padding: 12, backgroundColor: '#dcfce7', borderRadius: 12 }}>
+                                    <MaterialIcons name="check-circle" size={20} color="#166534" />
+                                    <ThemedText style={{ marginLeft: 8, color: '#166534', fontSize: 13, fontWeight: '600' }}>
+                                        Security Token Verified
+                                    </ThemedText>
+                                </View>
+                            )}
+                            
+                            {!params.token && (
+                                <View style={styles.fieldGroup}>
                                 <ThemedText style={[styles.label, { color: colors.textSubtle }]}>
                                     Reset Token
                                 </ThemedText>
@@ -113,6 +139,7 @@ export default function ResetPasswordScreen() {
                                     />
                                 </View>
                             </View>
+                            )}
 
                             <View style={styles.fieldGroup}>
                                 <ThemedText style={[styles.label, { color: colors.textSubtle }]}>
@@ -134,6 +161,33 @@ export default function ResetPasswordScreen() {
                                         value={password}
                                         onChangeText={setPassword}
                                         placeholder="Min. 6 characters"
+                                        placeholderTextColor={colors.textMuted}
+                                        secureTextEntry
+                                        style={[styles.input, { color: colors.textMain }]}
+                                    />
+                                </View>
+                            </View>
+
+                            <View style={styles.fieldGroup}>
+                                <ThemedText style={[styles.label, { color: colors.textSubtle }]}>
+                                    Confirm New Password
+                                </ThemedText>
+                                <View
+                                    style={[
+                                        styles.inputWrapper,
+                                        { backgroundColor: colors.inputBg, borderColor: colors.inputBorder },
+                                    ]}
+                                >
+                                    <MaterialIcons
+                                        name="lock-outline"
+                                        size={20}
+                                        color={colors.textMuted}
+                                        style={styles.inputIcon}
+                                    />
+                                    <TextInput
+                                        value={confirmPassword}
+                                        onChangeText={setConfirmPassword}
+                                        placeholder="Re-enter password"
                                         placeholderTextColor={colors.textMuted}
                                         secureTextEntry
                                         style={[styles.input, { color: colors.textMain }]}

@@ -27,6 +27,7 @@ export function ChangePasswordSheet({ visible, onClose }: ChangePasswordSheetPro
 
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
+    const [confirmNewPassword, setConfirmNewPassword] = useState('');
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     const mutation = useMutation({
@@ -36,6 +37,7 @@ export function ChangePasswordSheet({ visible, onClose }: ChangePasswordSheetPro
             onClose();
             setCurrentPassword('');
             setNewPassword('');
+            setConfirmNewPassword('');
         },
         onError: () => {
             setErrorMessage('Failed to change password. Check your current password.');
@@ -43,12 +45,16 @@ export function ChangePasswordSheet({ visible, onClose }: ChangePasswordSheetPro
     });
 
     const handleSave = () => {
-        if (!currentPassword || !newPassword) {
-            setErrorMessage('Both fields are required.');
+        if (!currentPassword || !newPassword || !confirmNewPassword) {
+            setErrorMessage('All fields are required.');
             return;
         }
         if (newPassword.length < 6) {
             setErrorMessage('New password must be at least 6 characters.');
+            return;
+        }
+        if (newPassword !== confirmNewPassword) {
+            setErrorMessage('Passwords do not match.');
             return;
         }
         setErrorMessage(null);
@@ -94,6 +100,15 @@ export function ChangePasswordSheet({ visible, onClose }: ChangePasswordSheetPro
                         <TextInput
                             value={newPassword}
                             onChangeText={setNewPassword}
+                            secureTextEntry
+                            style={[styles.input, { color: colors.textMain, backgroundColor: colors.inputBg, borderColor: colors.inputBorder }]}
+                        />
+                    </View>
+                    <View style={styles.field}>
+                        <ThemedText style={[styles.label, { color: colors.textSubtle }]}>Confirm New Password</ThemedText>
+                        <TextInput
+                            value={confirmNewPassword}
+                            onChangeText={setConfirmNewPassword}
                             secureTextEntry
                             style={[styles.input, { color: colors.textMain, backgroundColor: colors.inputBg, borderColor: colors.inputBorder }]}
                         />

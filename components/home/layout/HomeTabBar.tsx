@@ -219,7 +219,7 @@ export function HomeTabBar({ state, descriptors, navigation, onAddPress }: HomeT
           const isFocused = state.routes[state.index].key === route.key;
 
           const onPress = () => {
-            if (isAllDisabled) return;
+            // Let the listener handle validation (offline check)
             const event = navigation.emit({
               type: 'tabPress',
               target: route.key,
@@ -237,26 +237,28 @@ export function HomeTabBar({ state, descriptors, navigation, onAddPress }: HomeT
 
           const iconColor = isFocused ? colors.primaryAccent : colors.textMuted;
           const labelColor = isFocused ? colors.primaryAccent : colors.textMuted;
-          const disabledTint = colors.textSubtle ?? colors.textMuted;
+          // Apply visual disabled style if needed, but keep interaction enabled for the alert
+          const disabledTint = colors.textSubtle ?? colors.textMuted; 
+          const visualDisabled = isAllDisabled; 
 
           return (
             <Pressable
               key={route.key}
               onPress={onPress}
               style={styles.tabItem}
-              disabled={isAllDisabled}
+              // disabled={isAllDisabled} // REMOVED: Need to fire press event so listener can show alert
               accessibilityState={{ selected: isFocused, disabled: isAllDisabled }}
             >
               <View style={styles.iconContainer}>
                 <MaterialIcons
                   name={iconName}
                   size={22}
-                  color={isAllDisabled ? disabledTint : iconColor}
+                  color={visualDisabled ? disabledTint : iconColor}
                 />
                 <Text
                   style={[
                     styles.tabLabel,
-                    { color: isAllDisabled ? disabledTint : labelColor },
+                    { color: visualDisabled ? disabledTint : labelColor },
                   ]}
                 >
                   {options.title}

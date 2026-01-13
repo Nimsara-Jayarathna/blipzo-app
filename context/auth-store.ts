@@ -12,6 +12,7 @@ interface AuthState {
   setAuth: (payload: AuthResponse) => void;
   markSessionChecked: () => void;
   logout: () => void;
+  updateUser: (user: Partial<UserProfile>) => void;
 }
 
 export const useAuthStore = create<AuthState>(set => ({
@@ -27,6 +28,11 @@ export const useAuthStore = create<AuthState>(set => ({
         isSessionChecked: true,
       };
     }),
+  updateUser: (updates: Partial<UserProfile>) =>
+    set(state => ({
+      ...state,
+      user: state.user ? { ...state.user, ...updates } : null,
+    })),
   markSessionChecked: () =>
     set(state => ({
       ...state,
