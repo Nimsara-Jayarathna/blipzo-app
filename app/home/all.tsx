@@ -23,6 +23,7 @@ import {
   useTransactionCategories,
 } from '@/hooks/home/useTransactionLogic';
 import { AllFiltersSheet } from '@/components/home/all/AllFiltersSheet';
+import { FloatingSummaryButton } from '@/components/home/all/FloatingSummaryButton';
 
 export default function AllTransactionsScreen() {
   const { isAuthenticated } = useAuth();
@@ -116,56 +117,63 @@ export default function AllTransactionsScreen() {
   }, [navigation, offlineMode, isAuthenticated, refetch]);
 
   return (
-    <HomeContent bleedBottom>
-      <HomeStickyHeader
-        variant="all"
-        filters={filters}
-        grouping={grouping}
-        isLoading={isFetching || isLoading}
-        onOpenFilters={() => setIsFiltersOpen(true)}
-        collapsedSummary={collapsedSummary}
-        disableTransition={!enableTransition} // Apply switch
-      >
-        {({ onScroll, contentContainerStyle }) => (
-          <View style={styles.listWrapper}>
-            <TransactionList
-              data={filteredTransactions}
-              groupedData={groupedData}
-              HeaderComponent={() => null}
-              onDelete={(id) => deleteMutation.mutate(id)}
-              canDelete={capabilities.canDelete}
-              openNoteId={openNoteId}
-              onToggleNote={(id) => setOpenNoteId(current => (current === id ? null : id))}
-              onRowPress={() => setOpenNoteId(null)}
-              scrollEnabled={canScroll}
-              onScroll={enableTransition ? onScroll : undefined}
-              contentContainerStyle={[contentContainerStyle, { paddingBottom: HOME_BOTTOM_BAR_CLEARANCE }]}
-              onLayout={(event) => setListLayoutHeight(event.nativeEvent.layout.height)}
-              onContentSizeChange={(_, height) => setContentHeight(height)}
-              refreshControl={
-                <RefreshControl
-                  refreshing={isFetching}
-                  onRefresh={refetch}
-                  tintColor={colors.primaryAccent}
-                />
-              }
-            />
-          </View>
-        )}
-      </HomeStickyHeader>
+    <View style={{ flex: 1 }}>
+      <HomeContent bleedBottom>
+        <HomeStickyHeader
+          variant="all"
+          filters={filters}
+          grouping={grouping}
+          isLoading={isFetching || isLoading}
+          onOpenFilters={() => setIsFiltersOpen(true)}
+          collapsedSummary={collapsedSummary}
+          disableTransition={!enableTransition} // Apply switch
+        >
+          {({ onScroll, contentContainerStyle }) => (
+            <View style={styles.listWrapper}>
+              <TransactionList
+                data={filteredTransactions}
+                groupedData={groupedData}
+                HeaderComponent={() => null}
+                onDelete={(id) => deleteMutation.mutate(id)}
+                canDelete={capabilities.canDelete}
+                openNoteId={openNoteId}
+                onToggleNote={(id) => setOpenNoteId(current => (current === id ? null : id))}
+                onRowPress={() => setOpenNoteId(null)}
+                scrollEnabled={canScroll}
+                onScroll={enableTransition ? onScroll : undefined}
+                contentContainerStyle={[contentContainerStyle, { paddingBottom: HOME_BOTTOM_BAR_CLEARANCE }]}
+                onLayout={(event) => setListLayoutHeight(event.nativeEvent.layout.height)}
+                onContentSizeChange={(_, height) => setContentHeight(height)}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={isFetching}
+                    onRefresh={refetch}
+                    tintColor={colors.primaryAccent}
+                  />
+                }
+              />
+            </View>
+          )}
+        </HomeStickyHeader>
 
-      <AllFiltersSheet
-        visible={isFiltersOpen}
-        filters={filters}
-        grouping={grouping}
-        categories={categoriesForType}
-        onClose={() => setIsFiltersOpen(false)}
-        onApply={(nextFilters, nextGrouping) => {
-          setFilters(nextFilters);
-          setGrouping(nextGrouping);
-        }}
+        <AllFiltersSheet
+          visible={isFiltersOpen}
+          filters={filters}
+          grouping={grouping}
+          categories={categoriesForType}
+          onClose={() => setIsFiltersOpen(false)}
+          onApply={(nextFilters, nextGrouping) => {
+            setFilters(nextFilters);
+            setGrouping(nextGrouping);
+          }}
+        />
+      </HomeContent>
+
+      <FloatingSummaryButton 
+        transactions={filteredTransactions} 
+        visible={true} 
       />
-    </HomeContent>
+    </View>
   );
 }
 
