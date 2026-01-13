@@ -23,6 +23,7 @@ import {
   useTransactionCategories,
 } from '@/hooks/home/useTransactionLogic';
 import { AllFiltersSheet } from '@/components/home/all/AllFiltersSheet';
+import { FloatingSummaryButton } from '@/components/home/all/FloatingSummaryButton';
 
 export default function AllTransactionsScreen() {
   const { isAuthenticated } = useAuth();
@@ -164,6 +165,11 @@ export default function AllTransactionsScreen() {
           setFilters(nextFilters);
           setGrouping(nextGrouping);
         }}
+      />
+
+      <FloatingSummaryButton 
+        transactions={filteredTransactions} 
+        visible={true} 
       />
     </HomeContent>
   );
