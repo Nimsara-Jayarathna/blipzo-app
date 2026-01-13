@@ -3,7 +3,7 @@ import { useNavigation } from '@react-navigation/native';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, View } from 'react-native';
 
 import { logoutSession } from '@/api/auth';
 import { HomeContent } from '@/components/home/layout/HomeContent';
@@ -47,6 +47,31 @@ export default function ProfileScreen() {
     }
   }, [onlineCheckState]);
 
+  const handleGoOnline = async () => {
+    if (!offlineMode || onlineCheckState === 'checking') return;
+    setOnlineCheckState('checking');
+    const success = await tryGoOnline();
+    setOnlineCheckState(success ? 'success' : 'failed');
+  };
+
+  const handleRestrictedAction = (action: () => void) => {
+    if (offlineMode) {
+      Alert.alert(
+        'You are offline',
+        'You need to go online content to proceed.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { 
+            text: 'Go Online', 
+            onPress: handleGoOnline 
+          }
+        ]
+      );
+      return;
+    }
+    action();
+  };
+
   const handleLogout = async () => {
     try {
       await logoutSession();
@@ -76,8 +101,7 @@ export default function ProfileScreen() {
             >
               {/* Profile Setting */}
               <Pressable
-                onPress={() => setActiveSection('profile')}
-                disabled={offlineMode}
+                onPress={() => handleRestrictedAction(() => setActiveSection('profile'))}
                 style={styles.listRow}
               >
                 <View style={styles.listRowLeft}>
@@ -93,8 +117,7 @@ export default function ProfileScreen() {
 
               {/* Security Setting */}
               <Pressable
-                onPress={() => setActiveSection('security')}
-                disabled={offlineMode}
+                onPress={() => handleRestrictedAction(() => setActiveSection('security'))}
                 style={styles.listRow}
               >
                 <View style={styles.listRowLeft}>
@@ -110,8 +133,11 @@ export default function ProfileScreen() {
 
               {/* Category Setting */}
               <Pressable
-                onPress={() => router.navigate('/home/settings')}
-                disabled={offlineMode || !capabilities.canManageCategories}
+                onPress={() => {
+                   if (!capabilities.canManageCategories && !offlineMode) return; // Should not happen if visible logic is correct, but good safety
+                   handleRestrictedAction(() => router.navigate('/home/settings'));
+                }}
+                disabled={!capabilities.canManageCategories && !offlineMode} // Disable only if online but no capability
                 style={styles.listRow}
               >
                 <View style={styles.listRowLeft}>
@@ -134,8 +160,7 @@ export default function ProfileScreen() {
 
               {/* Currency Setting */}
               <Pressable
-                onPress={() => router.navigate('/home/currency')}
-                disabled={offlineMode}
+                onPress={() => handleRestrictedAction(() => router.navigate('/home/currency'))}
                 style={styles.listRow}
               >
                 <View style={styles.listRowLeft}>
@@ -175,12 +200,7 @@ export default function ProfileScreen() {
             >
               <ThemedText style={[styles.label, { color: colors.textMuted }]}>Connectivity</ThemedText>
               <Pressable
-                onPress={async () => {
-                  if (!offlineMode || onlineCheckState === 'checking') return;
-                  setOnlineCheckState('checking');
-                  const success = await tryGoOnline();
-                  setOnlineCheckState(success ? 'success' : 'failed');
-                }}
+                onPress={handleGoOnline}
                 disabled={!offlineMode || onlineCheckState === 'checking'}
                 style={({ pressed }) => [
                   styles.goOnlineButton,
