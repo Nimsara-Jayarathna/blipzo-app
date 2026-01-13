@@ -47,13 +47,6 @@ export default function CurrencySettingsScreen() {
 
     return (
         <View style={[styles.container, { backgroundColor: colors.pageBg }]}>
-            <View style={styles.headerWrapper}>
-                <SectionHeader
-                    title="Currency setting"
-                    onBack={() => router.navigate('/home/profile')}
-                    accessibilityLabel="Back to profile"
-                />
-            </View>
 
             {isLoading ? (
                 <View style={styles.center}>

@@ -160,11 +160,6 @@ export default function SettingsScreen() {
             style={styles.fixedHeader}
             onLayout={event => setFixedHeaderHeight(event.nativeEvent.layout.height)}
           >
-            <SectionHeader
-              title="Category setting"
-              onBack={() => router.navigate('/home/profile')}
-              accessibilityLabel="Back to profile"
-            />
           </View>
           <ScrollView
             contentContainerStyle={[
@@ -201,17 +196,10 @@ export default function SettingsScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.screen}
     >
-      <View style={styles.screen}>
         <View
           style={styles.fixedHeader}
           onLayout={event => setFixedHeaderHeight(event.nativeEvent.layout.height)}
         >
-          <SectionHeader
-            title="Category setting"
-            onBack={() => router.navigate('/home/profile')}
-            accessibilityLabel="Back to category setting"
-          />
-
           <View style={[styles.blurredControls, { paddingHorizontal: HOME_CONTENT_PADDING_H }]}>
             <BlurView
               intensity={headerBlurIntensity}
@@ -295,7 +283,6 @@ export default function SettingsScreen() {
             onSetDefault={handleSetDefault}
           />
         </ScrollView>
-      </View>
     </KeyboardAvoidingView>
   );
 }

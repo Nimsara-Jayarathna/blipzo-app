@@ -27,8 +27,21 @@ export default function HomeTabLayout() {
     }
 
     const route = segments[1];
-    if (route === 'all' || route === 'settings') {
+    
+    // Check for "All" tab
+    if (route === 'all') {
       router.replace('/home/today');
+      return;
+    }
+
+    // Check for restricted profile sub-routes
+    // route (segments[1]) is 'profile'. We need to check the next segment.
+    if (route === 'profile' && segments.length > 2) {
+      const subRoute = segments[2];
+      const restrictedSubRoutes = ['details', 'security', 'categories', 'currency'];
+      if (typeof subRoute === 'string' && restrictedSubRoutes.includes(subRoute)) {
+        router.replace('/home/profile');
+      }
     }
   }, [offlineMode, capabilities, router, segments]);
 
@@ -61,9 +74,20 @@ export default function HomeTabLayout() {
           },
         }} 
       />
-      <Tabs.Screen name="settings" options={{ title: 'Settings', href: null, headerShown: false }} />
-      <Tabs.Screen name="currency" options={{ title: 'Currency', href: null, headerShown: false }} />
-      <Tabs.Screen name="profile" options={{ href: null }} />
+      
+      {/* 
+         Register nested routes.
+         - profile: The profile folder (Stack). 
+           We hide the Tab header because the Stack (in profile/_layout.tsx) handles its own headers.
+       */}
+      <Tabs.Screen 
+        name="profile" 
+        options={{ 
+          title: 'Profile', 
+          headerShown: false,
+          href: '/home/profile',
+        }} 
+      /> 
     </HomeShell>
   );
 }
